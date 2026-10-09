@@ -1,0 +1,2 @@
+repo:   https://github.com/finalburnneo/FBNeo
+commit: c579e2a0eb49b82469ec8596588d3bfbebda26f0

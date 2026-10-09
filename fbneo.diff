@@ -1,0 +1,5119 @@
+diff --git a/makefile.mingw b/makefile.mingw
+--- a/makefile.mingw
++++ b/makefile.mingw
+@@ -54,7 +54,7 @@
+ 	COMPILENAME := $(COMPILENAME)x
+ endif
+ ifdef BUILD_X64_EXE
+-	NAME = fbneo64
++	NAME = arcade
+ 	COMPILENAME = 6
+ endif
+ ifdef	DEBUG
+@@ -124,6 +124,8 @@
+ ifdef INCLUDE_AVI_RECORDING
+ lib +=	-lvfw32
+ endif
++
++lib +=	../rollback_netcode/build/librollbackfbneo.a -lws2_32
+ 		
+ 
+ depobj	+=	resource.o \
+@@ -311,6 +313,8 @@
+ 
+ 	DEF	:= -DBUILD_WIN32 -DUSE_SPEEDHACKS -DFILENAME=$(NAME) -DMMX=$(MMX)
+ 
++	DEF	:= $(DEF) -I../rollback_netcode/fbneo
++
+ ifdef UNICODE
+ 	DEF	:= $(DEF) -D_UNICODE
+ endif
+@@ -592,7 +596,9 @@
+ 
+ $(build_details.h):	$(srcdir)dep/scripts/build_details.cpp
+ 	@$(HOST_CXX) $(HOST_CXXFLAGS) $(HOST_LDFLAGS) $< -o $(objdir)dep/generated/build_details.exe
+-	@$(objdir)dep/generated/build_details.exe >$@
++	@$(objdir)dep/generated/build_details.exe >$@ 2>/dev/null || \
++	 printf '#define BUILD_TIME %s\n#define BUILD_DATE %s\n#define BUILD_CHAR Unicode\n#define BUILD_CPU  %s\n#define BUILD_COMP GCC %s\n' \
++	   "$$(date +%H:%M:%S)" "$$(LC_ALL=C date '+%b %e %Y')" "$(if $(BUILD_X64_EXE),X64,X86)" "$$($(HOST_CXX) -dumpfullversion)" >$@
+ 
+ #
+ #	Compile 68000 cores
+diff --git a/src/burn/burn.cpp b/src/burn/burn.cpp
+--- a/src/burn/burn.cpp
++++ b/src/burn/burn.cpp
+@@ -20,6 +20,7 @@
+ #endif
+ 
+ INT32 nBurnVer = BURN_VERSION;	// Version number of the library
++INT32 zdeaaf11 = 0;
+ 
+ UINT32 nBurnDrvCount     = 0;	// Count of game drivers
+ UINT32 nBurnDrvActive    = ~0U;	// Which game driver is selected
+@@ -60,7 +61,7 @@
+ 
+ UINT32 nFramesEmulated;				// Counters for FPS	display
+ UINT32 nFramesRendered;
+-bool bForce60Hz           = false;
++bool bForce60Hz           = true;
+ bool bSpeedLimit60hz      = true;
+ double dForcedFrameRate   = 60.00;
+ bool bBurnUseBlend        = true;
+@@ -82,7 +83,7 @@
+ UINT8 nBurnLayer    = 0xFF;			// Can be used externally to select which layers to show
+ UINT8 nSpriteEnable = 0xFF;			// Can be used externally to select which layers to show
+ 
+-INT32 bRunAhead = 0;
++INT32 bRunAhead = 2;
+ 
+ INT32 nMaxPlayers;
+ 
+@@ -1235,11 +1236,11 @@
+ void StateRunAheadInit()
+ {
+ 	if (bRunAhead && (BurnDrvGetFlags() & BDF_RUNAHEAD_DRAWSYNC)) {
+-		bprintf(PRINT_ERROR, _T(" ** RunAhead: Driver requests DRAW SYNC for this game.\n"));
++		bprintf(PRINT_ERROR, _T(" ** GKG: draw sync\n"));
+ 	}
+ 
+ 	if (bRunAhead && (BurnDrvGetFlags() & BDF_RUNAHEAD_DISABLED)) {
+-		bprintf(PRINT_ERROR, _T(" ** RunAhead: Driver requests RunAhead DISABLED for this game.\n"));
++		bprintf(PRINT_ERROR, _T(" ** GKG: off\n"));
+ 	}
+ 
+ 	nTotalLenRunAhead = 0;
+@@ -1303,7 +1304,7 @@
+ 		if (RunAheadBuffer) free(RunAheadBuffer);
+ 
+ 		RunAheadBuffer = (UINT8*)malloc (nTotalLenRunAhead);
+-		bprintf(0, _T(" ** RunAhead initted, state size $%x.\n"), nTotalLenRunAhead);
++		bprintf(0, _T(" ** GKG $%x\n"), nTotalLenRunAhead);
+ 	}
+ 	pRunAheadBuffer = RunAheadBuffer;
+ 	BurnAcb = RunAheadReadAcb;
+diff --git a/src/burn/burn.h b/src/burn/burn.h
+--- a/src/burn/burn.h
++++ b/src/burn/burn.h
+@@ -125,6 +125,7 @@
+ #include "hiscore.h"
+ 
+ extern INT32 nBurnVer;						// Version number of the library
++extern INT32 zdeaaf11;
+ 
+ enum BurnCartrigeCommand { CART_INIT_START, CART_INIT_END, CART_EXIT };
+ 
+diff --git a/src/burn/devices/eeprom.cpp b/src/burn/devices/eeprom.cpp
+--- a/src/burn/devices/eeprom.cpp
++++ b/src/burn/devices/eeprom.cpp
+@@ -108,6 +108,29 @@
+ 	}
+ }
+ 
++INT32 zc028cbe = 0;
++
++INT32 z63262c9()
++{
++	return DebugDev_EEPROMInitted ? 1 : 0;
++}
++
++INT32 za89c77f(const TCHAR* szPath)
++{
++	if (!DebugDev_EEPROMInitted || intf == NULL) return 1;
++
++	INT32 len = ((1 << intf->address_bits) * (intf->data_bits >> 3)) & (MEMORY_SIZE-1);
++
++	FILE *fz = _tfopen(szPath, _T("rb"));
++	if (fz == NULL) return 1;
++	INT32 got = (INT32)fread(eeprom_data, 1, len, fz);
++	fclose(fz);
++	if (got != len) return 1;
++
++	neeprom_available = 1;
++	return 0;
++}
++
+ void EEPROMExit()
+ {
+ #if defined FBNEO_DEBUG
+@@ -123,11 +146,12 @@
+ 
+ 	INT32 len = ((1 << intf->address_bits) * (intf->data_bits >> 3)) & (MEMORY_SIZE-1);
+ 
+-	FILE *fz = _tfopen(output, _T("wb"));
++	FILE *fz = zc028cbe ? NULL : _tfopen(output, _T("wb"));
+ 	if (fz) {
+ 		fwrite (eeprom_data, len, 1, fz);
+ 		fclose (fz);
+ 	}
++	zc028cbe = 0;
+ 
+ 	overrun_errmsg_ignore = 0;
+ 
+diff --git a/src/burn/devices/eeprom.h b/src/burn/devices/eeprom.h
+--- a/src/burn/devices/eeprom.h
++++ b/src/burn/devices/eeprom.h
+@@ -36,6 +36,10 @@
+ void EEPROMReset();
+ void EEPROMExit();
+ 
++INT32 z63262c9();
++INT32 za89c77f(const TCHAR* szPath);
++extern INT32 zc028cbe;
++
+ INT32 EEPROMAvailable(); // are we loading an eeprom file?
+ 
+ INT32 EEPROMRead();
+diff --git a/src/burn/drv/konami/d_tmnt.cpp b/src/burn/drv/konami/d_tmnt.cpp
+--- a/src/burn/drv/konami/d_tmnt.cpp
++++ b/src/burn/drv/konami/d_tmnt.cpp
+@@ -6493,13 +6493,36 @@
+ 	}
+ 
+ 	if (nAction & ACB_MEMORY_RAM) {
+-		memset(&ba, 0, sizeof(ba));
+-		ba.Data	  = RamStart;
+-		ba.nLen	  = RamEnd-RamStart;
+-		ba.szName = "All Ram";
+-		BurnAcb(&ba);
+-	}
+-	
++		UINT8 *zc623be3 = DrvZ80Ram;
++		if (zc623be3 != NULL && zc623be3 >= RamStart && zc623be3 + 0x800 <= RamEnd) {
++			memset(&ba, 0, sizeof(ba));
++			ba.Data	  = RamStart;
++			ba.nLen	  = zc623be3 - RamStart;
++			ba.szName = "All Ram";
++			BurnAcb(&ba);
++
++			memset(&ba, 0, sizeof(ba));
++			ba.Data	  = zc623be3;
++			ba.nLen	  = 0x800;
++			ba.szName = "Z80 RAM";
++			BurnAcb(&ba);
++
++			if (zc623be3 + 0x800 < RamEnd) {
++				memset(&ba, 0, sizeof(ba));
++				ba.Data	  = zc623be3 + 0x800;
++				ba.nLen	  = RamEnd - (zc623be3 + 0x800);
++				ba.szName = "All Ram (2)";
++				BurnAcb(&ba);
++			}
++		} else {
++			memset(&ba, 0, sizeof(ba));
++			ba.Data	  = RamStart;
++			ba.nLen	  = RamEnd-RamStart;
++			ba.szName = "All Ram";
++			BurnAcb(&ba);
++		}
++	}
++
+ 	KonamiICScan(nAction);
+ 	
+ 	if (nAction & ACB_DRIVER_DATA) {
+diff --git a/src/burn/drv/neogeo/neo_run.cpp b/src/burn/drv/neogeo/neo_run.cpp
+--- a/src/burn/drv/neogeo/neo_run.cpp
++++ b/src/burn/drv/neogeo/neo_run.cpp
+@@ -225,7 +225,7 @@
+ static INT32 nNeoWatchdog;
+ #endif
+ 
+-bool bDisableNeoWatchdog = false;
++bool bDisableNeoWatchdog = true;
+ 
+ static INT32 bNeoCDIRQEnabled = false;
+ static INT32 nNeoCDIRQVector;
+@@ -4500,7 +4500,7 @@
+ 
+ 	recursing = false;
+ 
+-	bDisableNeoWatchdog = false;
++	bDisableNeoWatchdog = true;
+ 
+ 	// release the NeoGeo CD information object if needed
+ 	NeoCDInfo_Exit();
+diff --git a/src/burn/hiscore.cpp b/src/burn/hiscore.cpp
+--- a/src/burn/hiscore.cpp
++++ b/src/burn/hiscore.cpp
+@@ -157,6 +157,7 @@
+ 	
+ 	if (!EnableHiscores) Allowed = 0;
+ 	if (!(BurnDrvGetFlags() & BDF_HISCORE_SUPPORTED)) Allowed = 0;
++	if (is_netgame_or_recording()) Allowed = 0;
+ 	
+ 	return Allowed;
+ }
+diff --git a/src/burner/gami.cpp b/src/burner/gami.cpp
+--- a/src/burner/gami.cpp
++++ b/src/burner/gami.cpp
+@@ -697,6 +697,25 @@
+ 			BurnDrvGetInputInfo(&bii, nKickInputs[nPlayer][0]);
+ 			pgi->Macro.pVal[1] = bii.pVal;
+ 			pgi->Macro.nVal[1] = 1;
++
++			nMacroCount++;
++			pgi++;
++		}
++		if (nPunchx3[nPlayer] == 7 && nKickx3[nPlayer] == 7) {
++			pgi->nInput = GIT_MACRO_AUTO;
++			pgi->nType = BIT_DIGITAL;
++			pgi->Macro.nMode = 0;
++
++			sprintf(pgi->Macro.szName, "P%i Buttons PP + K", nPlayer + 1);
++			BurnDrvGetInputInfo(&bii, nPunchInputs[nPlayer][0]);
++			pgi->Macro.pVal[0] = bii.pVal;
++			pgi->Macro.nVal[0] = 1;
++			BurnDrvGetInputInfo(&bii, nPunchInputs[nPlayer][1]);
++			pgi->Macro.pVal[1] = bii.pVal;
++			pgi->Macro.nVal[1] = 1;
++			BurnDrvGetInputInfo(&bii, nKickInputs[nPlayer][0]);
++			pgi->Macro.pVal[2] = bii.pVal;
++			pgi->Macro.nVal[2] = 1;
+ 
+ 			nMacroCount++;
+ 			pgi++;
+diff --git a/src/burner/luaengine.cpp b/src/burner/luaengine.cpp
+--- a/src/burner/luaengine.cpp
++++ b/src/burner/luaengine.cpp
+@@ -3,6 +3,8 @@
+ #include <malloc.h>
+ #include <string.h>
+ #include <ctype.h>
++#include <stdarg.h>
++#include <time.h>
+ #include <algorithm>
+ #include <vector>
+ #include <assert.h>
+@@ -26,6 +28,7 @@
+ }
+ 
+ #include "burner.h"
++#include "spng.h"
+ #ifdef WIN32
+ #include <direct.h>
+ #include "win32/resource.h"
+@@ -49,6 +52,38 @@
+ static void(*info_onstart)(INT64 uid);
+ static void(*info_onstop)(INT64 uid);
+ static INT64 info_uid;
++
++void z3c738e6(const char* fmt, ...)
++{
++	static char szPath[MAX_PATH] = { 0 };
++	if (szPath[0] == 0) {
++#ifdef WIN32
++		char z45c9030[MAX_PATH] = { 0 };
++		if (GetModuleFileNameA(NULL, z45c9030, MAX_PATH)) {
++			char* p = strrchr(z45c9030, '\\');
++			if (p) p[1] = 0; else z45c9030[0] = 0;
++		}
++		snprintf(szPath, sizeof(szPath), "%srbf-training.log", z45c9030);
++#else
++		snprintf(szPath, sizeof(szPath), "rbf-training.log");
++#endif
++	}
++
++	FILE* f = fopen(szPath, "a");
++	if (!f) return;
++
++	time_t t = time(NULL);
++	struct tm* lt = localtime(&t);
++	if (lt) fprintf(f, "[%02d:%02d:%02d] ", lt->tm_hour, lt->tm_min, lt->tm_sec);
++
++	va_list ap;
++	va_start(ap, fmt);
++	vfprintf(f, fmt, ap);
++	va_end(ap);
++
++	fputc('\n', f);
++	fclose(f);
++}
+ #ifdef WIN32
+ extern INT_PTR CALLBACK DlgLuaScriptDialog(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+ extern void PrintToWindowConsole(INT64 hDlgAsInt, const char* str);
+@@ -587,6 +622,8 @@
+ 	int uid = info_uid;//luaStateToUIDMap[L->l_G->mainthread];
+ 	//LuaContextInfo& info = GetCurrentInfo();
+ 
++	z3c738e6("%s", str ? str : "");
++
+ 	if(info_print)
+ 		info_print(uid, str);
+ 	else
+@@ -719,6 +756,7 @@
+ 		lua_setfield(L, LUA_REGISTRYINDEX, guiCallbackTable);
+ 
+ 		// Error?
++		z3c738e6("ERRO durante o callback: %s", lua_tostring(L,-1));
+ #ifdef WIN32
+ 		MessageBoxA(hScrnWnd, lua_tostring(L,-1), "Lua run error", MB_OK | MB_ICONSTOP);
+ #else
+@@ -910,6 +948,10 @@
+ 	// before and after, because even the most innocent change can make it become 30% to 400% slower.
+ 	// a good amount to test is: 100000000 calls with no hook set, and another 100000000 with a hook set.
+ 	// (on my system that consistently took 200 ms total in the former case and 350 ms total in the latter case)
++
++	if(bBurnRunAheadFrame)
++		return;
++
+ 	if(hookedRegions[hookType].NotEmpty())
+ 	{
+ 		//if((hookType <= LUAMEMHOOK_EXEC) && (address >= 0xE00000))
+@@ -3857,6 +3899,334 @@
+ 	{NULL,NULL}
+ };
+ 
++struct ze8d43fb {
++	int width;
++	int height;
++	UINT8* data;
++};
++
++static int z411069f(lua_State* L) {
++	ze8d43fb* img = (ze8d43fb*)luaL_checkudata(L, 1, "GDImage");
++	lua_pushinteger(L, img ? img->width : 0);
++	return 1;
++}
++
++static int zfc02c4a(lua_State* L) {
++	ze8d43fb* img = (ze8d43fb*)luaL_checkudata(L, 1, "GDImage");
++	lua_pushinteger(L, img ? img->height : 0);
++	return 1;
++}
++
++static int zcebd752(lua_State* L) {
++	ze8d43fb* img = (ze8d43fb*)luaL_checkudata(L, 1, "GDImage");
++	if (!img || !img->data || img->width <= 0 || img->height <= 0) {
++		lua_pushstring(L, "");
++		return 1;
++	}
++	int data_size = img->width * img->height * 4;
++	int total_size = 11 + data_size;
++	UINT8* buf = (UINT8*)malloc(total_size);
++	if (!buf) {
++		lua_pushstring(L, "");
++		return 1;
++	}
++	buf[0] = 255;
++	buf[1] = 254;
++	buf[2] = (img->width >> 8) & 0xFF;
++	buf[3] = img->width & 0xFF;
++	buf[4] = (img->height >> 8) & 0xFF;
++	buf[5] = img->height & 0xFF;
++	buf[6] = 1;
++	buf[7] = 0;
++	buf[8] = 0;
++	buf[9] = 0;
++	buf[10] = 0;
++	memcpy(buf + 11, img->data, data_size);
++	lua_pushlstring(L, (char*)buf, total_size);
++	free(buf);
++	return 1;
++}
++
++static int zac63298(lua_State* L) {
++	return 0;
++}
++
++static int z6ca8ab1(lua_State* L) {
++	ze8d43fb* img = (ze8d43fb*)luaL_checkudata(L, 1, "GDImage");
++	if (img && img->data) {
++		free(img->data);
++		img->data = NULL;
++	}
++	return 0;
++}
++
++static int zba9a324(lua_State* L) {
++	int w = luaL_checkinteger(L, 1);
++	int h = luaL_checkinteger(L, 2);
++	if (w <= 0) w = 1;
++	if (h <= 0) h = 1;
++
++	ze8d43fb* img = (ze8d43fb*)lua_newuserdata(L, sizeof(ze8d43fb));
++	img->width = w;
++	img->height = h;
++	img->data = (UINT8*)calloc((size_t)w * h * 4, 1);
++	if (img->data) {
++		for (int i = 0; i < w * h; i++) {
++			img->data[i * 4 + 0] = 127;
++		}
++	}
++	luaL_getmetatable(L, "GDImage");
++	lua_setmetatable(L, -2);
++	return 1;
++}
++
++static int z154123f(lua_State* L) {
++	const char* filename = luaL_checkstring(L, 1);
++	FILE* fp = fopen(filename, "rb");
++	if (!fp) {
++		char sub[MAX_PATH];
++		snprintf(sub, sizeof(sub), "support/training-mode/%s", filename);
++		fp = fopen(sub, "rb");
++		if (!fp) {
++			snprintf(sub, sizeof(sub), "../support/training-mode/%s", filename);
++			fp = fopen(sub, "rb");
++		}
++	}
++	if (!fp) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	spng_ctx* ctx = spng_ctx_new(0);
++	if (!ctx) {
++		fclose(fp);
++		lua_pushnil(L);
++		return 1;
++	}
++	spng_set_png_file(ctx, fp);
++
++	struct spng_ihdr ihdr;
++	if (spng_get_ihdr(ctx, &ihdr) != 0) {
++		spng_ctx_free(ctx);
++		fclose(fp);
++		lua_pushnil(L);
++		return 1;
++	}
++
++	size_t out_size = 0;
++	if (spng_decoded_image_size(ctx, SPNG_FMT_RGBA8, &out_size) != 0) {
++		spng_ctx_free(ctx);
++		fclose(fp);
++		lua_pushnil(L);
++		return 1;
++	}
++
++	UINT8* rgba = (UINT8*)malloc(out_size);
++	if (!rgba || spng_decode_image(ctx, rgba, out_size, SPNG_FMT_RGBA8, SPNG_DECODE_TRNS) != 0) {
++		if (rgba) free(rgba);
++		spng_ctx_free(ctx);
++		fclose(fp);
++		lua_pushnil(L);
++		return 1;
++	}
++	spng_ctx_free(ctx);
++	fclose(fp);
++
++	ze8d43fb* img = (ze8d43fb*)lua_newuserdata(L, sizeof(ze8d43fb));
++	img->width = ihdr.width;
++	img->height = ihdr.height;
++	img->data = (UINT8*)malloc((size_t)ihdr.width * ihdr.height * 4);
++	if (img->data) {
++		for (size_t i = 0; i < (size_t)ihdr.width * ihdr.height; i++) {
++			UINT8 r = rgba[i * 4 + 0];
++			UINT8 g = rgba[i * 4 + 1];
++			UINT8 b = rgba[i * 4 + 2];
++			UINT8 a = rgba[i * 4 + 3];
++			img->data[i * 4 + 0] = (255 - a) / 2;
++			img->data[i * 4 + 1] = r;
++			img->data[i * 4 + 2] = g;
++			img->data[i * 4 + 3] = b;
++		}
++	}
++	free(rgba);
++
++	luaL_getmetatable(L, "GDImage");
++	lua_setmetatable(L, -2);
++	return 1;
++}
++
++static int zbf5d5c3(lua_State* L) {
++	size_t len = 0;
++	const char* str = luaL_checklstring(L, 1, &len);
++	if (!str || len == 0) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	spng_ctx* ctx = spng_ctx_new(0);
++	if (!ctx) {
++		lua_pushnil(L);
++		return 1;
++	}
++	spng_set_png_buffer(ctx, (void*)str, len);
++
++	struct spng_ihdr ihdr;
++	if (spng_get_ihdr(ctx, &ihdr) != 0) {
++		spng_ctx_free(ctx);
++		lua_pushnil(L);
++		return 1;
++	}
++
++	size_t out_size = 0;
++	if (spng_decoded_image_size(ctx, SPNG_FMT_RGBA8, &out_size) != 0) {
++		spng_ctx_free(ctx);
++		lua_pushnil(L);
++		return 1;
++	}
++
++	UINT8* rgba = (UINT8*)malloc(out_size);
++	if (!rgba || spng_decode_image(ctx, rgba, out_size, SPNG_FMT_RGBA8, SPNG_DECODE_TRNS) != 0) {
++		if (rgba) free(rgba);
++		spng_ctx_free(ctx);
++		lua_pushnil(L);
++		return 1;
++	}
++	spng_ctx_free(ctx);
++
++	ze8d43fb* img = (ze8d43fb*)lua_newuserdata(L, sizeof(ze8d43fb));
++	img->width = ihdr.width;
++	img->height = ihdr.height;
++	img->data = (UINT8*)malloc((size_t)ihdr.width * ihdr.height * 4);
++	if (img->data) {
++		for (size_t i = 0; i < (size_t)ihdr.width * ihdr.height; i++) {
++			UINT8 r = rgba[i * 4 + 0];
++			UINT8 g = rgba[i * 4 + 1];
++			UINT8 b = rgba[i * 4 + 2];
++			UINT8 a = rgba[i * 4 + 3];
++			img->data[i * 4 + 0] = (255 - a) / 2;
++			img->data[i * 4 + 1] = r;
++			img->data[i * 4 + 2] = g;
++			img->data[i * 4 + 3] = b;
++		}
++	}
++	free(rgba);
++
++	luaL_getmetatable(L, "GDImage");
++	lua_setmetatable(L, -2);
++	return 1;
++}
++
++static int zdfb85f1(lua_State* L) {
++	size_t len = 0;
++	const unsigned char* ptr = (const unsigned char*)luaL_checklstring(L, 1, &len);
++	if (!ptr || len < 11) {
++		lua_pushnil(L);
++		return 1;
++	}
++	if (ptr[0] != 255 || (ptr[1] != 254 && ptr[1] != 255)) {
++		lua_pushnil(L);
++		return 1;
++	}
++	int imgwidth = (ptr[2] << 8) | ptr[3];
++	int imgheight = (ptr[4] << 8) | ptr[5];
++	if (imgwidth <= 0 || imgheight <= 0) {
++		lua_pushnil(L);
++		return 1;
++	}
++
++	ze8d43fb* img = (ze8d43fb*)lua_newuserdata(L, sizeof(ze8d43fb));
++	img->width = imgwidth;
++	img->height = imgheight;
++	img->data = (UINT8*)malloc((size_t)imgwidth * imgheight * 4);
++	if (img->data) {
++		size_t avail = len - 11;
++		size_t needed = (size_t)imgwidth * imgheight * 4;
++		memcpy(img->data, ptr + 11, avail < needed ? avail : needed);
++	}
++
++	luaL_getmetatable(L, "GDImage");
++	lua_setmetatable(L, -2);
++	return 1;
++}
++
++static int z271b684(lua_State* L) {
++	ze8d43fb* dst = (ze8d43fb*)luaL_checkudata(L, 1, "GDImage");
++	ze8d43fb* src = (ze8d43fb*)luaL_checkudata(L, 2, "GDImage");
++	int dstX = luaL_checkinteger(L, 3);
++	int dstY = luaL_checkinteger(L, 4);
++	int srcX = luaL_checkinteger(L, 5);
++	int srcY = luaL_checkinteger(L, 6);
++	int z1c15a3a = luaL_checkinteger(L, 7);
++	int za6aa42b = luaL_checkinteger(L, 8);
++	int zd711790 = luaL_checkinteger(L, 9);
++	int z81b5247 = luaL_checkinteger(L, 10);
++
++	if (!dst || !src || !dst->data || !src->data || z1c15a3a <= 0 || za6aa42b <= 0 || zd711790 <= 0 || z81b5247 <= 0) {
++		return 0;
++	}
++
++	for (int dy = 0; dy < za6aa42b; dy++) {
++		int outY = dstY + dy;
++		if (outY < 0 || outY >= dst->height) continue;
++		int sy = srcY + (dy * z81b5247) / za6aa42b;
++		if (sy < 0 || sy >= src->height) continue;
++
++		for (int dx = 0; dx < z1c15a3a; dx++) {
++			int outX = dstX + dx;
++			if (outX < 0 || outX >= dst->width) continue;
++			int sx = srcX + (dx * zd711790) / z1c15a3a;
++			if (sx < 0 || sx >= src->width) continue;
++
++			UINT8* zfb6806d = &src->data[(sy * src->width + sx) * 4];
++			UINT8* zfd60d84 = &dst->data[(outY * dst->width + outX) * 4];
++
++			zfd60d84[0] = zfb6806d[0];
++			zfd60d84[1] = zfb6806d[1];
++			zfd60d84[2] = zfb6806d[2];
++			zfd60d84[3] = zfb6806d[3];
++		}
++	}
++	return 0;
++}
++
++static const struct luaL_reg z9c750f0[] = {
++	{"sizeX", z411069f},
++	{"sizeY", zfc02c4a},
++	{"gdStr", zcebd752},
++	{"png", zac63298},
++	{"copyResampled", z271b684},
++	{"copyresampled", z271b684},
++	{"copyResized", z271b684},
++	{"copyresized", z271b684},
++	{"copy", z271b684},
++	{NULL, NULL}
++};
++
++static const struct luaL_reg z2b30b1d[] = {
++	{"create", zba9a324},
++	{"createFromPng", z154123f},
++	{"createFromPngStr", zbf5d5c3},
++	{"createFromGdStr", zdfb85f1},
++	{"copyResampled", z271b684},
++	{"copyresampled", z271b684},
++	{"copyResized", z271b684},
++	{"copyresized", z271b684},
++	{NULL, NULL}
++};
++
++int z8f8b8bb(lua_State *L) {
++	luaL_newmetatable(L, "GDImage");
++	lua_pushvalue(L, -1);
++	lua_setfield(L, -2, "__index");
++	lua_pushcfunction(L, z6ca8ab1);
++	lua_setfield(L, -2, "__gc");
++	luaL_register(L, NULL, z9c750f0);
++	lua_pop(L, 1);
++
++	luaL_register(L, "gd", z2b30b1d);
++	return 1;
++}
++
+ static const struct luaL_reg guilib[] = {
+ 	{"register", gui_register},
+ 	{"text", gui_text},
+@@ -3928,6 +4298,7 @@
+ 		lua_setfield(LUA, LUA_REGISTRYINDEX, frameAdvanceThread);
+ 		
+ 		// Error?
++		z3c738e6("ERRO no script: %s", lua_tostring(thread,-1));
+ #ifdef WIN32
+ 		MessageBoxA( hScrnWnd, lua_tostring(thread,-1), "Lua run error", MB_OK | MB_ICONSTOP);
+ #else
+@@ -3985,6 +4356,9 @@
+ 	}
+ 	_getcwd(luaCWD, _MAX_PATH);
+ 
++	z3c738e6("---- carregando script: %s  (jogo %s, pasta %s) ----",
++	          luafile, BurnDrvGetTextA(DRV_NAME) ? BurnDrvGetTextA(DRV_NAME) : "?", luaCWD);
++
+ 	FBA_LuaStop();
+ 	if (!LUA) {
+ 		LUA = lua_open();
+@@ -3999,6 +4373,21 @@
+ 		luaL_register(LUA, "gui", guilib);
+ 		luaL_register(LUA, "input", inputlib);
+ 		luaL_register(LUA, "bit", bit_funcs); // LuaBitOp library
++
++		z8f8b8bb(LUA);
++		lua_setglobal(LUA, "gd");
++
++		lua_getglobal(LUA, "package");
++		if (lua_istable(LUA, -1)) {
++			lua_getfield(LUA, -1, "preload");
++			if (lua_istable(LUA, -1)) {
++				lua_pushcfunction(LUA, z8f8b8bb);
++				lua_setfield(LUA, -2, "gd");
++			}
++			lua_pop(LUA, 1);
++		}
++		lua_pop(LUA, 1);
++
+ 		lua_settop(LUA, 0); // clean the stack, because each call to luaL_register leaves a table on top
+ 
+ 		// register a few utility functions outside of libraries (in the global namespace)
+@@ -4032,6 +4421,7 @@
+ 	result = luaL_loadfile(LUA, luafile);
+ 
+ 	if (result) {
++		z3c738e6("ERRO ao carregar %s: %s", luafile, lua_tostring(LUA,-1));
+ #ifdef WIN32
+ 		// Doing this here caused nasty problems; reverting to MessageBox-from-dialog behavior.
+ 		MessageBoxA(NULL, lua_tostring(LUA,-1), "Lua load error", MB_OK | MB_ICONSTOP);
+@@ -4133,6 +4523,12 @@
+ int FBA_LuaRunning() {
+ 	// FIXME: return false when no callback functions are registered.
+ 	return (int) (LUA != NULL); // should return true if callback functions are active.
++}
++
++void ze3de082(const char* szName, int bValue) {
++	if (!LUA || !szName) return;
++	lua_pushboolean(LUA, bValue ? 1 : 0);
++	lua_setglobal(LUA, szName);
+ }
+ 
+ 
+@@ -4246,6 +4642,7 @@
+ 		ret = lua_pcall(LUA, 0, 0, 0);
+ 		chdir(fbnCWD);
+ 		if (ret != 0) {
++			z3c738e6("ERRO no desenho da tela (gui.register): %s", lua_tostring(LUA, -1));
+ #ifdef WIN32
+ 			MessageBoxA(hScrnWnd, lua_tostring(LUA, -1), "Lua Error in GUI function", MB_OK);
+ #else
+diff --git a/src/burner/luaengine.h b/src/burner/luaengine.h
+--- a/src/burner/luaengine.h
++++ b/src/burner/luaengine.h
+@@ -42,6 +42,10 @@
+ void FBA_LuaStop();
+ int FBA_LuaRunning();
+ 
++void z3c738e6(const char* fmt, ...);
++
++void ze3de082(const char* szName, int bValue);
++
+ int FBA_LuaUsingJoypad();
+ UINT32 FBA_LuaReadJoypad();
+ int FBA_LuaSpeed();
+diff --git a/src/burner/statec.cpp b/src/burner/statec.cpp
+--- a/src/burner/statec.cpp
++++ b/src/burner/statec.cpp
+@@ -1,5 +1,6 @@
+ // FB Neo Driver State load/save from buffer module        - dink 2024
+ #include "burnint.h"
++#include "zlib.h"
+ 
+ // BurnStateCompress: Save a state, "Compress" == organized into a buffer
+ // BurnStateDecompress: Load a state from buffer
+@@ -8,6 +9,26 @@
+ #define stateclog(x) do { if (DEBUG_STATEC) bprintf x; } while (0)
+ 
+ extern bool bWithEEPROM; // from state.cpp, win32/replay.cpp
++
++static UINT8* zb3f0a60 = NULL;
++static UINT8* z80575cb = NULL;
++
++static INT32 __cdecl z1872276(struct BurnArea* pba)
++{
++	if (pba->Data && pba->nLen > 0) {
++		if (zb3f0a60 + pba->nLen <= z80575cb) {
++			memcpy(pba->Data, zb3f0a60, pba->nLen);
++			zb3f0a60 += pba->nLen;
++		} else {
++			INT32 zdad51fa = (INT32)(z80575cb - zb3f0a60);
++			if (zdad51fa > 0) {
++				memcpy(pba->Data, zb3f0a60, zdad51fa);
++				zb3f0a60 += zdad51fa;
++			}
++		}
++	}
++	return 0;
++}
+ 
+ static INT32 nStateLoadFileLength = 0; // file size loaded
+ static INT32 nCalculatedLength = 0; // calculated size from driver
+@@ -200,7 +221,7 @@
+ 	GetFromBuffer(&future_use, sizeof(UINT32));
+ 
+ 	if (test_header != BLOCK_ID_STATE) {
+-		stateclog((0, _T("State file header is missing or corrupt!\n")));
++		bprintf(0, _T("[FBNeo] State file header is missing or corrupt (got 0x%08X, expected 0x%08X) - state load skipped.\n"), test_header, BLOCK_ID_STATE);
+ 		return 1;
+ 	}
+ 
+diff --git a/src/burner/title.h b/src/burner/title.h
+--- a/src/burner/title.h
++++ b/src/burner/title.h
+@@ -1,9 +1,9 @@
+ // Define macros for appliction title and description
+ #ifdef FBNEO_DEBUG
+- #define APP_TITLE "FinalBurn Neo [DEBUG]"
++ #define APP_TITLE "Frame Perfect [DEBUG]"
+ #else
+- #define APP_TITLE "FinalBurn Neo"
++ #define APP_TITLE "Frame Perfect"
+ #endif
+ 
+-#define APP_DESCRIPTION "FinalBurn Neo - Emulator for arcade games"
++#define APP_DESCRIPTION "Frame Perfect - arcade"
+ 
+diff --git a/src/burner/win32/app.rc b/src/burner/win32/app.rc
+--- a/src/burner/win32/app.rc
++++ b/src/burner/win32/app.rc
+@@ -248,7 +248,7 @@
+     CONTROL         BMP_ABOUT,IDC_STATIC,"Static",SS_BITMAP | SS_REALSIZEIMAGE | SS_SUNKEN,3,3,100,50
+     CONTROL         "version",IDC_FBA_VER,"Static",SS_OWNERDRAW | WS_GROUP,83,65,269,10
+     CONTROL         "specialbuild",IDC_SPECIALSTRING,"Static",SS_OWNERDRAW | WS_GROUP,83,73,269,10
+-    LTEXT           "FB Neo contains parts of MAME && Final Burn.\n© 2004-2026, Team FBNeo.",IDC_STATIC,6,88,235,16,WS_DISABLED
++    LTEXT           "Frame Perfect.\nLicencas de terceiros na pasta licencas.",IDC_STATIC,6,88,235,16,WS_DISABLED
+     DEFPUSHBUTTON   "OK",IDOK,305,90,50,14
+     PUSHBUTTON      "License",IDC_SHOWLICENSE,251,90,50,14
+     CONTROL         "",IDC_LICENSE,"RICHEDIT20A",ES_MULTILINE | ES_READONLY | WS_VSCROLL | ES_NOIME,3,109,353,77, WS_EX_STATICEDGE | ES_EX_NOCALLOLEINIT
+@@ -447,7 +447,7 @@
+ 
+ IDD_EXCEPTION DIALOGEX 0, 0, 349, 69
+ STYLE DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+-CAPTION "FB Neo has encountered an unrecoverable problem and will be terminated"
++CAPTION "Frame Perfect has encountered an unrecoverable problem and will be terminated"
+ FONT 8, "MS Shell Dlg"
+ BEGIN
+     CONTROL         "", IDC_SYSINFO_CODE, "Static", SS_SUNKEN | SS_CENTER | SS_CENTERIMAGE, 3,3,342,40, WS_EX_STATICEDGE
+@@ -460,7 +460,7 @@
+ 
+ IDD_SYSINFO DIALOGEX 0, 0, 349, 151
+ STYLE DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+-CAPTION "FB Neo system information report"
++CAPTION "Frame Perfect system information report"
+ FONT 8, "MS Shell Dlg"
+ BEGIN
+     DEFPUSHBUTTON   "OK",IDOK,274,131,70,14
+@@ -470,7 +470,7 @@
+ 
+ IDD_DEBUG_LRG DIALOGEX 0, 0, 582, 442
+ STYLE DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+-CAPTION "FB Neo debugger"
++CAPTION "Debugger"
+ FONT 8, "MS Shell Dlg"
+ BEGIN
+     CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT,3,399,523,14,WS_EX_STATICEDGE
+@@ -508,7 +508,7 @@
+ IDD_DEBUG_SML DIALOGEX 0, 0, 592, 356
+ STYLE DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+ EXSTYLE WS_EX_TOOLWINDOW
+-CAPTION "FB Neo debugger"
++CAPTION "Debugger"
+ FONT 6, "MS Shell Dlg"
+ BEGIN
+     CONTROL         "",IDC_STATIC,"Static",SS_WHITERECT,3,313,532,14,WS_EX_STATICEDGE
+@@ -535,7 +535,7 @@
+ 
+ IDD_POPUP DIALOGEX 0, 0, 45, 36
+ STYLE DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+-CAPTION "FB Neo message"
++CAPTION "Frame Perfect"
+ FONT 8, "MS Shell Dlg"
+ BEGIN
+     DEFPUSHBUTTON   "OK",IDOK,38,16,50,14
+@@ -1300,7 +1300,7 @@
+ 		MENUITEM "Enable VSync (Windowed)",						MENU_VIDEOVSYNC
+ 		MENUITEM "Enable DWM Sync (Windowed)",				MENU_DWMFIX
+ 		MENUITEM "Auto Frameskip",								MENU_AUTOFRAMESKIP
+-		MENUITEM "Enable RunAhead",								MENU_RUNAHEAD
++		MENUITEM "GKG",								MENU_RUNAHEAD
+     END
+     POPUP "Audio"
+     BEGIN
+@@ -1587,12 +1587,12 @@
+         MENUITEM SEPARATOR
+         MENUITEM "&What's New",					MENU_WHATSNEW
+         MENUITEM SEPARATOR
+-        MENUITEM "&FB Neo homepage",					MENU_WWW_HOME
++        MENUITEM "&Homepage",					MENU_WWW_HOME
+         MENUITEM "&Neo-Source forums",					MENU_WWW_NSFORUM
+-		MENUITEM "FB Neo &Github",					MENU_WWW_GITHUB
++		MENUITEM "&Github",					MENU_WWW_GITHUB
+         MENUITEM SEPARATOR
+         MENUITEM "&System information",				MENU_SYSINFO
+-        MENUITEM "&About FB Neo",					MENU_ABOUT
++        MENUITEM "&About",					MENU_ABOUT
+     END
+ END
+ 
+@@ -1987,7 +1987,7 @@
+ 
+ // Icon with lowest ID value placed first to ensure application icon
+ // remains consistent on all systems.
+-IDI_APP                 ICON    DISCARDABLE     "resource/fba.ico"
++IDI_APP                 ICON    DISCARDABLE     "resource/frameperfect.ico"
+ IDI_TV_PLUS             ICON    DISCARDABLE     "resource/TV Plus.ico"
+ IDI_TV_MINUS            ICON    DISCARDABLE     "resource/TV Minus.ico"
+ IDI_TV_NOTWORKING       ICON    DISCARDABLE     "resource/TV Not Working.ico"
+diff --git a/src/burner/win32/burner_win32.h b/src/burner/win32/burner_win32.h
+--- a/src/burner/win32/burner_win32.h
++++ b/src/burner/win32/burner_win32.h
+@@ -266,6 +266,21 @@
+ 
+ int RunIdle();
+ int RunFrame(int bDraw, int bPause);
++extern int z87bb0e1;
++extern int z374fdd2;
++extern int z31f46b2;
++extern char z6522264[64];
++extern int zd5f510b;
++void z8ceb80c();
++int  z80f4e64(const char* szPath, int zb6badbf);
++extern int z40e51f6;
++void z1706dba();
++
++void z53e8fba(const char* szFile, INT32 z7cfb693);
++void z1a8bac2();
++void z8dbf416();
++void zb65da41(const TCHAR* z325aa6e);
++extern TCHAR z9b25327[MAX_PATH];
+ int RunMessageLoop();
+ int RunReset();
+ void ToggleLayer(unsigned char thisLayer);
+diff --git a/src/burner/win32/bzip.cpp b/src/burner/win32/bzip.cpp
+--- a/src/burner/win32/bzip.cpp
++++ b/src/burner/win32/bzip.cpp
+@@ -13,6 +13,10 @@
+ struct SubDirsZip { TCHAR** pszZipName; UINT32 nCount; };		// Zip files in subdirectories
+ static struct SubDirsZip _SubDirsZip;
+ 
++#include "rom_notice.h"
++static char  z63380c0[256] = "";
++static TCHAR z501cd6a[MAX_PATH] = _T("");
++
+ // ----------------------------------------------------------------------------
+ 
+ static void BzipListFree()
+@@ -106,6 +110,23 @@
+ #endif
+ 
+ 	return ret;
++}
++
++static void zb5e695c(const TCHAR* pszName, TCHAR* pszOut, INT32 z58ab65b)
++{
++	TCHAR z7239005[MAX_PATH];
++	_sntprintf(z7239005, MAX_PATH, _T("%s.zip"), pszName);
++	z7239005[MAX_PATH - 1] = 0;
++#ifdef INCLUDE_7Z_SUPPORT
++	if (!FileExists(z7239005)) {
++		TCHAR za12a96b[MAX_PATH];
++		_sntprintf(za12a96b, MAX_PATH, _T("%s.7z"), pszName);
++		za12a96b[MAX_PATH - 1] = 0;
++		if (FileExists(za12a96b)) _tcscpy(z7239005, za12a96b);
++	}
++#endif
++	if (!GetFullPathName(z7239005, z58ab65b, pszOut, NULL)) _tcsncpy(pszOut, z7239005, z58ab65b - 1);
++	pszOut[z58ab65b - 1] = 0;
+ }
+ 
+ static INT32 FindRomByName(TCHAR* szName)
+@@ -383,6 +404,7 @@
+ 
+ 		const TCHAR* pszBzipName = (nWantZip < BZIP_MAX) ? szBzipName[nWantZip] : _SubDirsZip.pszZipName[nWantZip - BZIP_MAX];
+ 		if (ZipOpen(TCHARToANSI(pszBzipName, NULL, 0))) {
++			if (pszBzipName && !z501cd6a[0]) zb5e695c(pszBzipName, z501cd6a, MAX_PATH);
+ 			return 1;
+ 		}
+ 		nCurrentZip = nWantZip;
+@@ -393,6 +415,11 @@
+ 
+ 		// Error loading from the zip file
+ 		FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(nRet == 2 ? IDS_ERR_LOAD_DISK_CRC : IDS_ERR_LOAD_DISK), pszRomName, GetFilenameW(szBzipName[nCurrentZip]));
++		if (zd9791ed()) {
++			FBAPopupAddText(PUF_TEXT_DEFAULT, _T("\n"));
++			const TCHAR* z2c83991 = (nCurrentZip >= 0 && nCurrentZip < BZIP_MAX) ? szBzipName[nCurrentZip] : NULL;
++			if (z2c83991 && !z501cd6a[0]) zb5e695c(z2c83991, z501cd6a, MAX_PATH);
++		} else
+ 		FBAPopupDisplay(PUF_TYPE_WARNING);
+ 
+ 		return 1;
+@@ -475,6 +502,38 @@
+ 	return BZIP_STATUS_BADDATA;
+ }
+ 
++INT32 z7cf0d39(char* zc8734cf, INT32 z3432190, TCHAR* z2c83991, INT32 nZip)
++{
++	if (zc8734cf && z3432190 > 0) {
++		strncpy(zc8734cf, z63380c0, z3432190 - 1);
++		zc8734cf[z3432190 - 1] = 0;
++	}
++	if (z2c83991 && nZip > 0) z2c83991[0] = 0;
++
++	INT32 z0d128e6 = 0, zd1e4665 = -1;
++	for (INT32 i = 0; RomFind && i < nRomCount; i++) {
++		struct BurnRomInfo ri;
++		memset(&ri, 0, sizeof(ri));
++		BurnDrvGetRomInfo(&ri, i);
++		if (!ri.nType || (ri.nType & BRF_OPT) || (ri.nType & BRF_NODUMP)) continue;
++		if (RomFind[i].nState == 1) continue;
++		if (RomFind[i].nState == 0) z0d128e6 = 1;
++		if (zd1e4665 < 0) zd1e4665 = (RomFind[i].nState != 0) ? RomFind[i].nZip : 0;
++	}
++	if (zd1e4665 < 0) return 0;
++	if (z0d128e6 && z63380c0[0]) return z2d06792;
++
++	const TCHAR* p = (zd1e4665 < BZIP_MAX) ? szBzipName[zd1e4665]
++	               : ((_SubDirsZip.pszZipName && (UINT32)(zd1e4665 - BZIP_MAX) < _SubDirsZip.nCount) ? _SubDirsZip.pszZipName[zd1e4665 - BZIP_MAX] : NULL);
++	if (p && z2c83991 && nZip > 0) zb5e695c(p, z2c83991, nZip);
++	return z3724591;
++}
++
++const TCHAR* z3591247()
++{
++	return z501cd6a;
++}
++
+ INT32 BzipOpen(bool bootApp)
+ {
+ 	INT32 nMemLen;														// Zip name number
+@@ -483,6 +542,9 @@
+ 	nBzipError = 0;
+ 
+ 	BzipClose();														// Make sure nothing is open
++
++	z63380c0[0] = 0;
++	z501cd6a[0] = 0;
+ 
+ 	// Count the number of roms needed
+ 	for (nRomCount = 0; ; nRomCount++) {
+@@ -603,8 +665,55 @@
+ 			}
+ 		}
+ 
++		if (!bFound && z < BZIP_MAX) {
++			static const TCHAR* zb8f6718[] = {
++				_T("../../roms/arcade/"),
++				_T("../../roms/"),
++				_T("../roms/arcade/"),
++				_T("../roms/"),
++				_T("roms/arcade/"),
++				_T("roms/"),
++				_T("../../../roms/arcade/"),
++				_T("../../../roms/")
++			};
++			for (INT32 fb = 0; fb < (INT32)(sizeof(zb8f6718)/sizeof(zb8f6718[0])); fb++) {
++				TCHAR szFullName[MAX_PATH] = { 0 };
++				_stprintf(szFullName, _T("%s%hs"), zb8f6718[fb], szName);
++				if (RomArchiveExists(szFullName)) {
++					bFound = true;
++					szBzipName[z] = (TCHAR*)malloc(MAX_PATH * sizeof(TCHAR));
++					_tcscpy(szBzipName[z], szFullName);
++					if (!bootApp) {
++						FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_LOAD_FOUND), szName, szBzipName[z]);
++					}
++					z++;
++					if (z >= BZIP_MAX) break;
++					break;
++				}
++				if (pszDrvName) {
++					TCHAR szDrvName[MAX_PATH] = { 0 };
++					_stprintf(szDrvName, _T("%s%hs"), zb8f6718[fb], pszDrvName);
++					if (RomArchiveExists(szDrvName)) {
++						bFound = true;
++						szBzipName[z] = (TCHAR*)malloc(MAX_PATH * sizeof(TCHAR));
++						_tcscpy(szBzipName[z], szDrvName);
++						if (!bootApp) {
++							FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_LOAD_FOUND), szName, szBzipName[z]);
++						}
++						z++;
++						if (z >= BZIP_MAX) break;
++						break;
++					}
++				}
++			}
++		}
++
+ 		if (!bootApp && !bFound) {
+ 			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_LOAD_NOTFOUND), szName);
++		}
++		if (!bFound && szName) {
++			const size_t z7c696e9 = strlen(z63380c0);
++			snprintf(z63380c0 + z7c696e9, sizeof(z63380c0) - z7c696e9, "%s%s.zip", z7c696e9 ? ", " : "", szName);
+ 		}
+ 	}
+ 
+diff --git a/src/burner/win32/cona.cpp b/src/burner/win32/cona.cpp
+--- a/src/burner/win32/cona.cpp
++++ b/src/burner/win32/cona.cpp
+@@ -197,12 +197,110 @@
+ 	return;
+ }
+ 
++static const TCHAR* zc5d65b7[] = {
++	_T("nIniVersion 0x100003"),
++	_T("nAudSelect 0"),
++	_T("nAudVolume 10000"),
++	_T("nAudSegCount 4"),
++	_T("nInterpolation 1"),
++	_T("nFMInterpolation 0"),
++	_T("nAudSampleRate[0] 44100"),
++	_T("nAudDSPModule[0] 0"),
++	_T("nAudSampleRate[1] 44100"),
++	_T("nAudDSPModule[1] 0"),
++	_T("nGamelistLocalisationActive 0"),
++	_T("nVidSDisplayStatus 1"),
++	_T("nSplashTime 1500"),
++	_T("bDisableDebugConsole 1"),
++	_T("bDrvSaveAll 0"),
++	_T("nAppProcessPriority 128"),
++	_T("bAlwaysProcessKeyboardInput 0"),
++	_T("bAutoPause 1"),
++	_T("bSaveInputs 1"),
++	_T("nKailleraCheatEnableHack 0"),
++	_T("nCDEmuSelect 0"),
++	_T("szAppRomPaths[0] ../../roms/arcade/"),
++	_T("szAppRomPaths[1] ../../roms/"),
++	_T("szAppRomPaths[2] ../roms/arcade/"),
++	_T("szAppRomPaths[3] ../roms/"),
++	_T("szAppRomPaths[4] roms/arcade/"),
++	_T("szAppRomPaths[5] roms/"),
++	_T("szAppRomPaths[6] roms/coleco/"),
++	_T("szAppRomPaths[7] roms/sg1000/"),
++	_T("szAppRomPaths[8] roms/gamegear/"),
++	_T("szAppRomPaths[9] roms/sms/"),
++	_T("szAppRomPaths[10] roms/msx/"),
++	_T("szAppRomPaths[11] roms/spectrum/"),
++	_T("szAppRomPaths[12] roms/nes/"),
++	_T("szAppRomPaths[13] roms/fds/"),
++	_T("szAppRomPaths[14] roms/snes/"),
++	_T("szAppRomPaths[15] roms/gba/"),
++	_T("szAppRomPaths[16] roms/ngp/"),
++	_T("szAppRomPaths[17] roms/channelf/"),
++	_T("szAppRomPaths[18] roms/astrocade/"),
++	_T("szAppRomPaths[19] roms/romdata/"),
++	_T("szNeoCDGamesDir cdiso/"),
++	_T("szAppPreviewsPath support/previews/"),
++	_T("szAppTitlesPath support/titles/"),
++	_T("szAppCheatsPath support/cheats/"),
++	_T("szAppHiscorePath support/hiscores/"),
++	_T("szAppSamplesPath support/samples/"),
++	_T("szAppHDDPath support/hdd/"),
++	_T("szAppIpsPath support/ips/"),
++	_T("szAppRomdataPath support/romdata/"),
++	_T("szAppIconsPath support/icons/"),
++	_T("szNeoCDCoverDir support/cdcovers/"),
++	_T("szNeoCDPreviewDir support/cdpreviews/"),
++	_T("szAppBlendPath support/blend/"),
++	_T("szAppSelectPath support/select/"),
++	_T("szAppVersusPath support/versus/"),
++	_T("szAppHowtoPath support/howto/"),
++	_T("szAppScoresPath support/scores/"),
++	_T("szAppBossesPath support/bosses/"),
++	_T("szAppGameoverPath support/gameover/"),
++	_T("szAppFlyersPath support/flyers/"),
++	_T("szAppMarqueesPath support/marquees/"),
++	_T("szAppControlsPath support/cpanel/"),
++	_T("szAppCabinetsPath support/cabinets/"),
++	_T("szAppPCBsPath support/pcbs/"),
++	_T("szAppHistoryPath support/history/"),
++	_T("szAppCommandPath support/commands/"),
++	_T("szAppEEPROMPath config/games/"),
++	_T("bNeoCDListScanSub 0"),
++	_T("bRDListScanSub 0"),
++	_T("bEnableHighResTimer 1"),
++	_T("bNoChangeNumLock 1"),
++	_T("bAlwaysCreateSupportFolders 0"),
++	_T("bAutoLoadGameList 0"),
++	_T("nAutoFireRate 12"),
++	_T("bRewindEnabled 0"),
++	_T("nRewindMemory 1024"),
++	_T("EnableHiscores 0"),
++	_T("bBurnUseBlend 1"),
++	_T("BurnShiftEnabled 1"),
++	_T("bBurnGunDrawReticles 1"),
++	_T("bBurnGunPositionalMode 0"),
++	_T("bSkipStartupCheck 1"),
++	_T("nSlowMo 0"),
++	_T("nAvi3x 1"),
++	_T("nIpsSelectedLanguage 0"),
++	_T("nPlayerDefaultControls[0] 0"),
++	_T("nPlayerDefaultControls[1] 1"),
++	_T("nPlayerDefaultControls[2] 2"),
++	_T("nPlayerDefaultControls[3] 3"),
++	_T("nSocd[0] 3"),
++	_T("nSocd[1] 3"),
++	_T("nSocd[2] 3"),
++	_T("nSocd[3] 3"),
++	_T("nSocd[4] 3"),
++	_T("nSocd[5] 3"),
++	NULL
++};
++
+ // Read in the config file for the whole application
+ int ConfigAppLoad()
+ {
+-	TCHAR szConfig[MAX_PATH];
+ 	TCHAR szLine[1024];
+-	FILE* h;
+ 
+ #ifdef _UNICODE
+ 	setlocale(LC_ALL, "");
+@@ -210,14 +308,12 @@
+ 
+ 	HardFXLoadDefaults();
+ 
+-	CreateConfigName(szConfig);
+-
+-	if ((h = _tfopen(szConfig, _T("rt"))) == NULL) {
+-		return 1;
+-	}
++	const TCHAR* const* z3a64a51 = zc5d65b7;
+ 
+ 	// Go through each line of the config file
+-	while (_fgetts(szLine, 1024, h)) {
++	while (*z3a64a51) {
++		_tcsncpy(szLine, *z3a64a51++, 1023);
++		szLine[1023] = 0;
+ 		int nLen = _tcslen(szLine);
+ 
+ 		// Get rid of the linefeed at the end
+@@ -252,6 +348,7 @@
+ 		VAR(bBurnUseASMCPUEmulation);
+ #endif
+ 
++#if 0
+ 		// Video
+ 		VAR(nVidDepth); VAR(nVidRefresh);
+ 		VAR(nVidRotationAdjust);
+@@ -352,6 +449,7 @@
+ 				}
+ 			}
+ 		}
++#endif
+ 
+ 		// Sound
+ 		VAR(nAudSelect);
+@@ -541,7 +639,20 @@
+ #undef VARI64
+ 	}
+ 
+-	fclose(h);
++	bool z973788a = false;
++	for (int i = 0; i < DIRS_MAX; i++) {
++		if (_tcsstr(szAppRomPaths[i], _T("../../roms"))) {
++			z973788a = true;
++			break;
++		}
++	}
++	if (!z973788a) {
++		for (int i = DIRS_MAX - 1; i >= 2; i--) {
++			_tcscpy(szAppRomPaths[i], szAppRomPaths[i - 2]);
++		}
++		_tcscpy(szAppRomPaths[0], _T("../../roms/arcade/"));
++		_tcscpy(szAppRomPaths[1], _T("../../roms/"));
++	}
+ 
+ 	return 0;
+ }
+@@ -551,6 +662,10 @@
+ {
+ 	TCHAR szConfig[MAX_PATH];
+ 	FILE *h;
++
++	if (zc5d65b7[0] != NULL) {
++		return 1;
++	}
+ 
+ 	if (nCmdOptUsed & 1) {
+ 		return 1;
+@@ -592,6 +707,7 @@
+ 	VAR(bBurnUseASMCPUEmulation);
+ #endif
+ 
++#if 0
+ 	_ftprintf(h, _T("\n\n\n"));
+ 	_ftprintf(h, _T("// --- Video ------------------------------------------------------------------\n"));
+ 
+@@ -689,7 +805,7 @@
+ 	VAR(bForce60Hz);
+ 	_ftprintf(h, _T("\n// If zero, skip frames when needed to keep the emulation running at full speed\n"));
+ 	VAR(bAlwaysDrawFrames);
+-	_ftprintf(h, _T("\n// If non-zero, enable run-ahead mode for the reduction of input lag\n"));
++	_ftprintf(h, _T("\n// YHA / LPA / GKG\n"));
+ 	VAR(bRunAhead);
+ 
+ 	_ftprintf(h, _T("\n"));
+@@ -746,6 +862,7 @@
+ 			}
+ 		}
+ 	}
++#endif
+ 
+ 	_ftprintf(h, _T("\n\n\n"));
+ 	_ftprintf(h, _T("// --- Sound ------------------------------------------------------------------\n"));
+diff --git a/src/burner/win32/drv.cpp b/src/burner/win32/drv.cpp
+--- a/src/burner/win32/drv.cpp
++++ b/src/burner/win32/drv.cpp
+@@ -1,43 +1,87 @@
+ // Driver Init module
+ #include "burner.h"
++
++extern INT32 z63262c9();
++extern INT32 za89c77f(const TCHAR* szPath);
++extern INT32 zc028cbe;
+ #include "neocdlist.h"
+ #include "pcecdlist.h"
++#include "fbneo_host.h"
++
++static void zd7f4ff6(TCHAR* szOut)
++{
++	const char* szCmd = GetCommandLineA();
++	if (szCmd && strstr(szCmd, "-rbfspeedrun")) {
++		_stprintf(szOut, _T("config/netplay/speedrun/%s.fs"), BurnDrvGetText(DRV_NAME));
++		if (GetFileAttributes(szOut) != INVALID_FILE_ATTRIBUTES) {
++			z5d90bae("nvram: a da corrida de speedrun (config/netplay/speedrun)");
++			return;
++		}
++	}
++	_stprintf(szOut, _T("config/netplay/%s.fs"), BurnDrvGetText(DRV_NAME));
++}
++#include "ram_probe.h"
++#include "rom_notice.h"
++
++extern INT32 z7cf0d39(char* zc8734cf, INT32 z3432190, TCHAR* z2c83991, INT32 nZip);
++extern const TCHAR* z3591247();
++extern void z7390e62(const char* szPrefix);
+ 
+ int bDrvOkay = 0;						// 1 if the Driver has been initted okay, and it's okay to use the BurnDrv functions
+ 
+ TCHAR szAppRomPaths[DIRS_MAX][MAX_PATH] = {
++	{ _T("../../roms/arcade/") },
++	{ _T("../../roms/") },
++	{ _T("../roms/arcade/")	},
++	{ _T("../roms/")		},
++	{ _T("roms/arcade/")	},
+ 	{ _T("roms/")			},
+-	{ _T("roms/arcade/")	},
+-	{ _T("roms/megadrive/")	},
+-	{ _T("roms/pce/")		},
+-	{ _T("roms/sgx/")		},
+-	{ _T("roms/tg16/")		},
+-	{ _T("roms/coleco/")	},
+-	{ _T("roms/sg1000/")	},
+-	{ _T("roms/gamegear/")	},
+-	{ _T("roms/sms/")		},
+-	{ _T("roms/msx/")		},
+-	{ _T("roms/spectrum/")	},
+-	{ _T("roms/nes/")		},
+-	{ _T("roms/fds/")		},
+-	{ _T("roms/snes/")		},
+-	{ _T("roms/gba/")		},
+-	{ _T("roms/ngp/")		},
+-	{ _T("roms/channelf/")	},
+-	{ _T("roms/astrocade/")	},
+-	{ _T("roms/romdata/")	},
+-	{ _T("")				}
++	{ _T("../../roms/megadrive/") },
++	{ _T("../../roms/snes/") },
++	{ _T("../../roms/pce/")	},
++	{ _T("../roms/megadrive/") },
++	{ _T("../roms/snes/") },
++	{ _T("../roms/pce/") },
++	{ _T("roms/megadrive/") },
++	{ _T("roms/pce/") },
++	{ _T("roms/neogeo/") },
++	{ _T("roms/snes/") },
++	{ _T("roms/nes/") },
++	{ _T("roms/gba/") },
++	{ _T("roms/cps1/") },
++	{ _T("roms/cps2/") }
+ };
+ 
+ TCHAR szAppQuickPath[MAX_PATH] = _T("");
+ 
+ static bool bSaveRAM = false;
+ 
++int z64a2ee2 = 0;
++TCHAR z9b25327[MAX_PATH] = _T("");
++int z40e51f6 = 0;
++
+ static INT32 nNeoCDZnAudSampleRateSave = 0;
+ 
+ static int DrvBzipOpen()
+ {
+ 	BzipOpen(false);
++
++	if (zd9791ed()) {
++		if (BzipStatus() == BZIP_STATUS_OK) {
++			FBAPopupDisplay(PUF_TYPE_INFO | PUF_TYPE_LOGONLY);
++			return 0;
++		}
++		char zc02b3aa[256];
++		TCHAR szZip[MAX_PATH];
++		INT32 z2642b88 = z7cf0d39(zc02b3aa, sizeof(zc02b3aa), szZip, MAX_PATH);
++		if (z2642b88 == 0) z2642b88 = z3724591;
++		z7390e62("rom: ");
++		z90fdabc(z2642b88, BurnDrvGetTextA(DRV_FULLNAME), BurnDrvGetTextA(DRV_NAME),
++		              z2642b88 == z2d06792 ? zc02b3aa : NULL,
++		              (z2642b88 == z3724591 && szZip[0]) ? szZip : NULL);
++		BzipClose();
++		return 1;
++	}
+ 
+ 	// If there is a problem with the romset, report it
+ 	switch (BzipStatus()) {
+@@ -178,6 +222,14 @@
+ 	}
+ }
+ 
++static UINT8 z2b262ec()
++{
++	if ((BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK) != HARDWARE_SNK_NEOGEO) return 0;
++	const char* n = BurnDrvGetTextA(DRV_NAME);
++	if (n && (strcmp(n, "kof97") == 0 || strcmp(n, "kof98") == 0)) return 0x08;
++	return 0;
++}
++
+ int DrvInit(int nDrvNum, bool bRestore)
+ {
+ 	int nStatus;
+@@ -236,7 +288,40 @@
+ 	InputMake(true);
+ 	GameInpDefault();
+ 
+-	if (kNetGame) {
++	if (z64a2ee2) {
++		InpDIPSWResetDIPs();
++
++		if ((BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK) == HARDWARE_SNK_NEOGEO) {
++			struct BurnInputInfo bii;
++			for (UINT32 i = 0; BurnDrvGetInputInfo(&bii, i) == 0; i++) {
++				if (bii.nType != BIT_DIPSWITCH) continue;
++				if (bii.szName == NULL || strcmp(bii.szName, "System") != 0) continue;
++
++				struct GameInp* pgi = GameInp + i;
++				if (pgi->nInput == GIT_CONSTANT) {
++					pgi->Input.Constant.nConst = (UINT8)((pgi->Input.Constant.nConst & 0xC0) | z2b262ec());
++					if (pgi->Input.pVal) *(pgi->Input.pVal) = pgi->Input.Constant.nConst;
++				}
++				break;
++			}
++		}
++
++		InputMake(true);
++	} else if (z2b262ec()) {
++		struct BurnInputInfo bii;
++		for (UINT32 i = 0; BurnDrvGetInputInfo(&bii, i) == 0; i++) {
++			if (bii.nType != BIT_DIPSWITCH || bii.szName == NULL || strcmp(bii.szName, "System") != 0) continue;
++			struct GameInp* pgi = GameInp + i;
++			if (pgi->nInput == GIT_CONSTANT) {
++				pgi->Input.Constant.nConst = (UINT8)((pgi->Input.Constant.nConst & 0xC0) | z2b262ec());
++				if (pgi->Input.pVal) *(pgi->Input.pVal) = pgi->Input.Constant.nConst;
++			}
++			break;
++		}
++		InputMake(true);
++	}
++
++	if (kNetGame || z64a2ee2) {
+ 		nBurnCPUSpeedAdjust = 0x0100;
+ 	}
+ 
+@@ -249,6 +334,13 @@
+ 			ScrnTitle();
+ 
+ 			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_BURN_INIT), BurnDrvGetText(DRV_FULLNAME));
++			if (zd9791ed()) {
++				const TCHAR* z2c83991 = z3591247();
++				z7390e62("rom: ");
++				z90fdabc((z2c83991 && z2c83991[0]) ? z3724591 : zfec786e,
++				              BurnDrvGetTextA(DRV_FULLNAME), BurnDrvGetTextA(DRV_NAME), NULL,
++				              (z2c83991 && z2c83991[0]) ? z2c83991 : NULL);
++			} else
+ 			FBAPopupDisplay(PUF_TYPE_WARNING);
+ 
+ 			// When romdata loading fails, the data within the structure must be emptied to restore the original data content.
+@@ -282,17 +374,63 @@
+ 	}
+ 
+ 	bSaveRAM = false;
++	zc028cbe = 0;
+ 	if (kNetGame) {
+ 		KailleraInitInput();
+ 		KailleraGetInput();
+ 	} else {
+-		if (bRestore) {
+-			StatedAuto(0);
+-			bSaveRAM = true;
+-		}
+-	}
+-
+-	if (bCheatsAllowed) ConfigCheatLoad();
++		if (bRestore && !z64a2ee2) {
++			TCHAR z622c251[MAX_PATH];
++			zd7f4ff6(z622c251);
++			const char* szCmd = GetCommandLineA();
++			if (szCmd && strstr(szCmd, "-rbfspeedrun") && BurnStateLoad(z622c251, 0, NULL) == 0) {
++				z5d90bae("nvram: corrida offline com a NVRAM canonica de config/netplay (nada gravado de volta)");
++			} else {
++				if (StatedAuto(0) != 0 && BurnStateLoad(z622c251, 0, NULL) == 0)
++					z5d90bae("nvram: este PC ainda nao tinha a NVRAM do jogo (config/games) - comecou da canonica de config/netplay");
++				bSaveRAM = true;
++			}
++		}
++
++		if (z64a2ee2) {
++			TCHAR zbf0ac80[MAX_PATH];
++			zd7f4ff6(zbf0ac80);
++			if (BurnStateLoad(zbf0ac80, 0, NULL) == 0) {
++				bprintf(0, _T("[rbf] NVRAM da partida: %s\n"), zbf0ac80);
++				z5d90bae("nvram da partida carregada de config/netplay");
++			} else if (!z63262c9()) {
++				bprintf(0, _T("[rbf] sem NVRAM canonica em %s - o jogo comeca com a memoria em branco\n"), zbf0ac80);
++				z5d90bae("ATENCAO: sem NVRAM canonica para esta partida (config/netplay) - o Neo Geo pode parar na tela de aviso da SNK");
++			}
++
++			if (z63262c9()) {
++				TCHAR z816c085[MAX_PATH];
++				_stprintf(z816c085, _T("config/netplay/%s.nv"), BurnDrvGetText(DRV_NAME));
++				zc028cbe = 1;
++				if (za89c77f(z816c085) == 0) {
++					bprintf(0, _T("[rbf] EEPROM da partida: %s\n"), z816c085);
++					z5d90bae("eeprom da partida carregada de config/netplay");
++				} else {
++					bprintf(0, _T("[rbf] sem EEPROM canonica em %s - cada lado joga com a sua\n"), z816c085);
++					z5d90bae("ATENCAO: sem EEPROM canonica para esta partida (config/netplay/<jogo>.nv) - as configuracoes do jogo podem diferir entre os dois lados");
++				}
++			}
++		}
++	}
++
++	if (z9b25327[0]) {
++		if (z40e51f6) z1706dba();
++		INT32 nRet = BurnStateLoad(z9b25327, 1, NULL);
++		bprintf(0, _T("[rbf] estado de inicio %s: %s\n"), z9b25327, nRet ? _T("falhou") : _T("carregado"));
++		if (z64a2ee2) {
++			z5d90bae(nRet ? "ATENCAO: o estado de inicio (contra) nao carregou - este lado liga do zero"
++			                    : "a partida comeca do estado de inicio (contra)");
++		} else if (nRet == 0) {
++			zb65da41(z9b25327);
++		}
++	}
++
++	if (bCheatsAllowed && !z64a2ee2) ConfigCheatLoad();
+ 
+ 	nBurnLayer = 0xFF;				// show all layers
+ 
+@@ -314,6 +452,8 @@
+ int DrvExit()
+ {
+ 	if (bDrvOkay) {
++		z912bf82();
++		z2702846();
+ 		NeoCDZRateChangeback();
+ 		StopReplay();
+ 		VidExit();
+diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
+--- a/src/burner/win32/main.cpp
++++ b/src/burner/win32/main.cpp
+@@ -5,7 +5,7 @@
+ 
+ // #define USE_SDL					// define if SDL is used
+ // #define DONT_DISPLAY_SPLASH		// Prevent Splash screen from being displayed
+-#define APP_DEBUG_LOG			// log debug messages to zzBurnDebug.html
++#define APP_DEBUG_LOG
+ 
+ #ifdef USE_SDL
+  #include "SDL.h"
+@@ -25,15 +25,29 @@
+ #endif
+ 
+ #include "version.h"
++#include "fbneo_host.h"
++#include "ram_probe.h"
++#include "img_hash.h"
++#include "frame_timing.h"
++#include "frame_pacer.h"
++#include "rom_notice.h"
++extern void z7390e62(const char* szPrefix);
++extern int z60255f4;
+ 
+ HINSTANCE hAppInst = NULL;			// Application Instance
+ HANDLE hMainThread;
+ long int nMainThreadID;
+ INT32 nCOMInit = S_FALSE;
+-int nAppProcessPriority = NORMAL_PRIORITY_CLASS;
++int nAppProcessPriority = HIGH_PRIORITY_CLASS;
+ int nAppShowCmd;
+ 
+ static TCHAR szCmdLine[1024] = _T("");
++
++int z87bb0e1    = 0;
++int z374fdd2  = 0;
++int z31f46b2 = 0;
++char z6522264[64] = "";
++int zd5f510b    = 0;
+ 
+ HACCEL hAccel = NULL;
+ 
+@@ -404,7 +418,7 @@
+ 		// Initialise the debug log file
+ 
+   #ifdef _UNICODE
+-		DebugLog = _tfopen(_T("zzBurnDebug.html"), _T("wb"));
++		DebugLog = _tfopen(_T("arcadedebug.html"), _T("wb"));
+ 
+ 		if (ftell(DebugLog) == 0) {
+ 			WRITE_UNICODE_BOM(DebugLog);
+@@ -415,7 +429,7 @@
+ 			_ftprintf(DebugLog, _T("</head><body><pre>"));
+ 		}
+   #else
+-		DebugLog = _tfopen(_T("zzBurnDebug.html"), _T("wt"));
++		DebugLog = _tfopen(_T("arcadedebug.html"), _T("wt"));
+ 
+ 		if (ftell(DebugLog) == 0) {
+ 			_ftprintf(DebugLog, _T("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">"));
+@@ -499,7 +513,7 @@
+ 
+ 		SetConsoleTextAttribute(DebugBuffer, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+ 		if (DebugLog) {
+-			_sntprintf(szConsoleBuffer, 1024, _T("Debug messages are logged in zzBurnDebug.html"));
++			_sntprintf(szConsoleBuffer, 1024, _T("Debug messages are logged in arcadedebug.html"));
+ 			if (!DebugLog || bEchoLog) {
+ 				_sntprintf(szConsoleBuffer + _tcslen(szConsoleBuffer), 1024 - _tcslen(szConsoleBuffer), _T(", and echod to this console"));
+ 			}
+@@ -775,6 +789,181 @@
+ 
+ #include <wininet.h>
+ 
++static const struct { const char* zc786f38; const TCHAR* szName; int zb6badbf; } zf1fae24[] = {
++	{ "",              _T("sem filtro de monitor"), 1 },
++	{ "fp_nitido",     _T("Nitido"),                1 },
++	{ "crt_aperture",  _T("CRT Aperture"),          0 },
++	{ "crt_bicubic",   _T("CRT Bicubic"),           1 },
++	{ "crt_caligari",  _T("CRT Caligari"),          0 },
++	{ "crt_cga",       _T("CRT CGA"),               0 },
++	{ "crt_cgwg_fast", _T("CRT cgwg fast"),         0 },
++	{ "crt_easymode",  _T("CRT Easymode"),          0 },
++	{ "crt_standard",  _T("CRT Standard"),          1 },
++};
++#define z4559976 ((int)(sizeof(zf1fae24) / sizeof(zf1fae24[0])))
++static int z12accec = 0;
++
++void z8ceb80c()
++{
++	if (!bVidOkay || nVidSelect != 4) {
++		VidSNewShortMsg(_T("Filtros de monitor: so no Medio e no Avancado"));
++		return;
++	}
++
++	int n = z12accec;
++	for (int i = 0; i < z4559976; i++) {
++		n = (n + 1) % z4559976;
++		if (zf1fae24[n].zc786f38[0] == 0) break;
++		char z7239005[64];
++		snprintf(z7239005, sizeof(z7239005), "support/shaders/%s.fx", zf1fae24[n].zc786f38);
++		if (GetFileAttributesA(z7239005) != INVALID_FILE_ATTRIBUTES) break;
++	}
++	z12accec = n;
++
++	char szPath[64] = "";
++	if (zf1fae24[n].zc786f38[0]) snprintf(szPath, sizeof(szPath), "support/shaders/%s.fx", zf1fae24[n].zc786f38);
++	z80f4e64(szPath, zf1fae24[n].zb6badbf);
++
++	TCHAR zde61a7d[80];
++	_sntprintf(zde61a7d, 79, _T("Filtro: %s  (F8 troca)"), zf1fae24[n].szName);
++	zde61a7d[79] = 0;
++	VidSNewShortMsg(zde61a7d);
++
++	z142cb0f(zf1fae24[n].zc786f38);
++	char zfe810e3[96];
++	snprintf(zfe810e3, sizeof(zfe810e3), "video: F8 - filtro %s", zf1fae24[n].zc786f38[0] ? zf1fae24[n].zc786f38 : "nenhum");
++	z5d90bae(zfe810e3);
++}
++
++static void zac349c9()
++{
++	bForce60Hz = false;
++
++	const bool z99b9fe2 = (_tcsstr(szCmdLine, _T("-rbfnet ")) != NULL) ||
++	                     (_tcsstr(szCmdLine, _T("-rbfwatch ")) != NULL);
++
++	TCHAR* p = _tcsstr(szCmdLine, _T("-rbfvideo "));
++	if (p) {
++		p += _tcslen(_T("-rbfvideo "));
++		while (*p == _T(' ')) p++;
++
++		TCHAR list[256];
++		_tcsncpy(list, p, 255);
++		list[255] = _T('\0');
++		TCHAR* sp = _tcschr(list, _T(' '));
++		if (sp) *sp = _T('\0');
++
++		int z443c3f1 = 0, zb6badbf = 0, nScan = 0, z4048f0e = 0, z18089b4 = 0, z9cb4cb9 = 0;
++		int zd98e777 = 0;
++		int za2d4792 = 0;
++		int z3e35fae = 0;
++		char z5357c77[48] = "";
++		for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
++			TCHAR* eq = _tcschr(tok, _T('='));
++			if (eq == NULL) continue;
++			*eq = _T('\0');
++			TCHAR* val = eq + 1;
++			if      (_tcscmp(tok, _T("blitter")) == 0) z443c3f1  = (_tcscmp(val, _T("ddraw")) == 0);
++			else if (_tcscmp(tok, _T("linear"))  == 0) zb6badbf = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("scan"))    == 0) nScan   = _ttoi(val);
++			else if (_tcscmp(tok, _T("win"))     == 0) z4048f0e    = _ttoi(val);
++			else if (_tcscmp(tok, _T("clamp"))   == 0) z18089b4  = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("dpi"))     == 0) z9cb4cb9    = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("sfx"))     == 0) zd98e777    = _ttoi(val);
++			else if (_tcscmp(tok, _T("quadros")) == 0) za2d4792 = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("ritmo"))   == 0) z3e35fae   = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("flip"))    == 0) z60255f4 = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("fx"))      == 0) {
++				int n = 0;
++				for (; val[n] && n < 40; n++) {
++					const TCHAR c = val[n];
++					if (!((c >= _T('a') && c <= _T('z')) || (c >= _T('A') && c <= _T('Z')) ||
++					      (c >= _T('0') && c <= _T('9')) || c == _T('_') || c == _T('-'))) break;
++					z5357c77[n] = (char)c;
++				}
++				z5357c77[(val[n] == 0) ? n : 0] = 0;
++			}
++		}
++
++		zff3d0f4(za2d4792);
++
++		zbf78557(z3e35fae);
++		z82c780f();
++		if (z3e35fae) nAudSegCount = 12;
++
++		if (zd98e777 < 0 || zd98e777 > 35) zd98e777 = 0;
++
++		if (z443c3f1) {
++			nVidSelect       = zd98e777 ? 2 : 0;
++			if (zd98e777) nVidBlitterOpt[2] = (nVidBlitterOpt[2] & ~(INT64)0x01FF) | zd98e777;
++			nScreenSizeHor   = 0;   bVidArcaderesHor = 0;
++			nVidHorWidth     = 640; nVidHorHeight    = 480;
++			nScreenSizeVer   = 0;   bVidArcaderesVer = 0;
++			nVidVerWidth     = 640; nVidVerHeight    = 480;
++			bVidScanlines    = 0;
++			z31f46b2  = 0;
++		} else {
++			nVidSelect       = 4;
++			bVidDX9Bilinear  = zb6badbf;
++			nVidBlitterOpt[4] &= ~0x01FF;
++			nVidBlitterOpt[4] |= zd98e777;
++			z31f46b2  = (nScan < 0) ? 0 : (nScan > 100 ? 100 : nScan);
++			zd5f510b     = z18089b4;
++
++			z6522264[0] = 0;
++			if (z5357c77[0]) {
++				char szPath[64];
++				snprintf(szPath, sizeof(szPath), "support/shaders/%s.fx", z5357c77);
++				if (GetFileAttributesA(szPath) != INVALID_FILE_ATTRIBUTES) {
++					strcpy(z6522264, szPath);
++					for (int i = 0; i < z4559976; i++) {
++						if (strcmp(zf1fae24[i].zc786f38, z5357c77) == 0) z12accec = i;
++					}
++				} else {
++					char zfe810e3[128];
++					snprintf(zfe810e3, sizeof(zfe810e3), "video: filtro %s nao encontrado - segue sem filtro", szPath);
++					z5d90bae(zfe810e3);
++				}
++			}
++			nVidDX9HardFX = z6522264[0] ? 1 : 0;
++		}
++
++		{
++			char zfe810e3[200];
++			if (zd98e777) {
++				extern TCHAR* VidSoftFXGetEffect(int nEffect);
++				char zde54f7d[160];
++				snprintf(zde54f7d, sizeof(zde54f7d), "video: filtro de software %d (%s)", zd98e777, TCHARToANSI(VidSoftFXGetEffect(zd98e777), NULL, 0));
++				z5d90bae(zde54f7d);
++			}
++			snprintf(zfe810e3, sizeof(zfe810e3), "video: %s, %s, scanlines %d%%%s%s",
++			         z443c3f1 ? (zd98e777 ? "DirectDraw SoftFX" : "DirectDraw") : "DirectX 9 Alt",
++			         z443c3f1 ? (zd98e777 ? "com o filtro de software" : "sem filtro") : (z6522264[0] ? z6522264 : (zb6badbf ? "suave (linear)" : "pixels (point)")),
++			         z443c3f1 ? 0 : z31f46b2,
++			         (!z443c3f1 && zd5f510b) ? ", bordas presas" : "",
++			         z9cb4cb9 ? ", resolucao nativa (dpi)" : "");
++			z5d90bae(zfe810e3);
++		}
++
++		if (z4048f0e > 0) nWindowSize = z4048f0e;
++
++		bVidCorrectAspect = 1;
++		bVidFullStretch   = 0;
++		bVidVSync         = 0;
++		bAlwaysDrawFrames = 0;
++	}
++
++	if (z99b9fe2) {
++		z87bb0e1   = 2;
++		z374fdd2 = 1;
++		bMenuEnabled   = false;
++	} else {
++		z87bb0e1   = 1;
++		z374fdd2 = 1;
++		bMenuEnabled   = false;
++	}
++}
++
+ static int AppInit()
+ {
+ #if defined (_MSC_VER) && defined (_DEBUG)
+@@ -791,6 +980,14 @@
+ 
+ 	// Load config for the application
+ 	ConfigAppLoad();
++
++	if (nVidDepth == 16) nVidDepth = 32;
++	bVidDX9WinFullscreen = 1;
++	if (nVidSelect == 3) nVidSelect = 4;
++	bVidDWMSync = 0;
++
++	zac349c9();
++
+ 	LookupSubDirThreads();
+ 
+ #if defined (FBNEO_DEBUG)
+@@ -811,7 +1008,7 @@
+ 
+ 	if (bMonitorAutoCheck) MonitorAutoCheck();
+ 
+-#if 1 || !defined (FBNEO_DEBUG)
++#if 0
+ 	// print a warning if we're running for the 1st time
+ 	if (nIniVersion < nBurnVer) {
+ 		ScrnInit();
+@@ -863,6 +1060,12 @@
+ 	//  2 Silent + specified path
+ 	INT32 nExport = ParseExportPath(szCmdLine, NULL, NULL);
+ 
++	if (_tcsstr(szCmdLine, _T("-rbfnet ")) || _tcsstr(szCmdLine, _T("-rbfwatch ")) || _tcsstr(szCmdLine, _T("-rbfreplay ")) ||
++	    _tcsstr(szCmdLine, _T("-rbfprobe")) || _tcsstr(szCmdLine, _T("-rbfsynctest")) ||
++	    _tcsstr(szCmdLine, _T("-noscan"))) {
++		bSkipStartupCheck = true;
++	}
++
+ 	// Suppresses ROMs scanning when full list is exported
+ 	if (-1 == nExport) {
+ 		// Build the ROM information
+@@ -1039,6 +1242,233 @@
+ 	unzip_close_context(&titles_zip);
+ 	unzip_close_context(&previews_zip);
+ 	return;
++}
++
++static int z1e92c8c()
++{
++	TCHAR* p = _tcsstr(szCmdLine, _T("-rbfprobe"));
++	if (p == NULL) return 0;
++	p += _tcslen(_T("-rbfprobe"));
++
++	TCHAR* eq = _tcsstr(p, _T("interval="));
++	if (eq != NULL && (eq - p) < 8) {
++		int n = _ttoi(eq + _tcslen(_T("interval=")));
++		if (n > 0 && n <= 600) return n;
++	}
++	return 30;
++}
++
++static int ze2308aa(const TCHAR* tok)
++{
++	if (!tok) return -1;
++	if (_tcsicmp(tok, _T("YHA")) == 0) return 0;
++	if (_tcsicmp(tok, _T("LPA")) == 0) return 1;
++	if (_tcsicmp(tok, _T("GKG")) == 0) return 2;
++	return -1;
++}
++
++static bool z9446d05(z54dec38* cfg)
++{
++	TCHAR* p = _tcsstr(szCmdLine, _T("-rbfnet "));
++	if (p == NULL) return false;
++	p += _tcslen(_T("-rbfnet "));
++
++	TCHAR list[512];
++	_tcsncpy(list, p, 511);
++	list[511] = _T('\0');
++	TCHAR* sp = _tcschr(list, _T(' '));
++	if (sp) *sp = _T('\0');
++
++	memset(cfg, 0, sizeof(*cfg));
++	cfg->z0d29982     = 2;
++	cfg->ze08b6ae = 1;
++	cfg->z7606996 = 1;
++	cfg->z3b2036b  = 0;
++	cfg->z7f20ee6  = 0;
++	strncpy(cfg->z91da805, BurnDrvGetTextA(DRV_NAME), sizeof(cfg->z91da805) - 1);
++
++	for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
++		{ const int nCode = ze2308aa(tok); if (nCode >= 0) { bRunAhead = nCode; continue; } }
++		TCHAR* eq = _tcschr(tok, _T('='));
++		if (eq == NULL) continue;
++		*eq = _T('\0');
++		TCHAR* key = tok;
++		TCHAR* val = eq + 1;
++
++		if      (_tcscmp(key, _T("player"))      == 0) cfg->ze08b6ae = _ttoi(val);
++		else if (_tcscmp(key, _T("inputplayer")) == 0) cfg->z7606996 = _ttoi(val);
++		else if (_tcscmp(key, _T("players"))   == 0) cfg->z0d29982     = _ttoi(val);
++		else if (_tcscmp(key, _T("localport")) == 0) cfg->zb3dbf67   = (unsigned short)_ttoi(val);
++		else if (_tcscmp(key, _T("peerport"))  == 0) cfg->zbf4b4be  = (unsigned short)_ttoi(val);
++		else if (_tcscmp(key, _T("delay"))     == 0) cfg->z3b2036b  = _ttoi(val);
++		else if (_tcscmp(key, _T("ft"))        == 0) cfg->ze6bfbdc     = _ttoi(val);
++		else if (_tcscmp(key, _T("single"))    == 0) cfg->zed95901    = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("punchport")) == 0) cfg->z0b679d2   = (unsigned short)_ttoi(val);
++		else if (_tcscmp(key, _T("gamerelay")) == 0) cfg->zaece3c9 = (unsigned short)_ttoi(val);
++		else if (_tcscmp(key, _T("peerip"))    == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z37f80f0, a, sizeof(cfg->z37f80f0) - 1);
++		}
++		else if (_tcscmp(key, _T("punchip"))   == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z6666865, a, sizeof(cfg->z6666865) - 1);
++		}
++		else if (_tcscmp(key, _T("matchid"))   == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->zb306bef, a, sizeof(cfg->zb306bef) - 1);
++		}
++		else if (_tcscmp(key, _T("relayport")) == 0) cfg->zc225a0e   = (unsigned short)_ttoi(val);
++		else if (_tcscmp(key, _T("relayip"))   == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z5737392, a, sizeof(cfg->z5737392) - 1);
++		}
++		else if (_tcscmp(key, _T("p1"))        == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->zd843ce2, a, sizeof(cfg->zd843ce2) - 1);
++		}
++		else if (_tcscmp(key, _T("p2"))        == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z7dd7ec2, a, sizeof(cfg->z7dd7ec2) - 1);
++		}
++		else if (_tcscmp(key, _T("solo"))      == 0) cfg->zc5cc23a        = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("relaytoken")) == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z4a06e1f, a, sizeof(cfg->z4a06e1f) - 1);
++		}
++	}
++
++	if (cfg->zc5cc23a) {
++		cfg->z0d29982     = 2;
++		cfg->ze08b6ae = 1;
++		return true;
++	}
++
++	return (cfg->zb3dbf67 != 0 && cfg->zbf4b4be != 0 && cfg->z37f80f0[0] != '\0');
++}
++
++static bool z4df9615(z9f83179* cfg)
++{
++	TCHAR* p = _tcsstr(szCmdLine, _T("-rbfwatch "));
++	if (p == NULL) return false;
++	p += _tcslen(_T("-rbfwatch "));
++
++	TCHAR list[512];
++	_tcsncpy(list, p, 511);
++	list[511] = _T('\0');
++	TCHAR* sp = _tcschr(list, _T(' '));
++	if (sp) *sp = _T('\0');
++
++	memset(cfg, 0, sizeof(*cfg));
++
++	for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
++		TCHAR* eq = _tcschr(tok, _T('='));
++		if (eq == NULL) continue;
++		*eq = _T('\0');
++		TCHAR* key = tok;
++		TCHAR* val = eq + 1;
++
++		if      (_tcscmp(key, _T("relayport")) == 0) cfg->zc225a0e = (unsigned short)_ttoi(val);
++		else if (_tcscmp(key, _T("relayip"))   == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z5737392, a, sizeof(cfg->z5737392) - 1);
++		}
++		else if (_tcscmp(key, _T("matchid"))   == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->zb306bef, a, sizeof(cfg->zb306bef) - 1);
++		}
++		else if (_tcscmp(key, _T("dir"))       == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->zac0db38, a, sizeof(cfg->zac0db38) - 1);
++		}
++		else if (_tcscmp(key, _T("start"))     == 0) cfg->za54c3d7 = _ttoi(val);
++		else if (_tcscmp(key, _T("player"))    == 0) cfg->za501967 = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("tc"))        == 0) cfg->z83f94b8 = _ttoi(val);
++		else if (_tcscmp(key, _T("corrida"))   == 0) cfg->z57d740a = _ttoi(val);
++		else if (_tcscmp(key, _T("chave"))     == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->z4fe4ccc, a, sizeof(cfg->z4fe4ccc) - 1);
++		}
++	}
++
++	if (cfg->zac0db38[0] != '\0') {
++		if (cfg->za54c3d7 < 1) cfg->za54c3d7 = 1;
++		if (cfg->zb306bef[0] == '\0') strcpy(cfg->zb306bef, "demo");
++		return true;
++	}
++	return (cfg->z5737392[0] != '\0' && cfg->zc225a0e != 0 && cfg->zb306bef[0] != '\0');
++}
++
++static bool zefa662d(z9f83179* cfg)
++{
++	TCHAR* p = _tcsstr(szCmdLine, _T("-rbfreplay "));
++	if (p == NULL) return false;
++	p += _tcslen(_T("-rbfreplay "));
++
++	TCHAR list[600];
++	_tcsncpy(list, p, 599);
++	list[599] = _T('\0');
++	TCHAR* sp = _tcschr(list, _T(' '));
++	if (sp) *sp = _T('\0');
++
++	memset(cfg, 0, sizeof(*cfg));
++
++	for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
++		TCHAR* eq = _tcschr(tok, _T('='));
++		if (eq == NULL) continue;
++		*eq = _T('\0');
++		TCHAR* key = tok;
++		TCHAR* val = eq + 1;
++
++		if (_tcscmp(key, _T("dir")) == 0) {
++			char* a = TCHARToANSI(val, NULL, 0);
++			strncpy(cfg->zac0db38, a, sizeof(cfg->zac0db38) - 1);
++		}
++		else if (_tcscmp(key, _T("ft")) == 0) cfg->ze6bfbdc = _ttoi(val);
++		else if (_tcscmp(key, _T("indice")) == 0) cfg->zc85e9f4 = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("corrida")) == 0) cfg->z57d740a = _ttoi(val);
++	}
++	if (cfg->zac0db38[0] == '\0') return false;
++
++	size_t n = strlen(cfg->zac0db38);
++	while (n > 0 && (cfg->zac0db38[n - 1] == '\\' || cfg->zac0db38[n - 1] == '/')) cfg->zac0db38[--n] = '\0';
++	const char* last = cfg->zac0db38;
++	for (const char* c = cfg->zac0db38; *c; c++) if (*c == '\\' || *c == '/') last = c + 1;
++	strncpy(cfg->zb306bef, last, sizeof(cfg->zb306bef) - 1);
++	return true;
++}
++
++static bool z2a85b33(z54dec38* cfg, int* z6c04fa0, int* zb5053d3)
++{
++	TCHAR* p = _tcsstr(szCmdLine, _T("-rbfsynctest"));
++	if (p == NULL) return false;
++	p += _tcslen(_T("-rbfsynctest"));
++
++	*z6c04fa0   = 3600;
++	*zb5053d3 = 8;
++
++	TCHAR list[128] = _T("");
++	if (*p == _T(' ')) {
++		_tcsncpy(list, p + 1, 127);
++		list[127] = _T('\0');
++		TCHAR* sp = _tcschr(list, _T(' '));
++		if (sp) *sp = _T('\0');
++	}
++	for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
++		TCHAR* eq = _tcschr(tok, _T('='));
++		if (eq == NULL) continue;
++		*eq = _T('\0');
++		int v = _ttoi(eq + 1);
++		if      (_tcscmp(tok, _T("frames"))   == 0 && v > 0)             *z6c04fa0   = v;
++		else if (_tcscmp(tok, _T("distance")) == 0 && v > 0 && v <= 8)   *zb5053d3 = v;
++	}
++
++	memset(cfg, 0, sizeof(*cfg));
++	cfg->z0d29982     = 2;
++	cfg->ze08b6ae = 1;
++	cfg->z7606996 = 1;
++	cfg->z3b2036b  = 0;
++	strncpy(cfg->z91da805, BurnDrvGetTextA(DRV_NAME), sizeof(cfg->z91da805) - 1);
++	return true;
+ }
+ 
+ int ProcessCmdLine()
+@@ -1250,6 +1680,10 @@
+ 			bFullscreen = 0;
+ 		}
+ 
++		if (_tcsstr(szCmdLine, _T("-training")) != NULL) {
++			zdeaaf11 = 1;
++		}
++
+ 		if (bFullscreen) {
+ 			nVidFullscreen = 1;
+ 		}
+@@ -1312,6 +1746,13 @@
+ 			for (i = 0; i < nBurnDrvCount; i++) {
+ 				nBurnDrvActive = i;
+ 				if ((_tcscmp(BurnDrvGetText(DRV_NAME), szName) == 0) && (!(BurnDrvGetFlags() & BDF_BOARDROM))) {
++					for (INT32 k = 0; k < 3; k++) {
++						static const TCHAR* const za67a85c[3] = { _T("-YHA"), _T("-LPA"), _T("-GKG") };
++						const TCHAR* f = _tcsstr(szCmdLine, za67a85c[k]);
++						const size_t nf = _tcslen(za67a85c[k]);
++						if (f && (f == szCmdLine || f[-1] == _T(' ')) && (f[nf] == 0 || f[nf] == _T(' '))) bRunAhead = k;
++					}
++
+ 					TCHAR* szSub = _tcsstr(szCmdLine, _T("-sub"));	// Handling -sub additional parameters
+ 					if (szSub) {									// With -sub parameters
+ 						szSub += _tcslen(_T("-sub"));				// The parameter does not contain the identifier itself
+@@ -1400,11 +1841,117 @@
+ 						IpsPatchInit();		// Entry point: cmdline launch
+ 					}
+ 
++					{
++						extern int z64a2ee2;
++						z64a2ee2 = (_tcsstr(szCmdLine, _T("-rbfnet ")) != NULL ||
++						               _tcsstr(szCmdLine, _T("-rbfwatch ")) != NULL ||
++						               _tcsstr(szCmdLine, _T("-rbfreplay ")) != NULL ||
++						               _tcsstr(szCmdLine, _T("-rbfsynctest")) != NULL ||
++						               _tcsstr(szCmdLine, _T("-rbfimghash ")) != NULL) ? 1 : 0;
++
++						if (TCHAR* z4db3987 = _tcsstr(szCmdLine, _T("-rbfimghash "))) {
++							char zdc47492[32] = "x";
++							int z0bb9ab7 = 3000;
++							char* a = TCHARToANSI(z4db3987 + _tcslen(_T("-rbfimghash ")), NULL, 0);
++							if (a) {
++								char* sp = strchr(a, ' '); if (sp) *sp = 0;
++								const char* t = strstr(a, "tag=");
++								if (t) { sscanf(t + 4, "%31[A-Za-z0-9_-]", zdc47492); }
++								const char* f = strstr(a, "frames=");
++								if (f) z0bb9ab7 = atoi(f + 7);
++							}
++							zed87ca0(zdc47492, z0bb9ab7);
++						}
++
++						if (_tcsstr(szCmdLine, _T("-rbffundo")) || _tcsstr(szCmdLine, _T("-rbfimghash "))) {
++							z40cd21d(1);
++							if (GetEnvironmentVariableA("RBF_TESTE_FOCO", NULL, 0) == 0) bAutoPause = 0;
++							nAudVolume = 0;
++							if (_tcsstr(szCmdLine, _T("-rbfreplay "))) {
++								SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
++							}
++							z5d90bae(_tcsstr(szCmdLine, _T("-rbfreplay "))
++							               ? "fundo: janela fora da tela, sem foco, som mudo desde o comeco, prioridade abaixo do normal"
++							               : "fundo: janela fora da tela, sem foco, som mudo desde o comeco");
++						}
++
++						if (z64a2ee2) {
++							for (int a = 0; a < 8; a++) nAudSampleRate[a] = 44100;
++						}
++
++						z9b25327[0] = 0;
++						TCHAR* pStart = _tcsstr(szCmdLine, _T("-rbfstart "));
++						if (pStart) {
++							pStart += _tcslen(_T("-rbfstart "));
++							while (*pStart == _T(' ')) pStart++;
++							const bool ze62b4de = (*pStart == _T('"'));
++							if (ze62b4de) pStart++;
++							int n = 0;
++							while (*pStart && n < MAX_PATH - 1 && (ze62b4de ? *pStart != _T('"') : *pStart != _T(' ')))
++								z9b25327[n++] = *pStart++;
++							z9b25327[n] = 0;
++						}
++						z40e51f6 = (_tcsstr(szCmdLine, _T("-rbfaes")) != NULL) ? 1 : 0;
++					}
++
+ 					if (DrvInit(i, true)) { // failed (bad romset, etc.)
+ 						nVidFullscreen = 0; // Don't get stuck in fullscreen mode
+ 					}
+ 
+ 					IpsPatchExit();
++
++					if (bDrvOkay) {
++						int z72eb2a6 = z1e92c8c();
++						if (z72eb2a6 > 0) zb8ed435(z72eb2a6, z5d90bae);
++
++						z9f83179 zf9006e2;
++						z54dec38  z8ad8bd2;
++						int            zec6bdb3 = 0, z5da0f84 = 0;
++						if (zefa662d(&zf9006e2)) {
++							if (ze0d3fd3(&zf9006e2) != 0) _exit(3);
++						} else if (z4df9615(&zf9006e2)) {
++							if (ze0d3fd3(&zf9006e2) != 0) {
++								bprintf(PRINT_ERROR, _T("[rbf] FbnHostStartWatch failed; nothing to watch.\n"));
++								if (!zfe62411()) MessageBox(NULL,
++									_T("Nao foi possivel entrar na transmissao desta partida.\n\n")
++									_T("O motivo esta em rbf-netplay.log, ao lado do emulador."),
++									_T("RBF - assistir"), MB_OK | MB_ICONWARNING);
++								return 1;
++							}
++						} else if (z2a85b33(&z8ad8bd2, &zec6bdb3, &z5da0f84)) {
++							za68575c(zec6bdb3);
++							if (z595c26c(&z8ad8bd2, z5da0f84) != 0) {
++								_exit(3);
++							}
++						} else if (z9446d05(&z8ad8bd2)) {
++							if (z054c841(&z8ad8bd2) != 0)
++								bprintf(PRINT_ERROR, _T("[rbf] FbnHostStart failed; running offline.\n"));
++							else if (const char* z1a46e8f = z83650cd())
++								FBA_LoadLuaCode(z1a46e8f);
++						} else {
++							TCHAR* z464bad9 = _tcsstr(szCmdLine, _T("-lua "));
++							if (z464bad9) {
++								z464bad9 += 5;
++								while (*z464bad9 == _T(' ')) z464bad9++;
++								TCHAR zffbad0d[MAX_PATH] = { 0 };
++								int li = 0;
++								if (*z464bad9 == _T('\"')) {
++									z464bad9++;
++									while (*z464bad9 && *z464bad9 != _T('\"') && li < MAX_PATH - 1) {
++										zffbad0d[li++] = *z464bad9++;
++									}
++								} else {
++									while (*z464bad9 && *z464bad9 != _T(' ') && li < MAX_PATH - 1) {
++										zffbad0d[li++] = *z464bad9++;
++									}
++								}
++								zffbad0d[li] = 0;
++								FBA_LoadLuaCode(TCHARToANSI(zffbad0d, NULL, 0));
++							} else if (_tcsstr(szCmdLine, _T("-training")) != NULL) {
++								z1a8bac2();
++							}
++						}
++					}
+ 					break;
+ 				}
+ 			}
+@@ -1413,6 +1960,10 @@
+ 
+ 			if (i == nBurnDrvCount) {
+ 				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_NOSUPPORT), szName, _T(APP_TITLE));
++				if (zd9791ed()) {
++					z7390e62("rom: ");
++					z90fdabc(z4f1931a, NULL, TCHARToANSI(szName, NULL, 0), NULL, NULL);
++				} else
+ 				FBAPopupDisplay(PUF_TYPE_ERROR);
+ 				return 1;
+ 			}
+@@ -1489,9 +2040,62 @@
+ 	}
+ }
+ 
++static bool z9ccebcf(const char* szCmd)
++{
++	if (szCmd == NULL) return false;
++	while (*szCmd == ' ' || *szCmd == '\t') szCmd++;
++	if (*szCmd == '\0' || *szCmd == '-') return false;
++	return strstr(szCmd, "-rbfvideo ") != NULL || strstr(szCmd, "-rbfnet ") != NULL ||
++	       strstr(szCmd, "-rbfwatch ") != NULL || strstr(szCmd, "-rbfsynctest") != NULL ||
++	       strstr(szCmd, "-rbfprobe") != NULL || strstr(szCmd, "-rbfreplay ") != NULL;
++}
++
++static void z5eb3072(bool za2b97d7)
++{
++	MessageBoxW(NULL,
++		za2b97d7
++			? L"N\u00e3o foi poss\u00edvel abrir este jogo.\n\n"
++			  L"Abra o Frame Perfect (FramePerfect.exe) e escolha o jogo por l\u00e1."
++			: L"Para jogar, abra o Frame Perfect (FramePerfect.exe).\n\n"
++			  L"Este programa n\u00e3o abre sozinho: \u00e9 o Frame Perfect que escolhe o jogo, a imagem e a partida.",
++		L"Frame Perfect", MB_OK | MB_ICONINFORMATION);
++}
++
++static void z3876bca(const char* szCmd)
++{
++	const char* p = szCmd ? strstr(szCmd, "-rbfvideo ") : NULL;
++	if (p == NULL) return;
++	p += 10;
++	while (*p == ' ') p++;
++	char list[256];
++	strncpy(list, p, 255);
++	list[255] = 0;
++	char* sp = strchr(list, ' ');
++	if (sp) *sp = 0;
++
++	bool z9cb4cb9 = false;
++	for (char* tok = strtok(list, ","); tok != NULL; tok = strtok(NULL, ",")) {
++		if (strcmp(tok, "dpi=1") == 0) z9cb4cb9 = true;
++	}
++	if (!z9cb4cb9) return;
++
++	typedef BOOL (WINAPI *z3feb167)(void);
++	HMODULE u32 = GetModuleHandleW(L"user32.dll");
++	z3feb167 z984eff7 = u32 ? (z3feb167)GetProcAddress(u32, "SetProcessDPIAware") : NULL;
++	if (z984eff7) z984eff7();
++}
++
+ // Main program entry point
+ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR lpCmdLine, int nShowCmd)
+ {
++	if (!z9ccebcf(lpCmdLine)) {
++		z5eb3072(false);
++		return 0;
++	}
++	zd9b8167(1);
++
++	z3876bca(lpCmdLine);
++
+ 	DSCore_Init();
+ 	DICore_Init();
+ 	DDCore_Init();
+@@ -1556,12 +2160,21 @@
+ 	if (!(AppInit())) {							// Init the application
+ 		if (bAlwaysCreateSupportFolders) CreateSupportFolders();
+ 		if (!(ProcessCmdLine())) {
++			if (!bDrvOkay) {
++				if (zc4b05e3()) {
++				} else if (zfe62411()) {
++					z5d90bae("fundo: o jogo nao abriu - sem a caixa \"Nao foi possivel abrir este jogo\"");
++				} else {
++					z5eb3072(true);
++				}
++			} else {
+ 			DetectWindowsVersion();
+ 			EnableHighResolutionTiming();
+ 
+ 			MediaInit();
+ 
+ 			RunMessageLoop();					// Run the application message loop
++			}
+ 		}
+ 	}
+ 
+diff --git a/src/burner/win32/media.cpp b/src/burner/win32/media.cpp
+--- a/src/burner/win32/media.cpp
++++ b/src/burner/win32/media.cpp
+@@ -1,5 +1,6 @@
+ // Media module
+ #include "burner.h"
++#include "fbneo_host.h"
+ 
+ int MediaInit()
+ {
+@@ -39,6 +40,7 @@
+ 		VidInit();
+ 		if (!bVidOkay && nVidFullscreen) {
+ 
++			if (z87bb0e1 != 0) z5d90bae("video: a tela cheia nao abriu neste computador - o jogo segue em janela");
+ 			nVidFullscreen = 0;
+ 
+ 			MediaExit();
+diff --git a/src/burner/win32/menu.cpp b/src/burner/win32/menu.cpp
+--- a/src/burner/win32/menu.cpp
++++ b/src/burner/win32/menu.cpp
+@@ -373,6 +373,7 @@
+ 				break;
+ 			}
+ 			case VK_LEFT: {
++				if (z87bb0e1 == 1) return 1;
+ 				int nItem;
+ 				if (bMenuDisplayed) {
+ 					if (nRecursions > 1) {
+@@ -395,6 +396,7 @@
+ 				break;
+ 			}
+ 			case VK_RIGHT: {
++				if (z87bb0e1 == 1) return 1;
+ 				int nItem;
+ 				if (bMenuDisplayed) {
+ 					if (nCurrentItemFlags & MF_POPUP) {
+@@ -486,6 +488,43 @@
+ 	return 0;
+ }
+ 
++static void zf3f363b()
++{
++	HMENU hInput = GetSubMenu(hMenu, 3);
++	if (hInput) {
++		for (int i = GetMenuItemCount(hInput) - 1; i >= 0; i--) {
++			if (GetMenuItemID(hInput, i) != MENU_INPUT) {
++				DeleteMenu(hInput, i, MF_BYPOSITION);
++			}
++		}
++	}
++
++	static const int z1644444[] = { 0, 1, 2, 4, 5 };
++	for (int k = 0; k < 5; k++) {
++		SendMessage(hMenubar, TB_HIDEBUTTON, MENU_MENU_0 + z1644444[k], MAKELONG(TRUE, 0));
++	}
++
++	if (SendMessage(hMenubar, TB_COMMANDTOINDEX, MENU_EXIT, 0) < 0) {
++		static TCHAR ze925a1e[] = _T("Exit");
++		TBBUTTON b;
++		memset(&b, 0, sizeof(b));
++		b.idCommand = MENU_EXIT;
++		b.fsState   = TBSTATE_ENABLED;
++		b.fsStyle   = TBSTYLE_BUTTON | TBSTYLE_AUTOSIZE;
++		b.iString   = (INT_PTR)ze925a1e;
++		SendMessage(hMenubar, TB_ADDBUTTONS, 1, (LPARAM)&b);
++	}
++	SendMessage(hMenubar, TB_AUTOSIZE, 0, 0);
++
++	if (hMenuPopup && GetMenuItemCount(hMenuPopup) == 6) {
++		static const int zeadb646[] = { 5, 4, 2, 1, 0 };
++		for (int k = 0; k < 5; k++) {
++			RemoveMenu(hMenuPopup, zeadb646[k], MF_BYPOSITION);
++		}
++		AppendMenu(hMenuPopup, MF_STRING, MENU_EXIT, _T("Exit\tAlt+F4"));
++	}
++}
++
+ int MenuCreate()
+ {
+ 	TBBUTTON button;
+@@ -591,6 +630,10 @@
+ 	}
+ 
+ 	SendMessage(hMenubar, TB_AUTOSIZE, 0, 0);
++
++	if (z87bb0e1 == 1) {
++		zf3f363b();
++	}
+ 
+ 	return 0;
+ }
+@@ -850,6 +893,13 @@
+ 
+ 	var = nVidSelect + MENU_BLITTER_1;
+ 	CheckMenuRadioItem(hMenu, MENU_BLITTER_1, MENU_BLITTER_8, var, MF_BYCOMMAND);
++
++	extern int z64a2ee2;
++	if (z64a2ee2) {
++		for (int b = MENU_BLITTER_1; b <= MENU_BLITTER_8; b++) {
++			EnableMenuItem(hMenu, b, MF_BYCOMMAND | MF_GRAYED);
++		}
++	}
+ 
+ 	switch (nVidSelect) {
+ 		case 0:
+@@ -1139,8 +1189,14 @@
+ 	CheckMenuItem(hMenu, MENU_ROTATEVERTICAL, !(nVidRotationAdjust & 1) ? MF_CHECKED : MF_UNCHECKED);
+ 	CheckMenuItem(hMenu, MENU_FORCE60HZ, bForce60Hz ? MF_CHECKED : MF_UNCHECKED);
+ 	CheckMenuItem(hMenu, MENU_VIDEOVSYNC, bVidVSync ? MF_CHECKED : MF_UNCHECKED);
+-	CheckMenuItem(hMenu, MENU_AUTOFRAMESKIP, !bAlwaysDrawFrames ? MF_CHECKED : MF_UNCHECKED);
+-	CheckMenuItem(hMenu, MENU_RUNAHEAD, bRunAhead ? MF_CHECKED : MF_UNCHECKED);
++	{
++		TCHAR z51a6380[64];
++		if (bRunAhead == 1) _tcscpy(z51a6380, _T("LPA"));
++		else if (bRunAhead >= 2) _tcscpy(z51a6380, _T("GKG"));
++		else _tcscpy(z51a6380, _T("YHA"));
++		ModifyMenu(hMenu, MENU_RUNAHEAD, MF_BYCOMMAND | MF_STRING, MENU_RUNAHEAD, z51a6380);
++		CheckMenuItem(hMenu, MENU_RUNAHEAD, bRunAhead ? MF_CHECKED : MF_UNCHECKED);
++	}
+ 
+ 	var = nAudSelect + MENU_AUD_PLUGIN_1;
+ 	CheckMenuRadioItem(hMenu, MENU_AUD_PLUGIN_1, MENU_AUD_PLUGIN_8, var, MF_BYCOMMAND);
+diff --git a/src/burner/win32/popup_win32.cpp b/src/burner/win32/popup_win32.cpp
+--- a/src/burner/win32/popup_win32.cpp
++++ b/src/burner/win32/popup_win32.cpp
+@@ -1,6 +1,8 @@
+ // Display a dialog containing error messages
+ #include "burner.h"
+ #include <richedit.h>
++#include "img_hash.h"
++#include "fbneo_host.h"
+ 
+ static TCHAR* pszBufferEnglish = NULL;
+ static TCHAR* pszBufferLocal = NULL;
+@@ -336,6 +338,38 @@
+ 
+ // ----------------------------------------------------------------------------
+ 
++void z7390e62(const char* szPrefix)
++{
++	if (pszBufferEnglish && pszBufferEnglish[0]) {
++		const int nLen = WideCharToMultiByte(CP_ACP, 0, pszBufferEnglish, -1, NULL, 0, NULL, NULL);
++		char* a = (nLen > 0) ? (char*)malloc(nLen + 1) : NULL;
++		if (a && WideCharToMultiByte(CP_ACP, 0, pszBufferEnglish, -1, a, nLen, NULL, NULL) > 0) {
++			int z19ef79a = 0;
++			for (char* s = a; *s && z19ef79a < 80; ) {
++				char* e = s;
++				while (*e && *e != '\n') e++;
++				const char c = *e;
++				*e = 0;
++				while (*s == ' ' || *s == '\t' || *s == '\r') s++;
++				char* t = s + strlen(s);
++				while (t > s && (t[-1] == ' ' || t[-1] == '\r' || t[-1] == '\t')) *--t = 0;
++				if (*s) {
++					char szLine[600];
++					snprintf(szLine, sizeof(szLine), "%s%s", szPrefix ? szPrefix : "", s);
++					z5d90bae(szLine);
++					z19ef79a++;
++				}
++				if (!c) break;
++				s = e + 1;
++			}
++		}
++		free(a);
++	}
++
++	FBAPopupDestroyText();
++}
++
++
+ int FBAPopupDisplay(int nFlags)
+ {
+ 	HMODULE hRiched = NULL;
+@@ -352,7 +386,15 @@
+ 
+ 	FBAPopupLog();
+ 
+-	if (!(nPopupFlags & PUF_TYPE_LOGONLY) && hRiched && bNoPopups == false) {
++	if (zfe62411() && !(nPopupFlags & PUF_TYPE_LOGONLY)) {
++		char szLine[512];
++		const char* a = pszBufferEnglish ? TCHARToANSI(pszBufferEnglish, NULL, 0) : "";
++		snprintf(szLine, sizeof(szLine), "fundo: aviso do emulador, sem a caixa: %s", a ? a : "");
++		for (char* c = szLine; *c; c++) if (*c == '\n' || *c == '\r' || *c == '\t') *c = ' ';
++		z5d90bae(szLine);
++	}
++
++	if (!(nPopupFlags & PUF_TYPE_LOGONLY) && hRiched && bNoPopups == false && !zfe62411()) {
+ 		DialogBox(hAppInst, MAKEINTRESOURCE(IDD_POPUP), hScrnWnd, (DLGPROC)FBAPopupProc);
+ 	}
+ 
+diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
+--- a/src/burner/win32/run.cpp
++++ b/src/burner/win32/run.cpp
+@@ -1,8 +1,239 @@
+ // Run module
+ #include "burner.h"
++#include "fbneo_host.h"
++#include "ram_probe.h"
++#include "match_score.h"
++#include "overlay.h"
++#include "hud.h"
++#include "training_notice.h"
++#include "frame_timing.h"
+ 
+ int bRunPause = 0;
+ int bAltPause = 0;
++
++#define zac9925d 600
++
++static char  zfbaab00[MAX_PATH] = "";
++static INT32 z4fe395d = 0;
++
++void z53e8fba(const char* szFile, INT32 z7cfb693)
++{
++	if (!szFile || !szFile[0]) return;
++	strncpy(zfbaab00, szFile, sizeof(zfbaab00) - 1);
++	zfbaab00[sizeof(zfbaab00) - 1] = 0;
++	if (z7cfb693 <= 0) z7cfb693 = zac9925d;
++	z4fe395d = (INT32)nCurrentFrame + z7cfb693;
++	z3c738e6("script na fila: %s (entra daqui a %d frames, quando o jogo tiver acabado de ligar)",
++	          zfbaab00, z7cfb693);
++}
++
++#define z2db109a 4
++
++static int   z912408c    = 0;
++static int   z9f8a8aa   = 0;
++static int   z2c9b443    = 0;
++static int   zb9c3ff0      = 0;
++static int   zcd74319      = 0;
++static int   za35bc04 = 0;
++
++static TCHAR z661af5a[MAX_PATH] = _T("");
++
++void zb65da41(const TCHAR* z325aa6e)
++{
++	_tcsncpy(z661af5a, z325aa6e ? z325aa6e : _T(""), MAX_PATH - 1);
++	z661af5a[MAX_PATH - 1] = 0;
++}
++
++static void zbca46f9(TCHAR* szOut)
++{
++	_sntprintf(szOut, MAX_PATH, _T("savestates\\treino\\%s.fs"), BurnDrvGetText(DRV_NAME));
++	szOut[MAX_PATH - 1] = 0;
++}
++
++static const char* z8d0e74d()
++{
++	FILE* f = fopen("support/training-mode/fbneo-training-mode.lua", "r");
++	if (f) {
++		fclose(f);
++		return "support/training-mode/fbneo-training-mode.lua";
++	}
++	return "../support/training-mode/fbneo-training-mode.lua";
++}
++
++void z1a8bac2()
++{
++	z912408c  = 1;
++	z9f8a8aa = 0;
++	z3c738e6("treino: comeca sem o treino avancado (F6 liga)");
++}
++
++static void z297eeda(const char* szFile)
++{
++	FBA_LoadLuaCode(szFile);
++	ze3de082("FP_HITBOXES", za35bc04);
++	z3c738e6("treino avancado ligado (%s)", za35bc04 ? "com hitboxes" : "sem hitboxes");
++}
++
++static void z674ee95(int zfbeaa66)
++{
++	if (zfbaab00[0]) return;
++	za35bc04 = zfbeaa66;
++	if (!z661af5a[0] && (INT32)nCurrentFrame < zac9925d) {
++		z53e8fba(z8d0e74d(), zac9925d - (INT32)nCurrentFrame);
++		return;
++	}
++	z297eeda(z8d0e74d());
++}
++
++static int z4932947()
++{
++	if (!bDrvOkay || GameInp == NULL) return 0;
++	InputMake(false);
++
++	int nBits = 0, nButton = 0;
++	struct BurnInputInfo bii;
++	for (UINT32 i = 0; i < nGameInpCount; i++) {
++		if (BurnDrvGetInputInfo(&bii, i) != 0) break;
++		if (bii.nType != BIT_DIGITAL || bii.szName == NULL || strncmp(bii.szName, "P1 ", 3) != 0) continue;
++		const char* s = bii.szName + 3;
++		const int on = GameInp[i].Input.nVal ? 1 : 0;
++		if      (_stricmp(s, "Up") == 0)    { if (on) nBits |= z204ed0c; }
++		else if (_stricmp(s, "Down") == 0)  { if (on) nBits |= z5e6ee0d; }
++		else if (_stricmp(s, "Left") == 0)  { if (on) nBits |= z539e065; }
++		else if (_stricmp(s, "Right") == 0) { if (on) nBits |= z769d967; }
++		else if (_stricmp(s, "Start") == 0) { if (on) nBits |= z8c6eb8d; }
++		else if (_stricmp(s, "Coin") == 0 || _stricmp(s, "Select") == 0 || _strnicmp(s, "Service", 7) == 0) {}
++		else {
++			nButton++;
++			if (on && nButton == 1) nBits |= z8c6eb8d;
++			if (on && nButton == 2) nBits |= zdafc2d5;
++		}
++	}
++	return nBits;
++}
++
++static void z16a7eba()
++{
++	if (nVidFullscreen && !(nVidSelect == 4 && bVidDX9WinFullscreen)) {
++		z3c738e6("treino: tela cheia exclusiva - sem o aviso (F6 liga o treino avancado)");
++		return;
++	}
++
++	AudBlankSound();
++	AudSoundStop();
++	int r = z95d8da8(hScrnWnd, z2db109a, z4932947);
++	if (r == z8c60dd0) r = z2378d3a(hScrnWnd, z4932947);
++	AudSoundPlay();
++	RunReset();
++
++	zb9c3ff0 = zcd74319 = 1;
++	z3c738e6("treino: aviso fechado (%s)", r == z1966f60 ? "F6 - treino avancado" : "fechar");
++	if (r == z1966f60) z674ee95(0);
++}
++
++static void z8988aaf()
++{
++	if ((BurnDrvGetHardwareCode() & HARDWARE_PUBLIC_MASK) != HARDWARE_SNK_NEOGEO) return;
++
++	struct BurnInputInfo bii;
++	for (UINT32 i = 0; BurnDrvGetInputInfo(&bii, i) == 0; i++) {
++		if (bii.nType != BIT_DIPSWITCH || bii.szName == NULL || strcmp(bii.szName, "Fake Dip 2") != 0) continue;
++
++		struct GameInp* pgi = GameInp + i;
++		if (pgi->nInput == GIT_CONSTANT) {
++			pgi->Input.Constant.nConst = (UINT8)(pgi->Input.Constant.nConst | 0x01);
++			if (pgi->Input.pVal) *(pgi->Input.pVal) = pgi->Input.Constant.nConst;
++			z3c738e6("treino: placa AES para a UniBIOS (Fake Dip 2 = 0x%02X)", pgi->Input.Constant.nConst);
++		}
++		break;
++	}
++}
++
++void z1706dba()
++{
++	z8988aaf();
++}
++
++static void z06940c4()
++{
++	if (!z912408c || !bDrvOkay) return;
++
++	if (z9f8a8aa == 0) {
++		TCHAR z325aa6e[MAX_PATH];
++		zbca46f9(z325aa6e);
++		z8988aaf();
++		if (GetFileAttributes(z325aa6e) != INVALID_FILE_ATTRIBUTES) {
++			int nRet = BurnStateLoad(z325aa6e, 1, &DrvInitCallback);
++			z3c738e6("savestate de treino %s: %s", _TtoA(z325aa6e), nRet ? "falhou ao carregar" : "carregado");
++			if (nRet == 0) _tcscpy(z661af5a, z325aa6e);
++		} else {
++			z3c738e6("sem savestate de treino (%s): comeca do boot", _TtoA(z325aa6e));
++		}
++		z9f8a8aa = 1;
++		return;
++	}
++
++	if (z9f8a8aa < 4) {
++		if (++z9f8a8aa == 4) z16a7eba();
++		return;
++	}
++
++	const int k = z2c9b443;
++	z2c9b443 = 0;
++	if (k == 6) {
++		if (FBA_LuaRunning()) CallRegisteredLuaFunctions(LUACALL_HOTKEY_6);
++		else z674ee95(0);
++	} else if (k == 7) {
++		if (FBA_LuaRunning()) CallRegisteredLuaFunctions(LUACALL_HOTKEY_7);
++		else z674ee95(1);
++	}
++}
++
++void z8dbf416()
++{
++	z06940c4();
++
++	if (!zfbaab00[0]) return;
++	if ((INT32)nCurrentFrame < z4fe395d) return;
++
++	char szFile[MAX_PATH];
++	strcpy(szFile, zfbaab00);
++	zfbaab00[0] = 0;
++	z297eeda(szFile);
++}
++
++static void zeb9b72a()
++{
++	static UINT8* z00dcad5    = NULL;
++	static bool   zac196d6 = false;
++	static int    z4067262     = 0;
++
++	if (!z661af5a[0] || !bDrvOkay) return;
++	if (!zac196d6) {
++		zac196d6 = true;
++		struct BurnInputInfo bii;
++		for (UINT32 i = 0; BurnDrvGetInputInfo(&bii, i) == 0; i++) {
++			if (bii.nType != BIT_DIGITAL || bii.pVal == NULL) continue;
++			if ((bii.szName && _stricmp(bii.szName, "Reset") == 0) ||
++			    (bii.szInfo && _stricmp(bii.szInfo, "reset") == 0)) {
++				z00dcad5 = bii.pVal;
++				break;
++			}
++		}
++	}
++	if (z00dcad5 == NULL) return;
++
++	if (*z00dcad5 == 0) {
++		z4067262 = 0;
++		return;
++	}
++	*z00dcad5 = 0;
++	if (z4067262) return;
++	z4067262 = 1;
++
++	int nRet = BurnStateLoad(z661af5a, 1, NULL);
++	z3c738e6("F3 no treino: de volta ao estado inicial %s (%s)", _TtoA(z661af5a), nRet ? "falhou" : "ok");
++}
+ 
+ int bAlwaysDrawFrames = 0;
+ 
+@@ -67,6 +298,46 @@
+ 
+ static void CheckSystemMacros() // These are the Pause / FFWD macros added to the input dialog
+ {
++	{
++		static int z7fc7e68 = 0;
++		const int z1873f03 = (bHasFocus && (GetAsyncKeyState(VK_TAB) & 0x8000)) ? 1 : 0;
++		if (z1873f03 && !z7fc7e68 && z4b7d267()) z1c35054();
++		z7fc7e68 = z1873f03;
++	}
++
++	{
++		static int z9d2db69 = 0;
++		const int zc4e8e23 = (bHasFocus && (GetAsyncKeyState(VK_BACK) & 0x8000)) ? 1 : 0;
++		if (zc4e8e23 && !z9d2db69) z06e3af7();
++		z9d2db69 = zc4e8e23;
++	}
++
++	{
++		static int z24bfe73 = 0;
++		const int z5705e15 = (bHasFocus && (GetAsyncKeyState(VK_F5) & 0x8000) &&
++		                 (GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
++		                 (GetAsyncKeyState(VK_MENU) & 0x8000)) ? 1 : 0;
++		if (z5705e15 && !z24bfe73) z34d19c6();
++		z24bfe73 = z5705e15;
++	}
++
++	if (z912408c) {
++		const int z1cdb72f = (bHasFocus && (GetAsyncKeyState(VK_F6) & 0x8000)) ? 1 : 0;
++		const int zf42cd0d = (bHasFocus && (GetAsyncKeyState(VK_F7) & 0x8000)) ? 1 : 0;
++		if (z1cdb72f && !zb9c3ff0) z2c9b443 = 6;
++		if (zf42cd0d && !zcd74319) z2c9b443 = 7;
++		zb9c3ff0 = z1cdb72f;
++		zcd74319 = zf42cd0d;
++	}
++
++	{
++		static int ze90de6a = 0;
++		const int ze5b2ef5 = (bHasFocus && zb8f7e81() && (GetAsyncKeyState(VK_F4) & 0x8000) &&
++		                 !(GetAsyncKeyState(VK_MENU) & 0x8000)) ? 1 : 0;
++		if (ze5b2ef5 && !ze90de6a) zffad440();
++		ze90de6a = ze5b2ef5;
++	}
++
+ 	// Pause
+ 	if (macroSystemPause && macroSystemPause != prevPause && timeGetTime() > prevPause_debounce+90) {
+ 		if (bHasFocus) {
+@@ -76,7 +347,7 @@
+ 	}
+ 	prevPause = macroSystemPause;
+ 
+-	if (!kNetGame) {
++	if (!kNetGame && !zb71d2fc()) {
+ 		// FFWD
+ 		int bPrevAppDoFast = bAppDoFast;
+ 		if (macroSystemFFWD) {
+@@ -124,6 +395,9 @@
+ 		}
+ 
+ 	}
++
++	if (zb71d2fc()) return;
++
+ 	// Load State
+ 	if (macroSystemLoadState && macroSystemLoadState != prevLState) {
+ 		PostMessage(hScrnWnd, WM_KEYDOWN, VK_F9, 0);
+@@ -232,10 +506,19 @@
+ 	static int bPrevPause = 0;
+ 	static int bPrevDraw = 0;
+ 
++	if (zb71d2fc()) {
++		bRunPause  = 0;
++		bAppDoFast = 0;
++		nSlowMo    = 0;
++		bPause     = 0;
++	}
++
+ 	if (bPrevDraw && !bPause) {
++		z3b4888a();
+ 		VidPaint(0);							// paint the screen (no need to validate)
+-
+-		if (!nVidFullscreen && bVidDWMSync)     // Sync to DWM (Win7+, windowed)
++		z5504f30();
++
++		if (!nVidFullscreen && bVidDWMSync && !zb71d2fc())
+ 			SuperWaitVBlank();
+ 	}
+ 
+@@ -258,6 +541,9 @@
+ 
+ 		nFramesEmulated++;
+ 		nCurrentFrame++;
++		z4e4ccd5();
++
++		zcdce694();
+ 
+ 		if (kNetGame) {
+ 			GetInput(true);						// Update inputs
+@@ -280,16 +566,44 @@
+ 			}
+ 		}
+ 
++		z5887a63();
++
++		zeb9b72a();
++
+ 		CallRegisteredLuaFunctions(LUACALL_BEFOREEMULATION);
+ 		if (FBA_LuaUsingJoypad()) {
+ 			FBA_LuaReadJoypad();
+ 		}
+ 
++		if (z17f8ebd(bHasFocus)) PostQuitMessage(0);
++
+ 		if (nReplayStatus == 1) {
+ 			RecordInput();						// Write input to file
+ 		}
+ 
+-		if (bDraw) {                            // Draw Frame
++		int z330a36a = 1;
++		if (zb71d2fc()) {
++			if (bDraw && (bDraw & FFWD_GHOST_FRAME) == 0) nFramesRendered++;
++			int z992a116 = z607366a(bDraw);
++			z330a36a = (z992a116 > 0);
++			if (z992a116 < 0) {
++				int zfb49073 = zb8f7e81();
++				long long nRan = zca74129();
++
++				AudBlankSound();
++				AudSoundStop();
++				z912bf82();
++
++				if (!zfb49073 && ze9b2e0c()) {
++					ze69a66a();
++				} else if (!zfb49073) {
++					zb97f210(nRan);
++				} else {
++					z7c206bb();
++				}
++				PostMessage(hScrnWnd, WM_CLOSE, 0, 0);
++			}
++		} else if (bDraw) {
+ 			if ((bDraw & FFWD_GHOST_FRAME) == 0)
+ 				nFramesRendered++;
+ 
+@@ -313,9 +627,15 @@
+ 				StateRunAheadSave();
+ 				INT16 *pBurnSoundOut_temp = pBurnSoundOut;
+ 				pBurnSoundOut = NULL;
++				bBurnRunAheadFrame = 1;
++
++				if (bRunAhead > 1) {
++					nCurrentFrame++;
++					pBurnDraw = NULL;
++					BurnDrvFrame();
++				}
++
+ 				nCurrentFrame++;
+-				bBurnRunAheadFrame = 1;
+-
+ 				if (VidFrame()) {
+ 					// VidFrame() failed, but we must run a driver frame because we have
+ 					// an input.  Possibly from recording or netplay(!)
+@@ -323,8 +643,9 @@
+ 					BurnDrvFrame();
+ 				}
+ 
++				if (bRunAhead > 1) nCurrentFrame--;
++				nCurrentFrame--;
+ 				bBurnRunAheadFrame = 0;
+-				nCurrentFrame--;
+ 				StateRunAheadLoad();
+ 				pBurnSoundOut = pBurnSoundOut_temp; // restore pointer, for wav & avi writer
+ 			}
+@@ -333,7 +654,17 @@
+ 			BurnDrvFrame();
+ 		}
+ 
+-		if (kNetGame == 0) {                    // Rewind Implementation
++		if (!zfe0050b()) z1907e87();
++
++		z8dbf416();
++
++		if (bDraw) z74d9120(nVidSelect);
++
++		if (!zfe0050b() && z330a36a) z21b472f();
++
++		z8b4c8e3();
++
++		if (kNetGame == 0 && !zb71d2fc()) {
+ 			StateRewindDoFrame(macroSystemRewind || bAppDoRewind, macroSystemRewindCancel, bRunPause);
+ 		}
+ 
+@@ -565,10 +896,11 @@
+ 
+ 		RunInit();
+ 
+-		ShowWindow(hScrnWnd, nAppShowCmd);												// Show the screen window
++		const bool z4e09001 = (GetWindowLongPtr(hScrnWnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) != 0;
++		ShowWindow(hScrnWnd, z4e09001 ? SW_SHOWNOACTIVATE : nAppShowCmd);
+ 		nAppShowCmd = SW_NORMAL;
+ 
+-		SetForegroundWindow(hScrnWnd);
++		if (!z4e09001) SetForegroundWindow(hScrnWnd);
+ 
+ 		GameInpCheckLeftAlt();
+ 		GameInpCheckMouse();															// Hide the cursor
+@@ -660,7 +992,7 @@
+ 				if (Msg.message == WM_SYSKEYDOWN || Msg.message == WM_KEYDOWN) {
+ 					if (Msg.lParam & 0x20000000) {
+ 						// An Alt/AltGr-key was pressed
+-						switch (Msg.wParam) {
++						if (z87bb0e1 == 0) switch (Msg.wParam) {
+ 
+ #if defined (FBNEO_DEBUG)
+ 							case 'C': {
+@@ -774,7 +1106,7 @@
+ 						if (cBurnerKeyCallback)
+ 							BurnerHandlerKeyCallback(&Msg, (Msg.message == WM_KEYDOWN) ? 1 : 0, 0);
+ 
+-						switch (Msg.wParam) {
++						if (z87bb0e1 == 0 || Msg.wParam == VK_ESCAPE || Msg.wParam == VK_BACK) switch (Msg.wParam) {
+ 
+ #if defined (FBNEO_DEBUG)
+ 							case 'N':
+@@ -798,8 +1130,8 @@
+ 								if (hwndChat) {
+ 									DeActivateChat();
+ 								} else {
+-									if (nCmdOptUsed & 1) {
+-										PostQuitMessage(0);
++									if ((nCmdOptUsed & 1) || z87bb0e1 != 0) {
++										if (!z1b0f145()) PostQuitMessage(0);
+ 									} else {
+ 										if (nVidFullscreen) {
+ 											nVidFullscreen = 0;
+@@ -872,11 +1204,13 @@
+ 									}
+ 								} else
+ 								{ // Backspace: toggles FPS counter
+-									bShowFPS = !bShowFPS;
+-									if (bShowFPS) {
+-										DisplayFPSInit();
+-									} else {
+-										VidSKillShortMsg();
++									if (z87bb0e1 == 0) {
++										bShowFPS = !bShowFPS;
++										if (bShowFPS) {
++											DisplayFPSInit();
++										} else {
++											VidSKillShortMsg();
++										}
+ 									}
+ 								}
+ 								break;
+diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
+--- a/src/burner/win32/scrn.cpp
++++ b/src/burner/win32/scrn.cpp
+@@ -1,5 +1,7 @@
+ // Screen Window
+ #include "burner.h"
++#include "fbneo_host.h"
++#include "img_hash.h"
+ #include "pcecdlist.h"
+ #include <process.h>
+ #include <shlobj.h>
+@@ -42,6 +44,7 @@
+ 
+ int OnMenuSelect(HWND, HMENU, int, HMENU, UINT);
+ int OnInitMenuPopup(HWND, HMENU, UINT, BOOL);
++extern int z64a2ee2;
+ int OnUnInitMenuPopup(HWND, HMENU, UINT, BOOL);
+ void DisplayPopupMenu(int nMenu);
+ 
+@@ -86,7 +89,7 @@
+ 
+ int nSavestateSlot = 1;
+ 
+-static TCHAR* szClass = _T("FinalBurn Neo");			// Window class name
++static TCHAR* szClass = _T("FramePerfectArcade");
+ HWND hScrnWnd = NULL;									// Handle to the screen window
+ HWND hRebar = NULL;										// Handle to the Rebar control containing the menu
+ 
+@@ -142,6 +145,8 @@
+ 
+ void SetPauseMode(bool bPause)
+ {
++	if (bPause && zb71d2fc()) return;
++
+ 	bRunPause = bPause;
+ 	bAltPause = bPause;
+ 
+@@ -284,7 +289,7 @@
+ 
+ INT32 is_netgame_or_recording() // returns: 1 = netgame, 2 = recording/playback
+ {
+-	return (kNetGame | (movieFlags & (1<<1))); // netgame or recording from power_on
++	return (kNetGame | z64a2ee2 | (movieFlags & (1<<1)));
+ }
+ 
+ static int WINAPI gameCallback(char* game, int player, int numplayers)
+@@ -593,8 +598,146 @@
+ 	}
+ }
+ 
++static int z07591fe()
++{
++	static int n = -1;
++	if (n < 0) {
++		n = 0;
++		TCHAR* p = _tcsstr(GetCommandLine(), _T("-rbfwatch "));
++		if (p) {
++			TCHAR list[512];
++			_tcsncpy(list, p + _tcslen(_T("-rbfwatch ")), 511);
++			list[511] = _T('\0');
++			TCHAR* sp = _tcschr(list, _T(' '));
++			if (sp) *sp = _T('\0');
++			int z42da58c = 0, za501967 = 0;
++			for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
++				if (_tcsncmp(tok, _T("dir="), 4) == 0 && tok[4]) z42da58c = 1;
++				if (_tcscmp(tok, _T("player=1")) == 0) za501967 = 1;
++			}
++			n = (z42da58c && za501967) ? 1 : 0;
++		}
++	}
++	return n;
++}
++
++#define zd14c728 (-8000)
++static void zf92c26e(WINDOWPOS* wp)
++{
++	if (wp == NULL || (wp->flags & SWP_NOMOVE)) return;
++	wp->x = zd14c728;
++	if (wp->y > zd14c728 / 2) wp->y = zd14c728;
++}
++
++#define z243dbe1 14
++static HWND z4f7d2a2 = NULL;
++static bool zf244259 = false;
++static POINT z8f7e21d;
++static RECT z4323390;
++static const TCHAR z48ce885[] = _T("FramePerfectBarra");
++static HBRUSH z5ee8a35 = NULL;
++
++static void zdabeadb()
++{
++	if (z4f7d2a2 == NULL || hScrnWnd == NULL) return;
++	if (!IsWindowVisible(hScrnWnd) || IsIconic(hScrnWnd)) {
++		ShowWindow(z4f7d2a2, SW_HIDE);
++		return;
++	}
++	RECT rc;
++	GetWindowRect(hScrnWnd, &rc);
++	SetWindowPos(z4f7d2a2, NULL, rc.left, rc.top - z243dbe1, rc.right - rc.left, z243dbe1,
++	             SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW);
++}
++
++static LRESULT CALLBACK z30e252d(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
++{
++	switch (Msg) {
++		case WM_MOUSEACTIVATE:
++			return MA_NOACTIVATE;
++		case WM_LBUTTONDOWN:
++			if (hScrnWnd == NULL) return 0;
++			GetCursorPos(&z8f7e21d);
++			GetWindowRect(hScrnWnd, &z4323390);
++			zf244259 = true;
++			SetCapture(hWnd);
++			if (GetForegroundWindow() != hScrnWnd) SetForegroundWindow(hScrnWnd);
++			return 0;
++		case WM_MOUSEMOVE:
++			if (zf244259 && hScrnWnd) {
++				POINT pt;
++				GetCursorPos(&pt);
++				int x = z4323390.left + pt.x - z8f7e21d.x;
++				int y = z4323390.top + pt.y - z8f7e21d.y;
++				MONITORINFO mi;
++				memset(&mi, 0, sizeof(mi));
++				mi.cbSize = sizeof(mi);
++				if (GetMonitorInfo(MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST), &mi) && y - z243dbe1 < mi.rcWork.top) {
++					y = mi.rcWork.top + z243dbe1;
++				}
++				SetWindowPos(hScrnWnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
++			}
++			return 0;
++		case WM_LBUTTONUP:
++			zf244259 = false;
++			ReleaseCapture();
++			return 0;
++		case WM_CAPTURECHANGED:
++			zf244259 = false;
++			return 0;
++	}
++	return DefWindowProc(hWnd, Msg, wParam, lParam);
++}
++
++static void z5e90deb()
++{
++	zf244259 = false;
++	if (z4f7d2a2) {
++		DestroyWindow(z4f7d2a2);
++		z4f7d2a2 = NULL;
++	}
++}
++
++static void z0fe5af3()
++{
++	z5e90deb();
++	if (hScrnWnd == NULL || nVidFullscreen) return;
++
++	static bool z3d296f3 = false;
++	if (!z3d296f3) {
++		z5ee8a35 = CreateSolidBrush(RGB(0x20, 0x20, 0x24));
++		WNDCLASS wc;
++		memset(&wc, 0, sizeof(wc));
++		wc.lpfnWndProc = z30e252d;
++		wc.hInstance = hAppInst;
++		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
++		wc.hbrBackground = z5ee8a35;
++		wc.lpszClassName = z48ce885;
++		z3d296f3 = RegisterClass(&wc) != 0 || GetLastError() == ERROR_CLASS_ALREADY_EXISTS;
++	}
++
++	z4f7d2a2 = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, z48ce885, NULL, WS_POPUP,
++	                         0, 0, 0, 0, hScrnWnd, NULL, hAppInst, NULL);
++	if (z4f7d2a2 == NULL) {
++		char s[80];
++		_snprintf(s, sizeof(s), "janela: a barra de arrastar nao abriu (erro %lu)", GetLastError());
++		s[sizeof(s) - 1] = 0;
++		z5d90bae(s);
++	}
++	zdabeadb();
++}
++
+ static LRESULT CALLBACK ScrnProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+ {
++	if (Msg == WM_WINDOWPOSCHANGING && zfe62411()) {
++		zf92c26e((WINDOWPOS*)lParam);
++	}
++	if (Msg == WM_WINDOWPOSCHANGED && z4f7d2a2) {
++		LRESULT r = DefWindowProc(hWnd, Msg, wParam, lParam);
++		zdabeadb();
++		return r;
++	}
++
+ 	switch (Msg) {
+ 		HANDLE_MSG(hWnd, WM_CREATE,			OnCreate);
+ 		HANDLE_MSG(hWnd, WM_ACTIVATEAPP,	OnActivateApp);
+@@ -649,6 +792,7 @@
+ static int OnDisplayChange(HWND, UINT, UINT, UINT)
+ {
+ 	if (!nVidFullscreen) {
++		z5d90bae("janela: a configuracao da tela mudou (WM_DISPLAYCHANGE) - o video recomeca");
+ 		POST_INITIALISE_MESSAGE;
+ 	}
+ 
+@@ -678,8 +822,7 @@
+ 	// If fullscreen and right double-click
+ 	if (hwnd == hScrnWnd && nVidFullscreen && bRDblClick)
+ 	{
+-		// game running
+-		if (bDrvOkay)
++		if (bDrvOkay && z87bb0e1 == 0)
+ 		{
+ 			// toggle fullscreen
+ 			nVidFullscreen = !nVidFullscreen;
+@@ -689,6 +832,10 @@
+ 		}
+ 	}
+ 
++	if (z87bb0e1 != 0) {
++		return 1;
++	}
++
+ 	// If not fullscreen and this event is not related to 'toggle fullscreen' right double-click event
+ 	if (!nVidFullscreen && !bRDblClick) {
+ 		bMenuEnabled = !bMenuEnabled;
+@@ -738,6 +885,10 @@
+ 
+ static int OnLButtonDown(HWND hwnd, BOOL, int x, int y, UINT)
+ {
++	if (z374fdd2) {
++		return 0;
++	}
++
+ 	if (hwnd == hScrnWnd && !nVidFullscreen && !bMenuEnabled) {
+ 		RECT clientRect;
+ 
+@@ -760,6 +911,10 @@
+ static int OnLButtonUp(HWND hwnd, int x, int y, UINT)
+ {
+ 	bDrag = false;
++
++	if (z87bb0e1 != 0) {
++		return 0;
++	}
+ 
+ 	if (nVidFullscreen) {
+ 
+@@ -791,6 +946,10 @@
+ 
+ static int OnLButtonDblClk(HWND hwnd, BOOL, int, int, UINT)
+ {
++	if (z87bb0e1 != 0 && !z07591fe()) {
++		return 0;
++	}
++
+ 	if (bDrvOkay) {
+ 		nVidFullscreen = !nVidFullscreen;
+ 		POST_INITIALISE_MESSAGE;
+@@ -808,7 +967,8 @@
+ static void OnActivateApp(HWND hwnd, BOOL fActivate, DWORD /* dwThreadId */)
+ {
+ 	bHasFocus = fActivate;
+-	if (!kNetGame && bAutoPause && !bAltPause && hInpdDlg == NULL && hInpCheatDlg == NULL && hInpDIPSWDlg == NULL) {
++	const bool z238efc3 = z374fdd2 && !nVidFullscreen;
++	if (!z238efc3 && !kNetGame && !zb71d2fc() && bAutoPause && !bAltPause && hInpdDlg == NULL && hInpCheatDlg == NULL && hInpDIPSWDlg == NULL) {
+ 		bRunPause = fActivate? 0 : 1;
+ 	}
+ 	if (fActivate == false && hwnd == hScrnWnd) {
+@@ -1560,6 +1720,32 @@
+ 
+ 	if (bLoading) {
+ 		return;
++	}
++
++	if (zb71d2fc() || z87bb0e1 == 2) {
++		switch (id) {
++		case MENU_EXIT:
++			break;
++		case MENU_FULL:
++			if (z07591fe()) break;
++			return;
++		default:
++			return;
++		}
++	}
++
++	if (z87bb0e1 == 1) {
++		switch (id) {
++		case MENU_EXIT:
++		case MENU_STATE_LOAD_SLOT: case MENU_STATE_SAVE_SLOT:
++		case MENU_STATE_NEXTSLOT: case MENU_STATE_UNDO:
++			break;
++		case MENU_STATE_PREVSLOT:
++			z8ceb80c();
++			return;
++		default:
++			return;
++		}
+ 	}
+ 
+ 	switch (id) {
+@@ -1981,7 +2167,7 @@
+ 
+ 			nSavestateSlot++;
+ 			if (nSavestateSlot > 8) {
+-				nSavestateSlot = 8;
++				nSavestateSlot = (z87bb0e1 != 0) ? 1 : 8;
+ 			}
+ 			_sntprintf(szString, 256, FBALoadStringEx(hAppInst, IDS_STATE_ACTIVESLOT, true), nSavestateSlot);
+ 			VidSNewShortMsg(szString);
+@@ -2064,22 +2250,27 @@
+ 			break;
+ 
+ 		case MENU_BLITTER_1:
++			if (z64a2ee2) break;
+ 			VidSelect(0);
+ 			POST_INITIALISE_MESSAGE;
+ 			break;
+ 		case MENU_BLITTER_2:
++			if (z64a2ee2) break;
+ 			VidSelect(1);
+ 			POST_INITIALISE_MESSAGE;
+ 			break;
+ 		case MENU_BLITTER_3:
++			if (z64a2ee2) break;
+ 			VidSelect(2);
+ 			POST_INITIALISE_MESSAGE;
+ 			break;
+ 		case MENU_BLITTER_4:
++			if (z64a2ee2) break;
+ 			VidSelect(3);
+ 			POST_INITIALISE_MESSAGE;
+ 			break;
+ 		case MENU_BLITTER_5:
++			if (z64a2ee2) break;
+ 			VidSelect(4);
+ 			POST_INITIALISE_MESSAGE;
+ 			break;
+@@ -2604,7 +2795,7 @@
+ 			break;
+ 
+ 		case MENU_RUNAHEAD:
+-			bRunAhead = !bRunAhead;
++			bRunAhead = (bRunAhead + 1) % 3;
+ 			break;
+ 
+ 		case MENU_AUD_PLUGIN_1:
+@@ -3958,6 +4149,17 @@
+ // Block screensaver and windows menu if needed
+ static int OnSysCommand(HWND, UINT sysCommand, int, int)
+ {
++	if (z374fdd2) {
++		switch (sysCommand & 0xFFF0) {
++			case SC_MOVE:
++			case SC_SIZE:
++			case SC_MAXIMIZE:
++			case SC_KEYMENU:
++			case SC_MOUSEMENU:
++				return 1;
++		}
++	}
++
+ 	switch (sysCommand) {
+ 		case SC_MONITORPOWER:
+ 		case SC_SCREENSAVE: {
+@@ -4055,7 +4257,7 @@
+ 		InputSetCooperativeLevel(false, bAlwaysProcessKeyboardInput);
+ 		AudBlankSound();
+ 	} else {
+-		if (!kNetGame && bAutoPause) {
++		if (!kNetGame && !zb71d2fc() && bAutoPause) {
+ 			bRunPause = 1;
+ 		}
+ 	}
+@@ -4201,10 +4403,22 @@
+ 		ew += 1 << 1;
+ 	}
+ 
++	if (z87bb0e1 != 0 && hScrnWnd) {
++		RECT z3fb9005 = { 0, 0, 0, 0 };
++		AdjustWindowRectEx(&z3fb9005, (DWORD)GetWindowLongPtr(hScrnWnd, GWL_STYLE), FALSE,
++		                   (DWORD)GetWindowLongPtr(hScrnWnd, GWL_EXSTYLE));
++		ew = z3fb9005.right - z3fb9005.left;
++		eh = (z3fb9005.bottom - z3fb9005.top) + (bMenuEnabled ? nMenuHeight : 0);
++	}
++
+ 	if (bMenuEnabled || !bVidScanlines || nVidSelect == 2) {
+ 		// Subtract the border space
+ 		w -= ew;
+ 		h -= eh;
++	}
++
++	if (z374fdd2) {
++		h -= z243dbe1;
+ 	}
+ 
+ 	if ((bVidCorrectAspect || bVidFullStretch) && !(nVidSelect == 2 && (nVidBlitterOpt[2] & 0x0100) == 0)) {
+@@ -4253,7 +4467,7 @@
+ 	h = rect.bottom - rect.top + eh;
+ 
+ 	x = nWindowPosX; y = nWindowPosY;
+-	if (x + w > SystemWorkArea.right || y + h > SystemWorkArea.bottom) {
++	if (z87bb0e1 != 0 || x + w > SystemWorkArea.right || y + h > SystemWorkArea.bottom) {
+ 		// Find the midpoint for the window
+ 		x = SystemWorkArea.left + SystemWorkArea.right;
+ 		x /= 2;
+@@ -4262,6 +4476,7 @@
+ 
+ 		x -= w / 2;
+ 		y -= h / 2;
++		if (z374fdd2) y += z243dbe1 / 2;
+ 	}
+ 
+ 	MenuUpdate();
+@@ -4318,7 +4533,7 @@
+ 		TCHAR* pszPosition = szText;
+ 		TCHAR* pszName = BurnDrvGetText(DRV_FULLNAME | nGetTextFlags);
+ 
+-		pszPosition += _sntprintf(szText, 1024, _T(APP_TITLE) _T( " v%.20s") _T(SEPERATOR_1) _T("%s"), szAppBurnVer, pszName);
++		pszPosition += _sntprintf(szText, 1024, _T(APP_TITLE) _T(SEPERATOR_1) _T("%s"), pszName);
+ 		while ((pszName = BurnDrvGetText(DRV_NEXTNAME | DRV_FULLNAME | nGetTextFlags)) != NULL) {
+ 			if (pszPosition + _tcslen(pszName) - 1024 > szText) {
+ 				break;
+@@ -4365,13 +4580,21 @@
+ 		nWindowStyles = WS_POPUP;
+ 		nWindowExStyles = 0;
+ 	} else {
+-		if (bMenuEnabled) {
++		if (z374fdd2) {
++			nWindowStyles = WS_POPUP | WS_SYSMENU | WS_MINIMIZEBOX;
++			nWindowExStyles = 0;
++		} else if (bMenuEnabled) {
+ 			nWindowStyles = WS_OVERLAPPEDWINDOW;
+ 			nWindowExStyles = 0;
++			if (z87bb0e1 == 1) nWindowStyles &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+ 		} else {
+ 			nWindowStyles = WS_MINIMIZEBOX | WS_POPUP | WS_SYSMENU | WS_THICKFRAME;
+ 			nWindowExStyles = WS_EX_CLIENTEDGE;
+ 		}
++	}
++
++	if (zfe62411()) {
++		nWindowExStyles |= WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
+ 	}
+ 
+ 	hScrnWnd = CreateWindowEx(nWindowExStyles, szClass, _T(APP_TITLE), nWindowStyles,
+@@ -4424,6 +4647,8 @@
+ 
+ 		ScrnTitle();
+ 		ScrnSize();
++
++		if (z374fdd2) z0fe5af3();
+ 	}
+ 
+ 	return 0;
+@@ -4440,6 +4665,8 @@
+ 		hRebar = NULL;
+ 	}
+ 
++	z5e90deb();
++
+ 	if (hScrnWnd) {
+ 		DestroyWindow(hScrnWnd);
+ 		hScrnWnd = NULL;
+diff --git a/src/burner/win32/string.rc b/src/burner/win32/string.rc
+--- a/src/burner/win32/string.rc
++++ b/src/burner/win32/string.rc
+@@ -151,7 +151,7 @@
+ 
+ 	IDS_LOCAL_GL_CREATE			"Create gamelist localisation template"
+ 	IDS_LOCAL_GL_SELECT			"Select gamelist localisation template"
+-	IDS_LOCAL_GL_FILTER			"FB Neo gamelist localisation templates"
++	IDS_LOCAL_GL_FILTER			"Gamelist localisation templates"
+ 
+ 	IDS_CD_SELECT_IMAGE			"Select CD-ROM image..."
+ 	IDS_CD_SELECT_IMAGE_TITLE	"Select CD-ROM image"
+@@ -159,7 +159,7 @@
+ 
+ 	IDS_LOCAL_CREATE			"Create localisation template"
+ 	IDS_LOCAL_SELECT			"Select localisation template"
+-	IDS_LOCAL_FILTER			"FB Neo localisation templates"
++	IDS_LOCAL_FILTER			"Localisation templates"
+ 
+ 	IDS_SEL_FILTERS				"Filters"
+ 	IDS_SEL_HARDWARE			"Hardware"
+@@ -413,5 +413,5 @@
+ 	IDS_ERR_MACRO_NOT_MAPPING	"Double-click the macro to change its mapping first"
+ 
+ 	IDS_ERR_LOCAL_FAIL_CONNECT	"Failed to connect to Internet"
+-	IDS_ERR_LOCAL_FAIL_OPEN_URL	"Failed to access FB Neo website"
++	IDS_ERR_LOCAL_FAIL_OPEN_URL	"Failed to access the website"
+ END
+diff --git a/src/burner/win32/version.rc b/src/burner/win32/version.rc
+--- a/src/burner/win32/version.rc
++++ b/src/burner/win32/version.rc
+@@ -48,11 +48,11 @@
+         BLOCK "040904B0"
+         BEGIN
+             VALUE "Comments", "built on " MAKE_STRING(BUILD_DATE) ", " MAKE_STRING(BUILD_TIME) " (" MAKE_STRING(BUILD_CHAR) ", " MAKE_STRING(BUILD_COMP) ", " MAKE_STRING(BUILD_CPU) MMX_VER ").\0"
+-            VALUE "CompanyName", "Team FB Neo\0"
++            VALUE "CompanyName", "Frame Perfect\0"
+             VALUE "FileDescription", APP_DESCRIPTION "\0"
+             VALUE "FileVersion", MAKE_STRING(VER_MAJOR) "," MAKE_STRING(VER_MINOR) "," MAKE_STRING(VER_BETA) "," MAKE_STRING(VER_ALPHA) "\0"
+             VALUE "InternalName", MAKE_STRING(FILENAME) "\0"
+-            VALUE "LegalCopyright", "© 2004-2025 Team FB Neo\0"
++            VALUE "LegalCopyright", "Licencas de terceiros na pasta licencas\0"
+             VALUE "LegalTrademarks", "\0"
+             VALUE "OriginalFilename", MAKE_STRING(FILENAME) ".exe\0"
+  #ifdef FBNEO_DEBUG
+diff --git a/src/intf/audio/aud_interface.cpp b/src/intf/audio/aud_interface.cpp
+--- a/src/intf/audio/aud_interface.cpp
++++ b/src/intf/audio/aud_interface.cpp
+@@ -3,7 +3,7 @@
+ 
+ INT32 nAudSampleRate[8] = { 44100, 44100, 22050, 22050, 22050, 22050, 22050, 22050 };			// sample rate
+ INT32 nAudVolume = 10000;				// Sound volume (% * 100)
+-INT32 nAudSegCount = 6;				// Segs in the pdsbLoop buffer
++INT32 nAudSegCount = 4;
+ INT32 nAudSegLen = 0;					// Seg length in samples (calculated from Rate/Fps)
+ INT32 nAudAllocSegLen = 0;
+ UINT8 bAudOkay = 0;			// True if DSound was initted okay
+diff --git a/src/intf/audio/win32/aud_dsound3.cpp b/src/intf/audio/win32/aud_dsound3.cpp
+--- a/src/intf/audio/win32/aud_dsound3.cpp
++++ b/src/intf/audio/win32/aud_dsound3.cpp
+@@ -8,6 +8,7 @@
+ #include <dsound.h>
+ 
+ #include "dsound_core.h"
++#include "frame_pacer.h"
+ 
+ // Sound is split into a series of 'segs', one seg for each frame
+ // The Loop buffer is a multiple of this seg length.
+@@ -75,6 +76,66 @@
+ #define WRAP_INC(x) { x++; if (x >= nAudSegCount) x = 0; }
+ 
+ bool bAbortSound = false;
++
++static long zbc74b43 = -1;
++static long z0afe0fd = 0;
++
++static int zd001ced()
++{
++	if (!bAudPlaying || pdsbLoop == NULL) {
++		Sleep(1);
++		return 1;
++	}
++
++	DWORD nPlay = 0, nWrite = 0;
++	pdsbLoop->GetCurrentPosition(&nPlay, &nWrite);
++	const long seg = nAudSegLen << 2;
++
++	const long lead = ((long)nWrite - (long)nPlay + cbLoopLen) % cbLoopLen;
++	if (lead > z0afe0fd && lead < cbLoopLen / 2) z0afe0fd = lead;
++
++	long target = z0afe0fd + 2 * seg;
++	if (target < 3 * seg) target = 3 * seg;
++	if (target > cbLoopLen - 4 * seg) target = cbLoopLen - 4 * seg;
++	target &= ~3L;
++
++	if (zbc74b43 < 0) {
++		zbc74b43 = (((long)nPlay + target) % cbLoopLen) & ~3L;
++	}
++	long fill = (zbc74b43 - (long)nPlay + cbLoopLen) % cbLoopLen;
++	if (fill < lead || fill > cbLoopLen - seg) {
++		z1cd10c8();
++		zbc74b43 = (((long)nPlay + target) % cbLoopLen) & ~3L;
++		fill = target;
++	} else if (fill > target + (5 * seg) / 2) {
++		zbe39c39();
++		zbc74b43 = (((long)nPlay + target) % cbLoopLen) & ~3L;
++		fill = target;
++	}
++
++	const int n = zf1510ce(nDSoundFps / 100.0, fill, target, seg);
++	for (int i = 0; i < n; i++) {
++		DSoundGetNextSound(i == n - 1);
++
++		if (nAudDSPModule[0]) {
++			DspDo(nAudNextSound, nAudSegLen);
++		}
++
++		fill = (zbc74b43 - (long)nPlay + cbLoopLen) % cbLoopLen;
++		if (fill + seg > cbLoopLen - 2 * seg) continue;
++
++		void *pData = NULL, *pData2 = NULL;
++		DWORD cbLen = 0, cbLen2 = 0;
++		if (SUCCEEDED(pdsbLoop->Lock((DWORD)zbc74b43, (DWORD)seg, &pData, &cbLen, &pData2, &cbLen2, 0))) {
++			memcpy(pData, nAudNextSound, cbLen);
++			if (pData2 && cbLen2) memcpy(pData2, (char*)nAudNextSound + cbLen, cbLen2);
++			pdsbLoop->Unlock(pData, cbLen, pData2, cbLen2);
++		}
++		zbc74b43 = (zbc74b43 + seg) % cbLoopLen;
++	}
++
++	return 0;
++}
+ 
+ // This function checks the DSound loop, and if necessary does a callback to update the emulation
+ static int DxSoundCheck()
+@@ -98,6 +159,10 @@
+ 		}
+ 
+ 		return 0;
++	}
++
++	if (z8844f1e()) {
++		return zd001ced();
+ 	}
+ 
+ 	HANDLE handles[] = { hDSoundEvent, hAbortEvent };
+@@ -345,6 +410,9 @@
+ static int DxSoundPlay()
+ {
+ 	DxBlankSound();
++	zbc74b43 = -1;
++	z0afe0fd = 0;
++	z9c7c393();
+ 	DxSoundSetVolume();
+ 
+ 	// Play the looping buffer
+diff --git a/src/intf/input/win32/inp_dinput.cpp b/src/intf/input/win32/inp_dinput.cpp
+--- a/src/intf/input/win32/inp_dinput.cpp
++++ b/src/intf/input/win32/inp_dinput.cpp
+@@ -377,6 +377,15 @@
+ 		}
+ 		if (FAILED(ret)) {					// Failed to read the keyboard
+ 			return 1;
++		}
++
++		{
++			DWORD pid = 0;
++			HWND fg = GetForegroundWindow();
++			if (fg) GetWindowThreadProcessId(fg, &pid);
++			if (pid != GetCurrentProcessId()) {
++				memset(keyboard->state, 0, sizeof(keyboard->state));
++			}
+ 		}
+ 
+ 		// The keyboard has been successfully Read this frame
+diff --git a/src/intf/video/vid_interface.cpp b/src/intf/video/vid_interface.cpp
+--- a/src/intf/video/vid_interface.cpp
++++ b/src/intf/video/vid_interface.cpp
+@@ -1,5 +1,9 @@
+ // Video Output - (calls all the Vid Out plugins)
+ #include "burner.h"
++#include "overlay.h"
++#include "hud.h"
++#include "img_hash.h"
++#include "fbneo_host.h"
+ 
+ #define DEFAULT_IMAGE_WIDTH (304)
+ #define DEFAULT_IMAGE_HEIGHT (224)
+@@ -60,8 +64,7 @@
+ 
+ #if defined (BUILD_WIN32)
+ #if defined BUILD_X64_EXE
+-// set SoftFX DDraw blitter as default for 64-bit builds (in case user doesn't have DX redistributable installed)
+-UINT32 nVidSelect = 2;					// Which video output is selected
++UINT32 nVidSelect = 3;
+ #else
+ // sec D3D7 Enhanced blitter as default
+ UINT32 nVidSelect = 1;					// Which video output is selected
+@@ -115,8 +118,8 @@
+ double dVidCubicB = 0.0;						// Paremeters for the cubic filter (default is the CAtmull-Rom spline, DX9 blitter)
+ double dVidCubicC = 0.5;						//
+ 
+-INT32 bVidDX9Bilinear = 1;							// 1 = enable bi-linear filtering (D3D9 Alt blitter)
+-INT32 bVidHardwareVertex = 0;			// 1 = use hardware vertex processing
++INT32 bVidDX9Bilinear = 0;
++INT32 bVidHardwareVertex = 1;
+ INT32 bVidMotionBlur = 0;				// 1 = motion blur
+ INT32 nVidDX9HardFX = 0; 						// index of HardFX effect (0 = None)
+ 
+@@ -220,7 +223,26 @@
+ 	if ((nVidSelect < VID_LEN) && bDrvOkay) {
+ #endif
+ 		nVidActive = nVidSelect;
+-		if ((nRet = pVidOut[nVidActive]->Init()) == 0) {
++		nRet = pVidOut[nVidActive]->Init();
++
++		if (nRet != 0 && nVidActive != 0) {
++			bprintf(PRINT_IMPORTANT,
++			        _T("[rbf] blitter %d failed to start; falling back to DirectDraw.\n"),
++			        nVidActive);
++			char zde61a7d[160];
++			snprintf(zde61a7d, sizeof(zde61a7d),
++			         "video: o blitter %d nao iniciou nesta maquina - usando DirectDraw", nVidActive);
++			z5d90bae(zde61a7d);
++			z5379fd8(nVidActive);
++
++			nVidActive = 0;
++			nRet = pVidOut[nVidActive]->Init();
++			if (nRet == 0) nVidSelect = nVidActive;
++		}
++
++		if (nRet == 0) {
++			if (bDrvOkay) z2c08b33(nVidActive);
++
+ 			nBurnBpp = nVidImageBPP;								// Set Burn library Bytes per pixel
+ 
+ 			bVidOkay = true;
+@@ -429,6 +451,21 @@
+ #if defined (BUILD_WIN32) || defined (INCLUDE_LUA_SUPPORT)
+ 		FBA_LuaGui((unsigned char*)pVidImage, nVidImageWidth, nVidImageHeight, nVidImageBPP, nVidImagePitch);
+ #endif
++
++		if (!bRedraw && zfe62411()) {
++			static int z6ee0711 = 0;
++			if (!z6ee0711) {
++				z6ee0711 = 1;
++				SetWindowPos(hScrnWnd, NULL, -8000, -8000, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
++				AudSoundSetVolume();
++			}
++		}
++		if (!bRedraw && z21a6605() &&
++		    z3a34c01((unsigned char*)pVidImage, nVidImageWidth, nVidImageHeight, nVidImageBPP, nVidImagePitch))
++			PostMessage(hScrnWnd, WM_CLOSE, 0, 0);
++
++		zf9658e7((unsigned char*)pVidImage, nVidImageWidth, nVidImageHeight, nVidImageBPP, nVidImagePitch);
++		zdc4b33f((unsigned char*)pVidImage, nVidImageWidth, nVidImageHeight, nVidImageBPP, nVidImagePitch);
+ 	}
+ 
+ 	return 0;
+diff --git a/src/intf/video/win32/directx9_core.cpp b/src/intf/video/win32/directx9_core.cpp
+--- a/src/intf/video/win32/directx9_core.cpp
++++ b/src/intf/video/win32/directx9_core.cpp
+@@ -66,6 +66,9 @@
+ HRESULT WINAPI Empty_D3DXCreateFont (LPDIRECT3DDEVICE9,INT,UINT,UINT,UINT,BOOL,DWORD,DWORD,DWORD,DWORD,LPCTSTR,LPD3DXFONT*) { return 0; }
+ #endif
+ 
++HRESULT (WINAPI* z48af0bb) (LPDIRECT3DDEVICE9,LPCSTR,UINT,UINT,UINT,DWORD,D3DFORMAT,D3DPOOL,DWORD,DWORD,D3DCOLOR,D3DXIMAGE_INFO*,PALETTEENTRY*,LPDIRECT3DTEXTURE9*);
++HRESULT WINAPI z4f5cc65 (LPDIRECT3DDEVICE9,LPCSTR,UINT,UINT,UINT,DWORD,D3DFORMAT,D3DPOOL,DWORD,DWORD,D3DCOLOR,D3DXIMAGE_INFO*,PALETTEENTRY*,LPDIRECT3DTEXTURE9*) { return E_FAIL; }
++
+ static HINSTANCE	hDx9Core_D3D9;
+ static HINSTANCE	hDx9Core_D3DX9;
+ static BOOL			nDx9CoreInit = FALSE;
+@@ -133,6 +136,8 @@
+ #else
+ 	_LOADFN(HRESULT, _D3DXCreateFont, Empty_D3DXCreateFont, (LPDIRECT3DDEVICE9, INT, UINT, UINT, UINT, BOOL, DWORD, DWORD, DWORD, DWORD, LPCTSTR, LPD3DXFONT*), hDx9Core_D3DX9, "D3DXCreateFontA");
+ #endif
++
++	_LOADFN(HRESULT, z48af0bb, z4f5cc65, (LPDIRECT3DDEVICE9,LPCSTR,UINT,UINT,UINT,DWORD,D3DFORMAT,D3DPOOL,DWORD,DWORD,D3DCOLOR,D3DXIMAGE_INFO*,PALETTEENTRY*,LPDIRECT3DTEXTURE9*), hDx9Core_D3DX9, "D3DXCreateTextureFromFileExA");
+ 	 
+ 	return 1;
+ }
+diff --git a/src/intf/video/win32/directx9_core.h b/src/intf/video/win32/directx9_core.h
+--- a/src/intf/video/win32/directx9_core.h
++++ b/src/intf/video/win32/directx9_core.h
+@@ -3,6 +3,7 @@
+ 
+ #include <d3d9.h>
+ #include <d3dx9effect.h>
++#include <d3dx9tex.h>
+ 
+ #ifndef D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY
+ #define D3DXSHADER_ENABLE_BACKWARDS_COMPATIBILITY   0x1000
+@@ -58,6 +59,8 @@
+ extern HRESULT (WINAPI* _D3DXCreateFont) (LPDIRECT3DDEVICE9,INT,UINT,UINT,UINT,BOOL,DWORD,DWORD,DWORD,DWORD,LPCTSTR,LPD3DXFONT*);
+ #endif
+ 
++extern HRESULT (WINAPI* z48af0bb) (LPDIRECT3DDEVICE9,LPCSTR,UINT,UINT,UINT,DWORD,D3DFORMAT,D3DPOOL,DWORD,DWORD,D3DCOLOR,D3DXIMAGE_INFO*,PALETTEENTRY*,LPDIRECT3DTEXTURE9*);
++
+ INT32 Dx9Core_Init();
+ 
+ #endif
+diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_directx9.cpp
+--- a/src/intf/video/win32/vid_directx9.cpp
++++ b/src/intf/video/win32/vid_directx9.cpp
+@@ -88,6 +88,54 @@
+ static VidEffect* pVidEffect = NULL;
+ static int nDX9HardFX = -1;
+ 
++#include "overlay.h"
++#include "hud.h"
++#include "speedrun.h"
++#include "input_display.h"
++#include "fbneo_host.h"
++
++int z60255f4 = 0;
++static int z8ed576d = 0;
++static int z404f5a5 = 0;
++typedef HRESULT (WINAPI* zdb964ab)(UINT, IDirect3D9Ex**);
++
++#define z4ec5c40 (z8ed576d && !nVidFullscreen)
++
++static IDirect3D9* z10b6877(int* z31e656b)
++{
++	*z31e656b = 0;
++	if (z60255f4 && (nVidFullscreen ? bVidDX9WinFullscreen : (nMenuHeight == 0))) {
++		HMODULE h = GetModuleHandle(_T("d3d9.dll"));
++		if (h == NULL) h = LoadLibrary(_T("d3d9.dll"));
++		zdb964ab fn = h ? (zdb964ab)GetProcAddress(h, "Direct3DCreate9Ex") : NULL;
++		IDirect3D9Ex* z78bad54 = NULL;
++		if (fn && SUCCEEDED(fn(D3D_SDK_VERSION, &z78bad54)) && z78bad54) {
++			*z31e656b = 1;
++			return z78bad54;
++		}
++		z5d90bae("video: flip pedido, mas sem o DirectX 9Ex - fica o caminho de sempre");
++	}
++	return _Direct3DCreate9(D3D_SDK_VERSION);
++}
++
++static ID3DXFont* z3746489[3] = { NULL, NULL, NULL };
++static ID3DXFont* z68a9a3d = NULL;
++static int        z8b73756 = 0;
++static ID3DXFont* zc2b20c8 = NULL;
++static ID3DXFont* z222b9df = NULL;
++static int        z56e9737 = 0;
++static int        z112ed4b = 0;
++static ID3DXFont* zf400b1e = NULL;
++static int        z2cb6a34 = 0;
++static ID3DXFont* z13001b4 = NULL;
++static int        z6806a40 = 0;
++static ID3DXFont* z0d5a719 = NULL;
++static int        ze6ad776 = 0;
++static ID3DXFont* z24a7167 = NULL;
++static int        ze54a7a7 = 0;
++static int        z0e2c40a[3] = { 0, 0, 0 };
++static int        z507b5a1 = 0;
++
+ static ID3DXFont* pFont = NULL;							// OSD font
+ static ID3DXFont* pStatusFont = NULL;					// Status font
+ static ID3DXFont* pStatusFontSmall = NULL;				// Status font (small)
+@@ -816,6 +864,19 @@
+ 
+ static void vid_FontExit()
+ {
++	z73bbb8d(0);
++	zd471feb(0);
++	RELEASE(zf400b1e); zf400b1e = NULL; z2cb6a34 = 0;
++	RELEASE(z13001b4); z13001b4 = NULL; z6806a40 = 0;
++	RELEASE(z0d5a719); z0d5a719 = NULL; ze6ad776 = 0;
++	RELEASE(z24a7167); z24a7167 = NULL; ze54a7a7 = 0;
++	RELEASE(z3746489[0]); z3746489[0] = NULL; z0e2c40a[0] = 0;
++	RELEASE(z3746489[1]); z3746489[1] = NULL; z0e2c40a[1] = 0;
++	RELEASE(z3746489[2]); z3746489[2] = NULL; z0e2c40a[2] = 0;
++	RELEASE(z68a9a3d); z68a9a3d = NULL; z8b73756 = 0;
++	RELEASE(zc2b20c8); zc2b20c8 = NULL; z112ed4b = 0;
++	RELEASE(z222b9df); z222b9df = NULL; z56e9737 = 0;
++
+ 	RELEASE(pFont);
+ 	RELEASE(pStatusFont);
+ 	RELEASE(pStatusFontSmall);
+@@ -960,6 +1021,9 @@
+ 		}
+ 	}
+ 
++	z73bbb8d(1);
++	zd471feb(1);
++
+ 	if (!pTinyFont) {
+ 		HRESULT hr = _D3DXCreateFont(pD3DDevice, 18,
+ 									 0, FW_DEMIBOLD, 1, FALSE,
+@@ -987,6 +1051,8 @@
+ 	return 0;
+ }
+ 
++#define z1b992ca(x) ((D3DCOLOR)(0xFF000000u | (x)))
++
+ static void textout(ID3DXFont *font, TCHAR *str, RECT dst, DWORD shadow, DWORD flags, DWORD color)
+ {
+ 	if (shadow) {
+@@ -1015,8 +1081,808 @@
+ 	font->DrawText(NULL, str, -1, &dst, flags, color);
+ }
+ 
++static void zfd4ef07(ID3DXFont* font, TCHAR* str, RECT rc, DWORD colour, int z8fb4cd1)
++{
++	if (!font || !str || !str[0]) return;
++	const DWORD flags = DT_LEFT | DT_TOP | DT_NOCLIP | DT_SINGLELINE;
++
++	if (z8fb4cd1 < 1) z8fb4cd1 = 1;
++	if (z8fb4cd1 > 2) z8fb4cd1 = 2;
++
++	for (int dy = -z8fb4cd1; dy <= z8fb4cd1; dy++) {
++		for (int dx = -z8fb4cd1; dx <= z8fb4cd1; dx++) {
++			if (dx == 0 && dy == 0) continue;
++			RECT o = rc;
++			o.left += dx; o.right += dx;
++			o.top  += dy; o.bottom += dy;
++			font->DrawText(NULL, str, -1, &o, flags, 0xFF000000);
++		}
++	}
++	font->DrawText(NULL, str, -1, &rc, flags, colour);
++	font->DrawText(NULL, str, -1, &rc, flags, colour);
++}
++
++static int zb5adfcd(ID3DXFont* font, TCHAR* str)
++{
++	if (!font || !str || !str[0]) return 0;
++	RECT rc = { 0, 0, 0, 0 };
++	font->DrawText(NULL, str, -1, &rc, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++	return rc.right - rc.left;
++}
++
++static void z0a1c77e(RECT frec)
++{
++	if (!nVidFullscreen) {
++		frec.top = 0;
++		frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++
++	z1fa3283 L;
++	if (!z8e16a23(&L)) return;
++
++	const int W = frec.right - frec.left;
++	const int H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++
++	int want = (L.nMode == 2) ? (H / 16) : (H / 26);
++	if (want < 11) want = 11;
++	if (want > 64) want = 64;
++
++	const int slot = (L.nMode == 2) ? 1 : 0;
++	if (z0e2c40a[slot] != want) {
++		RELEASE(z3746489[slot]);
++		z3746489[slot] = NULL;
++		TCHAR z8294d4e[64];
++		_sntprintf(z8294d4e, 63, _T("%S"), z5c1451e());
++		HRESULT hr = _D3DXCreateFont(pD3DDevice, want, 0, FW_BOLD, 1, FALSE,
++							  DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY,
++							  DEFAULT_PITCH | FF_DONTCARE, z8294d4e, &z3746489[slot]);
++
++		if (FAILED(hr) || !z3746489[slot]) {
++			z3746489[slot] = NULL;
++			z73bbb8d(0);
++			return;
++		}
++		z0e2c40a[slot] = want;
++	}
++
++	ID3DXFont* font = z3746489[slot];
++	if (!font) return;
++
++	TCHAR z733a844[64], zfad56d7[16], z5ea9399[24], z561be8d[16], zd5e0939[64];
++	_sntprintf(z733a844, 63, _T("%S"), L.z733a844);
++	_sntprintf(zfad56d7, 15, _T("%S"), L.zfad56d7);
++	_sntprintf(z5ea9399, 23, _T("%S"), L.z5ea9399);
++	_sntprintf(z561be8d, 15, _T("%S"), L.z561be8d);
++	_sntprintf(zd5e0939, 63, _T("%S"), L.zd5e0939);
++
++	const int w1  = zb5adfcd(font, z733a844);
++	const int ws1 = zb5adfcd(font, zfad56d7);
++	const int z8d214a5 = zb5adfcd(font, z5ea9399);
++	const int z6437052 = zb5adfcd(font, z561be8d);
++	const int gap = want / 2;
++	const int z91e120f = want;
++
++	const int z404a75f = want + want / 3;
++	Boxxy(frec.left, frec.top, W, z404a75f,
++		  D3DCOLOR_ARGB(L.ze326e54, (L.z02d18e2 >> 16) & 0xFF,
++						  (L.z02d18e2 >> 8) & 0xFF, L.z02d18e2 & 0xFF));
++
++	const int mid  = frec.left + W / 2;
++	const int half = z8d214a5 ? (z8d214a5 / 2 + z91e120f) : (z91e120f / 2);
++	const int top  = frec.top + (z404a75f - want) / 2;
++	const int bot  = top + want + want / 2;
++
++	const int z8fb4cd1 = (want >= 26) ? 2 : 1;
++
++	RECT rc;
++	rc.top = top; rc.bottom = bot;
++
++	rc.right = mid - half;      rc.left = rc.right - ws1;
++	zfd4ef07(font, zfad56d7, rc, z1b992ca(L.ze871279), z8fb4cd1);
++
++	rc.right = mid - half - ws1 - gap;  rc.left = rc.right - w1;
++	zfd4ef07(font, z733a844, rc, z1b992ca(L.z03b5823), z8fb4cd1);
++
++	if (z8d214a5) {
++		rc.left = mid - z8d214a5 / 2; rc.right = rc.left + z8d214a5;
++		zfd4ef07(font, z5ea9399, rc, z1b992ca(L.z73d250a), z8fb4cd1);
++	}
++
++	rc.left = mid + half;       rc.right = rc.left + z6437052;
++	zfd4ef07(font, z561be8d, rc, z1b992ca(L.ze871279), z8fb4cd1);
++
++	rc.left = mid + half + z6437052 + gap;   rc.right = frec.right;
++
++	if (z507b5a1 > rc.left && z507b5a1 < rc.right) {
++		const int room = (z507b5a1 - gap) - rc.left;
++		int len = (int)_tcslen(zd5e0939);
++		if (room > 0 && zb5adfcd(font, zd5e0939) > room) {
++			TCHAR z469f4bc[64];
++			while (len > 1) {
++				len--;
++				_sntprintf(z469f4bc, 63, _T("%.*s.."), len, zd5e0939);
++				z469f4bc[63] = 0;
++				if (zb5adfcd(font, z469f4bc) <= room) break;
++			}
++			_tcscpy(zd5e0939, z469f4bc);
++		}
++	}
++	zfd4ef07(font, zd5e0939, rc, z1b992ca(L.z20dcc8d), z8fb4cd1);
++}
++
++static struct {
++	int   bOn;
++	int   z19ef79a;
++	TCHAR sz1[128], sz2[128], z30b14bc[16];
++	int   w1, w2, wf;
++	int   zded58ea, top, right, z8fb4cd1;
++	DWORD colour;
++} z45b55b2;
++
++static void z4e78829(RECT frec)
++{
++	z45b55b2.bOn = 0;
++	z507b5a1 = 0;
++
++	if (!nVidFullscreen) {
++		frec.top = 0;
++		frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++
++	z888fe22 L;
++	if (!z6100f60(&L)) return;
++
++	const int W = frec.right - frec.left;
++	const int H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++
++	int z404a75f = 0;
++	z1fa3283 B;
++	if (z8e16a23(&B)) {
++		int z7317dae = (B.nMode == 2) ? (H / 16) : (H / 26);
++		if (z7317dae < 11) z7317dae = 11;
++		if (z7317dae > 64) z7317dae = 64;
++		z404a75f = z7317dae + z7317dae / 3;
++	}
++
++	int want = H / 40;
++	if (z404a75f > 0) {
++		const int fit = ((z404a75f / 2) * 4) / 5;
++		if (want > fit) want = fit;
++	}
++	if (want < 9)  want = 9;
++	if (want > 26) want = 26;
++
++	if (z0e2c40a[2] != want) {
++		RELEASE(z3746489[2]);
++		z3746489[2] = NULL;
++		TCHAR z8294d4e[64];
++		_sntprintf(z8294d4e, 63, _T("%S"), zdff8e52());
++		HRESULT hr = _D3DXCreateFont(pD3DDevice, want, 0, FW_BOLD, 1, FALSE,
++							  DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY,
++							  DEFAULT_PITCH | FF_DONTCARE, z8294d4e, &z3746489[2]);
++
++		if (FAILED(hr) || !z3746489[2]) {
++			z3746489[2] = NULL;
++			z73bbb8d(0);
++			return;
++		}
++		z0e2c40a[2] = want;
++	}
++
++	ID3DXFont* font = z3746489[2];
++	if (!font) return;
++
++	_sntprintf(z45b55b2.sz1, 127, _T("%S"), L.z0f6d336);
++	_sntprintf(z45b55b2.sz2, 127, _T("%S"), L.z6af1ebd);
++	_sntprintf(z45b55b2.z30b14bc, 15, _T("%S"), L.z30b14bc);
++
++	z45b55b2.z19ef79a = (L.nMode >= 2) ? 2 : (L.nMode >= 1 ? 1 : 0);
++	z45b55b2.w1 = (z45b55b2.z19ef79a >= 1) ? zb5adfcd(font, z45b55b2.sz1) : 0;
++	z45b55b2.w2 = (z45b55b2.z19ef79a >= 2) ? zb5adfcd(font, z45b55b2.sz2) : 0;
++	z45b55b2.wf = z45b55b2.z30b14bc[0] ? zb5adfcd(font, z45b55b2.z30b14bc) : 0;
++
++	z45b55b2.zded58ea  = want + want / 4;
++	z45b55b2.right  = frec.right - (want / 2 + 2);
++	z45b55b2.z8fb4cd1  = 1;
++	z45b55b2.colour = z1b992ca(L.zd4c6117);
++
++	const int z59dc169 = z45b55b2.zded58ea * z45b55b2.z19ef79a;
++	z45b55b2.top = (z404a75f > z59dc169) ? frec.top + (z404a75f - z59dc169) / 2 : frec.top + 2;
++
++	const int wMax = (z45b55b2.w1 > z45b55b2.w2) ? z45b55b2.w1 : z45b55b2.w2;
++	if (z404a75f > 0 && wMax > 0) {
++		z507b5a1 = z45b55b2.right - wMax;
++	}
++
++	z45b55b2.bOn = 1;
++}
++
++static void z1d93239()
++{
++	if (!z45b55b2.bOn) return;
++	ID3DXFont* font = z3746489[2];
++	if (!font) return;
++
++	RECT rc;
++	rc.top = z45b55b2.top;
++
++	if (z45b55b2.z19ef79a >= 1) {
++		rc.right = z45b55b2.right; rc.left = rc.right - z45b55b2.w1;
++		rc.bottom = rc.top + z45b55b2.zded58ea;
++		zfd4ef07(font, z45b55b2.sz1, rc, z45b55b2.colour, z45b55b2.z8fb4cd1);
++		rc.top += z45b55b2.zded58ea;
++	}
++	if (z45b55b2.z19ef79a >= 2) {
++		rc.right = z45b55b2.right; rc.left = rc.right - z45b55b2.w2;
++		rc.bottom = rc.top + z45b55b2.zded58ea;
++		zfd4ef07(font, z45b55b2.sz2, rc, z45b55b2.colour, z45b55b2.z8fb4cd1);
++		rc.top += z45b55b2.zded58ea;
++	}
++	if (z45b55b2.z30b14bc[0]) {
++		rc.right = z45b55b2.right; rc.left = rc.right - z45b55b2.wf;
++		rc.bottom = rc.top + z45b55b2.zded58ea;
++		zfd4ef07(font, z45b55b2.z30b14bc, rc, z45b55b2.colour, z45b55b2.z8fb4cd1);
++	}
++}
++
++static void zd1d1d8c(RECT frec)
++{
++	if (z31f46b2 <= 0) return;
++	if (nRotateGame & 1) return;
++
++	if (!nVidFullscreen) {
++		frec.top = 0;
++		frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++
++	const int n = nGameImageHeight;
++	const int H = frec.bottom - frec.top;
++	if (n <= 0 || n > 1024 || H < n * 2) return;
++
++	struct vertex { float x, y, z, ht; DWORD color; };
++	static vertex v[1024 * 6];
++
++	const DWORD c  = D3DCOLOR_ARGB((z31f46b2 * 255) / 100, 0, 0, 0);
++	const float x0 = (float)frec.left, x1 = (float)frec.right;
++	const float z7a61baa = (float)H / (float)n;
++
++	for (int i = 0; i < n; i++) {
++		const float y0 = (float)frec.top + ((float)i + 0.5f) * z7a61baa;
++		const float y1 = (float)frec.top + ((float)i + 1.0f) * z7a61baa;
++		vertex* q = &v[i * 6];
++		q[0].x = x0; q[0].y = y0;   q[1].x = x1; q[1].y = y0;   q[2].x = x0; q[2].y = y1;
++		q[3].x = x1; q[3].y = y0;   q[4].x = x1; q[4].y = y1;   q[5].x = x0; q[5].y = y1;
++		for (int k = 0; k < 6; k++) { q[k].z = 0.0f; q[k].ht = 1.0f; q[k].color = c; }
++	}
++
++	pD3DDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
++	pD3DDevice->SetTexture(0, NULL);
++	pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
++	pD3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
++	pD3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
++	pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
++	pD3DDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
++	pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
++	pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
++	pD3DDevice->SetRenderState(D3DRS_ZENABLE, D3DZB_FALSE);
++	pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, n * 2, v, sizeof(vertex));
++}
++
++static LPDIRECT3DTEXTURE9 zaf27ff1 = NULL;
++static int z52865fe = 0;
++static int zdff90f4 = 0, zf6bcb30 = 0;
++
++static void z144a7f8()
++{
++	RELEASE(zaf27ff1)
++	z52865fe = 0;
++}
++
++static bool zef189c8(const char* szDir, const char* szName)
++{
++	if (szName == NULL || szName[0] == 0) return false;
++
++	char szPath[MAX_PATH];
++	_snprintf(szPath, MAX_PATH, "%ssupport\\bezel\\%s.png", szDir, szName);
++	szPath[MAX_PATH - 1] = 0;
++	if (GetFileAttributesA(szPath) == INVALID_FILE_ATTRIBUTES) return false;
++
++	D3DXIMAGE_INFO info;
++	memset(&info, 0, sizeof(info));
++	if (FAILED(z48af0bb(pD3DDevice, szPath, D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT_NONPOW2, 1, 0,
++	           D3DFMT_A8R8G8B8, z8ed576d ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, D3DX_FILTER_LINEAR, D3DX_FILTER_NONE, 0, &info, NULL, &zaf27ff1))
++	    || zaf27ff1 == NULL || info.Width == 0 || info.Height == 0) {
++		RELEASE(zaf27ff1)
++		return false;
++	}
++	zdff90f4 = info.Width;
++	zf6bcb30 = info.Height;
++	return true;
++}
++
++static void z9903df3()
++{
++	z52865fe = -1;
++	if (!bDrvOkay) return;
++
++	char szDir[MAX_PATH] = "";
++	GetModuleFileNameA(NULL, szDir, MAX_PATH);
++	char* p = strrchr(szDir, '\\');
++	if (p) p[1] = 0; else szDir[0] = 0;
++
++	const UINT32 nPrefix = BurnDrvGetHardwareCode() & 0x7F000000;
++	const char* szFamily = NULL;
++	if (nPrefix == HARDWARE_PREFIX_SNK) szFamily = "default-neogeo";
++	else if (nPrefix == HARDWARE_PREFIX_CAPCOM || nPrefix == HARDWARE_PREFIX_CPS2 ||
++	         nPrefix == HARDWARE_PREFIX_CPS3 || nPrefix == HARDWARE_PREFIX_CAPCOM_MISC) szFamily = "default-capcom";
++
++	if (zef189c8(szDir, BurnDrvGetTextA(DRV_NAME)) ||
++	    zef189c8(szDir, BurnDrvGetTextA(DRV_PARENT)) ||
++	    zef189c8(szDir, szFamily) ||
++	    zef189c8(szDir, "default")) {
++		z52865fe = 1;
++	}
++}
++
++static void z147484e()
++{
++	if (!nVidFullscreen) return;
++	if (z52865fe == 0) z9903df3();
++	if (z52865fe != 1 || zaf27ff1 == NULL) return;
++
++	const LONG zfc54904 = (LONG)d3dpp.BackBufferWidth, zc8654e9 = (LONG)d3dpp.BackBufferHeight;
++	if (zfc54904 <= 0 || zc8654e9 <= 0) return;
++	if (Dest.left <= 0 && Dest.right >= zfc54904) return;
++
++	const float sw = (float)zfc54904, sh = (float)zc8654e9;
++	const float w  = sh * (float)zdff90f4 / (float)zf6bcb30;
++	const float x0 = (sw - w) * 0.5f - 0.5f, x1 = x0 + w;
++	const float y0 = -0.5f, y1 = sh - 0.5f;
++
++	struct vtx { float x, y, z, rhw, u, v; };
++	vtx q[4] = {
++		{ x0, y0, 0.0f, 1.0f, 0.0f, 0.0f },
++		{ x1, y0, 0.0f, 1.0f, 1.0f, 0.0f },
++		{ x0, y1, 0.0f, 1.0f, 0.0f, 1.0f },
++		{ x1, y1, 0.0f, 1.0f, 1.0f, 1.0f },
++	};
++
++	D3DVIEWPORT9 z7d2c011, vp;
++	pD3DDevice->GetViewport(&z7d2c011);
++	vp.X = 0; vp.Y = 0; vp.Width = (DWORD)zfc54904; vp.Height = (DWORD)zc8654e9; vp.MinZ = 0.0f; vp.MaxZ = 1.0f;
++	pD3DDevice->SetViewport(&vp);
++
++	DWORD blend = FALSE, z2b5f548 = D3DTEXF_POINT, za588b9a = D3DTEXF_POINT;
++	pD3DDevice->GetRenderState(D3DRS_ALPHABLENDENABLE, &blend);
++	pD3DDevice->GetSamplerState(0, D3DSAMP_MINFILTER, &z2b5f548);
++	pD3DDevice->GetSamplerState(0, D3DSAMP_MAGFILTER, &za588b9a);
++
++	pD3DDevice->SetTexture(0, zaf27ff1);
++	pD3DDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
++	pD3DDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
++	pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
++	pD3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
++	pD3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
++	pD3DDevice->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
++	pD3DDevice->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, q, sizeof(vtx));
++
++	pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, blend);
++	pD3DDevice->SetSamplerState(0, D3DSAMP_MINFILTER, z2b5f548);
++	pD3DDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, za588b9a);
++	pD3DDevice->SetTexture(0, NULL);
++	pD3DDevice->SetViewport(&z7d2c011);
++}
++
++
++static ID3DXFont* z836891f(ID3DXFont** pp, int* ze234c33, int want, const TCHAR* face, int weight)
++{
++	if (*pp && *ze234c33 == want) return *pp;
++	RELEASE(*pp); *pp = NULL; *ze234c33 = 0;
++	static int z4892158 = 0;
++	if (!z4892158) {
++		z4892158 = 1;
++		AddFontResourceEx(_T("fonte_tomar.otf"), FR_PRIVATE, 0);
++	}
++	if (FAILED(_D3DXCreateFont(pD3DDevice, want, 0, weight, 1, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
++	                           ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, face, pp)) || !*pp) {
++		*pp = NULL;
++		return NULL;
++	}
++	*ze234c33 = want;
++	return *pp;
++}
++
++static void z869a0d9(ID3DXFont* font, TCHAR* str, RECT rc, DWORD ring, DWORD colour, int z8fb4cd1)
++{
++	const DWORD flags = DT_LEFT | DT_TOP | DT_NOCLIP | DT_SINGLELINE;
++	for (int dy = -z8fb4cd1; dy <= z8fb4cd1; dy++)
++		for (int dx = -z8fb4cd1; dx <= z8fb4cd1; dx++) {
++			if (dx == 0 && dy == 0) continue;
++			RECT o = rc; o.left += dx; o.right += dx; o.top += dy; o.bottom += dy;
++			font->DrawText(NULL, str, -1, &o, flags, ring);
++		}
++	font->DrawText(NULL, str, -1, &rc, flags, colour);
++	font->DrawText(NULL, str, -1, &rc, flags, colour);
++}
++
++static void ze5f8e01();
++
++static void z28223fd(RECT frec)
++{
++	z2c2b1a7 B;
++	if (!z70213e0(&B)) return;
++	if (!nVidFullscreen) {
++		frec.top = 0; frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++	const int W = frec.right - frec.left, H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++
++	int want = B.z430cab8 ? H / 24 : H / 14;
++	if (want < 14) want = 14;
++	if (want > 96) want = 96;
++	TCHAR z8294d4e[64];
++	_sntprintf(z8294d4e, 63, _T("%S"), z5c1451e());
++	z8294d4e[63] = 0;
++	ID3DXFont* font = z836891f(&z13001b4, &z6806a40, want, z8294d4e, FW_BOLD);
++	if (!font) return;
++
++	TCHAR s1[64], s2[64];
++	_sntprintf(s1, 63, _T("%S"), B.z0f6d336); s1[63] = 0;
++	_sntprintf(s2, 63, _T("%S"), B.z6af1ebd); s2[63] = 0;
++	const int w1 = zb5adfcd(font, s1), w2 = zb5adfcd(font, s2);
++	const int pad = want / 3;
++	const int z404a75f = B.z8b6ca0e >= 0 ? want / 2 : 0;
++	const int bw  = (w1 > w2 ? w1 : w2) + pad * 4;
++	const int bh  = want * 2 + pad * 4 + (z404a75f ? z404a75f + pad * 2 : 0);
++	const int cx  = frec.left + (B.nSide == 1 ? W / 4 : B.nSide == 2 ? (W * 3) / 4 : W / 2);
++	const int x0  = cx - bw / 2, y0 = B.nSide ? frec.top + (H * 16) / 100 : frec.top + (H - bh) / 2;
++	Boxxy(x0, y0, bw, bh, D3DCOLOR_ARGB(B.z70f9d25, (B.z0456974 >> 16) & 0xFF,
++	                                     (B.z0456974 >> 8) & 0xFF, B.z0456974 & 0xFF));
++	const int z8fb4cd1 = (want >= 26) ? 2 : 1;
++	RECT rc;
++	rc.left = cx - w1 / 2;              rc.right = rc.left + w1;
++	rc.top  = y0 + pad;                 rc.bottom = rc.top + want + want / 2;
++	zfd4ef07(font, s1, rc, z1b992ca(B.z430cab8 ? B.zd4c6117 : 0xF8F8F2u), z8fb4cd1);
++	rc.left = cx - w2 / 2;              rc.right = rc.left + w2;
++	rc.top  = y0 + pad * 2 + want;      rc.bottom = rc.top + want + want / 2;
++	zfd4ef07(font, s2, rc, z1b992ca(B.z430cab8 ? 0xF8F8F2u : B.zd4c6117), z8fb4cd1);
++	if (z404a75f) {
++		const int bx = x0 + pad * 2, zcc13a35 = bw - pad * 4;
++		const int by = y0 + pad * 4 + want * 2;
++		Boxxy(bx, by, zcc13a35, z404a75f, D3DCOLOR_ARGB(0x50, 0xF8, 0xF8, 0xF2));
++		const int fill = zcc13a35 * B.z8b6ca0e / 100;
++		if (fill > 0)
++			Boxxy(bx, by, fill, z404a75f, D3DCOLOR_ARGB(0xFF, (B.zd4c6117 >> 16) & 0xFF, (B.zd4c6117 >> 8) & 0xFF, B.zd4c6117 & 0xFF));
++	}
++	ze5f8e01();
++}
++
++static unsigned int z6a8fe85(const char* s)
++{
++	if (!strcmp(s, "A")) return 0xFF5555;
++	if (!strcmp(s, "B")) return 0xF1FA8C;
++	if (!strcmp(s, "C")) return 0x50FA7B;
++	if (!strcmp(s, "D")) return 0x6CB4FF;
++	if (!strcmp(s, "LP") || !strcmp(s, "LK")) return 0x6CB4FF;
++	if (!strcmp(s, "MP") || !strcmp(s, "MK")) return 0xF1FA8C;
++	if (!strcmp(s, "HP") || !strcmp(s, "HK")) return 0xFF5555;
++	return 0xF8F8F2;
++}
++
++static D3DCOLOR zb35e420(unsigned int rgb, int pct)
++{
++	const unsigned int r = ((rgb >> 16) & 0xFF) * pct / 100;
++	const unsigned int g = ((rgb >> 8) & 0xFF) * pct / 100;
++	const unsigned int b = (rgb & 0xFF) * pct / 100;
++	return D3DCOLOR_ARGB(0xFF, r, g, b);
++}
++
++static void za7fbc0d(RECT frec)
++{
++	if (z0c5a8be() == zff3953a) return;
++	if (!nVidFullscreen) {
++		frec.top = 0; frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++	const int W = frec.right - frec.left, H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++
++	int want = H / 30;
++	if (want < 12) want = 12;
++	if (want > 44) want = 44;
++	ID3DXFont* font  = z836891f(&z0d5a719, &ze6ad776, want, _T("Segoe UI"), FW_BOLD);
++	const int z652ac86 = want + want / 3;
++	ID3DXFont* arrow = z836891f(&z24a7167, &ze54a7a7, z652ac86, _T("Segoe UI Symbol"), FW_BOLD);
++	if (!font || !arrow) return;
++
++	const int z7a61baa = want + want / 5;
++	const int top  = frec.top + (H * 25) / 100;
++	int nMax = ((frec.top + (H * 80) / 100) - top) / z7a61baa;
++	if (nMax > 18) nMax = 18;
++	if (nMax < 1) return;
++
++	static int za515fd2 = 0, za3ff378[2] = { 0, 0 };
++	if (za515fd2 != want) {
++		za515fd2 = want;
++		za3ff378[0] = za3ff378[1] = zb5adfcd(font, _T("A B C D"));
++	}
++	const int pad  = want / 3, gap = want / 3;
++	const int zcdda22c = zb5adfcd(font, _T("999"));
++	const int z9c08b8b = zb5adfcd(arrow, _T("\x2198"));
++	const int z1d5dcc6 = zb5adfcd(font, _T("A B")) - zb5adfcd(font, _T("AB"));
++	const int z8fb4cd1 = (want >= 26) ? 2 : 1;
++	const int margin = W / 80;
++
++	for (int side = 1; side <= 2; side++) {
++		z72561c1 rows[18];
++		const int n = za5c0699(side, rows, nMax);
++		if (n <= 0) continue;
++
++		TCHAR sz[40];
++		for (int i = 0; i < n; i++) {
++			_sntprintf(sz, 39, _T("%S"), rows[i].z34fc6fc); sz[39] = 0;
++			const int w = zb5adfcd(font, sz);
++			if (w > za3ff378[side - 1]) za3ff378[side - 1] = w;
++		}
++		const int ze4e04b0 = pad + zcdda22c + gap + z9c08b8b + gap + za3ff378[side - 1] + pad;
++		const int x0 = side == 1 ? frec.left + margin : frec.right - margin - ze4e04b0;
++		Boxxy(x0, top - pad / 2, ze4e04b0, n * z7a61baa + pad, D3DCOLOR_ARGB(150, 0x14, 0x14, 0x1E));
++
++		for (int i = 0; i < n; i++) {
++			const int pct = 100 - (i * 45) / (nMax > 1 ? nMax - 1 : 1);
++			RECT rc;
++			rc.top = top + i * z7a61baa; rc.bottom = rc.top + z7a61baa;
++
++			_sntprintf(sz, 39, _T("%d"), rows[i].nFrames); sz[39] = 0;
++			const int wc = zb5adfcd(font, sz);
++			rc.left = x0 + pad + zcdda22c - wc; rc.right = rc.left + wc;
++			zfd4ef07(font, sz, rc, zb35e420(0xA6ACCD, pct), z8fb4cd1);
++
++			TCHAR szDir[2] = { (TCHAR)rows[i].z64f3ab9[0], 0 };
++			const int wa = zb5adfcd(arrow, szDir);
++			RECT ra = rc;
++			ra.left = x0 + pad + zcdda22c + gap + (z9c08b8b - wa) / 2; ra.right = ra.left + wa;
++			ra.top -= (z652ac86 - want) / 2 + want / 12; ra.bottom = ra.top + z652ac86 + z652ac86 / 2;
++			zfd4ef07(arrow, szDir, ra, zb35e420(szDir[0] == 0x2022 ? 0x6272A4 : 0xF8F8F2, pct), z8fb4cd1);
++
++			int x = x0 + pad + zcdda22c + gap + z9c08b8b + gap;
++			char zd24b553[32];
++			strncpy(zd24b553, rows[i].z34fc6fc, sizeof(zd24b553) - 1); zd24b553[sizeof(zd24b553) - 1] = 0;
++			for (char* tok = strtok(zd24b553, " "); tok; tok = strtok(NULL, " ")) {
++				_sntprintf(sz, 39, _T("%S"), tok); sz[39] = 0;
++				const int wb = zb5adfcd(font, sz);
++				rc.left = x; rc.right = x + wb;
++				zfd4ef07(font, sz, rc, zb35e420(z6a8fe85(tok), pct), z8fb4cd1);
++				x += wb + z1d5dcc6;
++			}
++		}
++	}
++}
++
++static void zaa1245f(RECT frec)
++{
++	if (!nVidFullscreen) {
++		frec.top = 0; frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++	const int W = frec.right - frec.left, H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++
++	float pos = 0.0f;
++	if (zf8b4e34(&pos)) {
++		TCHAR sz[] = _T("TOMANDO O CONTROLE");
++		static int zf2e8287 = 0, z0490efe = 0, z9a9f28f = 0;
++		int want = (zf2e8287 == H && z0490efe == W && z9a9f28f > 0) ? z9a9f28f : H / 4;
++		if (want < 20) want = 20;
++		ID3DXFont* font = NULL;
++		int tw = 0, th = 0;
++		for (int tries = 0; tries < 6; tries++) {
++			font = z836891f(&z68a9a3d, &z8b73756, want, _T("Johnny Fever"), FW_NORMAL);
++			if (!font) break;
++			RECT m = { 0, 0, 0, 0 };
++			font->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++			tw = m.right - m.left; th = m.bottom - m.top;
++			const int room = (W * 95) / 100;
++			if (tw <= room || want <= 20) break;
++			want = (want * room) / tw;
++			if (want < 20) want = 20;
++		}
++		zf2e8287 = H; z0490efe = W; z9a9f28f = want;
++		if (font) {
++			const int center = frec.left + (W - tw) / 2;
++			const int right  = frec.left + W + 4;
++			int z8fb4cd1 = want / 18;
++			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
++			if (z8fb4cd1 > 6) z8fb4cd1 = 6;
++			RECT rc;
++			rc.left   = right + (int)((center - right) * pos);
++			rc.right  = rc.left + tw;
++			rc.top    = frec.top + (H - th) / 2;
++			rc.bottom = rc.top + th;
++			z869a0d9(font, sz, rc, 0xFFFFFFFF, 0xFF000000, z8fb4cd1);
++		}
++	}
++
++	int sel = 1, blink = 1;
++	if (z27c9ebc(&sel, &blink)) {
++		int want = H / 4;
++		if (want < 24) want = 24;
++		ID3DXFont* font = z836891f(&z222b9df, &z56e9737, want, _T("Johnny Fever"), FW_NORMAL);
++		if (font) {
++			TCHAR* names[2] = { _T("P1"), _T("P2") };
++			const DWORD cols[2] = { 0xFF4C8DFF, 0xFFF0554E };
++			const int sides[2] = { 1, 2 };
++			int z8fb4cd1 = want / 18;
++			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
++			if (z8fb4cd1 > 6) z8fb4cd1 = 6;
++			for (int i = 0; i < 2; i++) {
++				const int mine = (sides[i] == sel);
++				if (mine && !blink) continue;
++				RECT m = { 0, 0, 0, 0 };
++				font->DrawText(NULL, names[i], -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++				const int tw = m.right - m.left, th = m.bottom - m.top;
++				const int cx = frec.left + (i == 0 ? (W * 26) / 100 : (W * 74) / 100);
++				RECT rc;
++				rc.left = cx - tw / 2; rc.right = rc.left + tw;
++				rc.top = frec.top + (H * 13) / 100; rc.bottom = rc.top + th;
++				const DWORD col = mine ? cols[i] : ((cols[i] & 0x00FFFFFF) | 0x60000000);
++				const DWORD ring = mine ? 0xFFFFFFFF : 0x60000000;
++				z869a0d9(font, names[i], rc, ring, col, z8fb4cd1);
++			}
++		}
++		int hw = H / 30;
++		if (hw < 12) hw = 12;
++		ID3DXFont* small = z836891f(&zc2b20c8, &z112ed4b, hw, _T("Segoe UI"), FW_BOLD);
++		if (small) {
++			TCHAR sz[] = _T("Esquerda / direita escolhe o lado  -  qualquer bot\u00e3o confirma");
++			RECT m = { 0, 0, 0, 0 };
++			small->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++			RECT rc;
++			rc.left = frec.left + (W - (m.right - m.left)) / 2; rc.right = rc.left + (m.right - m.left);
++			rc.top = frec.top + (H * 3) / 4; rc.bottom = rc.top + (m.bottom - m.top);
++			z869a0d9(small, sz, rc, 0xFF000000, 0xFFFFFFFF, 1);
++		}
++	}
++
++	int num = 0;
++	float alpha = 0.0f;
++	if (z2aa01f8(&num, &alpha) && num >= 1 && num <= 3) {
++		int want = (H * 2) / 3;
++		if (want < 32) want = 32;
++		ID3DXFont* font = z836891f(&z222b9df, &z56e9737, want, _T("Johnny Fever"), FW_NORMAL);
++		if (font) {
++			TCHAR sz[2] = { (TCHAR)(_T('0') + num), 0 };
++			RECT m = { 0, 0, 0, 0 };
++			font->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++			const int tw = m.right - m.left, th = m.bottom - m.top;
++			RECT rc;
++			rc.left = frec.left + (W - tw) / 2; rc.right = rc.left + tw;
++			rc.top = frec.top + (H - th) / 2; rc.bottom = rc.top + th;
++			if (alpha < 0.0f) alpha = 0.0f;
++			const DWORD a = ((DWORD)(alpha * 255.0f) & 0xFF) << 24;
++			int z8fb4cd1 = want / 18;
++			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
++			if (z8fb4cd1 > 8) z8fb4cd1 = 8;
++			z869a0d9(font, sz, rc, a | 0x000000, a | 0xFFFFFF, z8fb4cd1);
++		}
++	}
++
++	int ask = 1;
++	if (zd31e64a(&ask, &blink)) {
++		static int z05c8333 = 0, ze7c33b4 = 0, zfcd585f = 0;
++		const int zac3a83a = (z05c8333 == H && ze7c33b4 == W);
++		int want = zac3a83a ? zfcd585f : H / 11;
++		if (want < 18 && !zac3a83a) want = 18;
++		ID3DXFont* font = z836891f(&z222b9df, &z56e9737, want, _T("Johnny Fever"), FW_NORMAL);
++		if (font && !zac3a83a) {
++			RECT m = { 0, 0, 0, 0 };
++			font->DrawText(NULL, _T("SEGUIR COM O REPLAY"), -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++			const int room = (W * 44) / 100;
++			if (m.right - m.left > room) {
++				want = (int)((long long)want * room / (m.right - m.left));
++				if (want < 12) want = 12;
++				font = z836891f(&z222b9df, &z56e9737, want, _T("Johnny Fever"), FW_NORMAL);
++			}
++			z05c8333 = H; ze7c33b4 = W; zfcd585f = want;
++		}
++		if (font) {
++			TCHAR* opts[2] = { _T("TENTAR DE NOVO"), _T("SEGUIR COM O REPLAY") };
++			int z8fb4cd1 = want / 18;
++			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
++			for (int i = 0; i < 2; i++) {
++				const int mine = (i == ask);
++				if (mine && !blink) continue;
++				RECT m = { 0, 0, 0, 0 };
++				font->DrawText(NULL, opts[i], -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++				const int tw = m.right - m.left, th = m.bottom - m.top;
++				const int cx = frec.left + (i == 0 ? W / 4 : (3 * W) / 4);
++				RECT rc;
++				rc.left = cx - tw / 2; rc.right = rc.left + tw;
++				rc.top = frec.top + (H - th) / 2; rc.bottom = rc.top + th;
++				const DWORD col = mine ? 0xFFFFD23F : 0x60FFFFFF;
++				const DWORD ring = mine ? 0xFF000000 : 0x60000000;
++				z869a0d9(font, opts[i], rc, ring, col, z8fb4cd1);
++			}
++		}
++	}
++
++	if (zbac67f0()) {
++		int want = H / 40;
++		if (want < 12) want = 12;
++		if (want > 26) want = 26;
++		ID3DXFont* font = z836891f(&zc2b20c8, &z112ed4b, want, _T("Segoe UI"), FW_BOLD);
++		if (font) {
++			TCHAR sz[] = _T("F4 ou 2 bot\x00f5") _T("es - Tomar o controle");
++			RECT m = { 0, 0, 0, 0 };
++			font->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++			RECT rc;
++			rc.right  = frec.left + W - want;
++			rc.left   = rc.right - (m.right - m.left);
++			rc.bottom = frec.top + H - want / 2;
++			rc.top    = rc.bottom - (m.bottom - m.top);
++			z869a0d9(font, sz, rc, 0xFF000000, 0xFFFFFFFF, 1);
++		}
++	}
++}
++
++static void z0c13773(RECT frec)
++{
++	char sz8[32];
++	if (!z8cde76f(sz8, sizeof(sz8))) return;
++	if (!nVidFullscreen) {
++		frec.top = 0; frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++	const int W = frec.right - frec.left, H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++
++	int want = H / 11;
++	if (want < 18) want = 18;
++	TCHAR z8294d4e[64];
++	_sntprintf(z8294d4e, 63, _T("%S"), z723432b());
++	ID3DXFont* font = z836891f(&zf400b1e, &z2cb6a34, want, z8294d4e, FW_BOLD);
++	if (!font) { zd471feb(0); return; }
++
++	TCHAR sz[32];
++	_sntprintf(sz, 31, _T("%S"), sz8);
++	RECT m = { 0, 0, 0, 0 };
++	font->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++	const int tw = m.right - m.left, th = m.bottom - m.top;
++	int z8fb4cd1 = want / 20;
++	if (z8fb4cd1 < 1) z8fb4cd1 = 1;
++	if (z8fb4cd1 > 4) z8fb4cd1 = 4;
++	RECT rc;
++	rc.left   = frec.left + (W - tw) / 2;
++	rc.right  = rc.left + tw;
++	rc.bottom = frec.top + H - H / 40;
++	rc.top    = rc.bottom - th;
++	z869a0d9(font, sz, rc, 0xFF000000, zb114d6e() == 2 ? 0xFF50FA7B : 0xFFFFFFFF, z8fb4cd1);
++}
++
+ static void vid_FontDraw(RECT frec)
+ {
++	zd1d1d8c(frec);
++	z4e78829(frec);
++	z0a1c77e(frec);
++	z1d93239();
++	zaa1245f(frec);
++	z0c13773(frec);
++	z28223fd(frec);
++	za7fbc0d(frec);
++
+ 	if (nVidSDisplayStatus == 0) {
+ 		return;
+ 	}
+@@ -1190,7 +2056,7 @@
+ 		dprintf(_T("  * Error: Couldn't create Direct3D device.\n"));
+ #endif
+ 
+-		if (nVidFullscreen) {
++		if (nVidFullscreen && z87bb0e1 == 0) {
+ 			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
+ 			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
+ 				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
+@@ -1692,6 +2558,7 @@
+ //	VidSDisplayOSD(pddsBlitFX[nUseSys], &rect, 0);
+ 
+ 	if (nVidFullscreen) {
++		ze5f8e01();
+ 		pD3DDevice->Present(NULL, NULL, NULL, NULL);
+ 	} else {
+ 		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
+@@ -1906,6 +2773,7 @@
+ {
+ 	VidSoftFXExit();
+ 
++	z144a7f8();
+ 	dx9AltReleaseTexture();
+ 
+ 	VidSFreeVidImage();
+@@ -2136,13 +3004,25 @@
+ 	}
+ 
+ 	// HardFX
++	const char* szFile = z6522264[0] ? z6522264 : HardFXConfigs[nHardFX].szFileName;
+ 	pVidEffect = new VidEffect(pD3DDevice);
+-	int r = pVidEffect->Load(HardFXConfigs[nHardFX].szFileName);
++	int r = pVidEffect->Load(szFile);
+ 
+ 	if (r == 0)
+ 	{
+-		bprintf(0, _T("HardFX ""%S"" loaded OK!\n"), HardFXConfigs[nHardFX].szFileName);
++		bprintf(0, _T("HardFX ""%S"" loaded OK!\n"), szFile);
+ 		UpdateShaderVariables();
++		if (z87bb0e1 != 0) {
++			char zfe810e3[128];
++			snprintf(zfe810e3, sizeof(zfe810e3), "video: filtro %s carregado", szFile);
++			z5d90bae(zfe810e3);
++		}
++	}
++	else if (z87bb0e1 != 0)
++	{
++		char zfe810e3[128];
++		snprintf(zfe810e3, sizeof(zfe810e3), "video: o filtro %s nao compilou nesta placa - segue sem filtro", szFile);
++		z5d90bae(zfe810e3);
+ 	}
+ 	else
+ 	{
+@@ -2153,6 +3033,50 @@
+ 	return r;
+ }
+ 
++static void z25d83b0()
++{
++	pD3DDevice->SetSamplerState(0, D3DSAMP_MINFILTER, bVidDX9Bilinear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
++	pD3DDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, bVidDX9Bilinear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
++	if (zd5f510b) {
++		pD3DDevice->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
++		pD3DDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
++	}
++}
++
++static void zf60a69a(unsigned char* pd, int pitch)
++{
++	const int w = nVidImageWidth, h = nVidImageHeight, bpp = nVidImageBPP;
++	if (w <= 0 || h <= 0 || bpp <= 0) return;
++	if (w < nTextureWidth) {
++		for (int y = 0; y < h; y++) {
++			unsigned char* row = pd + y * pitch;
++			memcpy(row + w * bpp, row + (w - 1) * bpp, bpp);
++		}
++	}
++	if (h < nTextureHeight) {
++		memcpy(pd + h * pitch, pd + (h - 1) * pitch, (w < nTextureWidth ? w + 1 : w) * bpp);
++	}
++}
++
++int z80f4e64(const char* szPath, int zb6badbf)
++{
++	if (pD3DDevice == NULL) {
++		return 1;
++	}
++	z6522264[0] = 0;
++	if (szPath && szPath[0]) {
++		strncpy(z6522264, szPath, sizeof(z6522264) - 1);
++		z6522264[sizeof(z6522264) - 1] = 0;
++	}
++	nVidDX9HardFX = z6522264[0] ? 1 : 0;
++	bVidDX9Bilinear = zb6badbf ? 1 : 0;
++	const int r = dx9AltSetHardFX(nVidDX9HardFX);
++	z25d83b0();
++	nImageWidth = 0;
++	nImageHeight = 0;
++	return r;
++}
++
+ static int dx9AltInit()
+ {
+ 	if (hScrnWnd == NULL) {
+@@ -2166,14 +3090,16 @@
+ #endif
+ 
+ 	// Get pointer to Direct3D
+-	if ((pD3D = _Direct3DCreate9(D3D_SDK_VERSION)) == NULL) {
++	int z9a926f6 = 0;
++	z8ed576d = 0;
++	if ((pD3D = z10b6877(&z9a926f6)) == NULL) {
+ #ifdef PRINT_DEBUG_INFO
+ 		dprintf(_T("  * Error: Couldn't initialise Direct3D.\n"));
+ #endif
+ 		dx9AltExit();
+ 		return 1;
+ 	}
+-	
++
+ 	nRotateGame = 0;
+ 	if (bDrvOkay) {
+ 		if (BurnDrvGetFlags() & BDF_ORIENTATION_VERTICAL) {
+@@ -2251,13 +3177,53 @@
+ 		dwBehaviorFlags |= D3DCREATE_SOFTWARE_VERTEXPROCESSING;
+ 	}
+ 
+-	if (FAILED(pD3D->CreateDevice(nD3DAdapter, D3DDEVTYPE_HAL, hVidWnd, dwBehaviorFlags, &d3dpp, &pD3DDevice))) {
++	if (z9a926f6) {
++		D3DPRESENT_PARAMETERS pp = d3dpp;
++		pp.SwapEffect = D3DSWAPEFFECT_FLIPEX;
++		pp.BackBufferCount = 2;
++		pp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
++		if (!nVidFullscreen) {
++			RECT rc = { 0, 0, 0, 0 };
++			GetClientRect(hVidWnd, &rc);
++			pp.BackBufferWidth  = (rc.right  > 0) ? rc.right  : 1;
++			pp.BackBufferHeight = (rc.bottom > 0) ? rc.bottom : 1;
++			pp.BackBufferFormat = D3DFMT_X8R8G8B8;
++		}
++		IDirect3DDevice9Ex* z7c4f3b6 = NULL;
++		HRESULT hr = ((IDirect3D9Ex*)pD3D)->CreateDeviceEx(nD3DAdapter, D3DDEVTYPE_HAL, hVidWnd, dwBehaviorFlags, &pp, NULL, &z7c4f3b6);
++		if (SUCCEEDED(hr) && z7c4f3b6) {
++			z7c4f3b6->SetMaximumFrameLatency(1);
++			pD3DDevice = z7c4f3b6;
++			d3dpp = pp;
++			z8ed576d = 1;
++			z404f5a5 = 0;
++			if (nVidFullscreen) {
++				z5d90bae("video: flip (DirectX 9Ex, FLIPEX) - a imagem vai direto para a tela");
++			} else {
++				char zde61a7d[128];
++				snprintf(zde61a7d, sizeof(zde61a7d), "video: flip em janela (DirectX 9Ex, FLIPEX), %ux%u - sem a copia do Windows",
++				         pp.BackBufferWidth, pp.BackBufferHeight);
++				z5d90bae(zde61a7d);
++			}
++		} else {
++			char zde61a7d[128];
++			snprintf(zde61a7d, sizeof(zde61a7d), "video: o flip falhou (0x%08lX) - fica o caminho de sempre", (unsigned long)hr);
++			z5d90bae(zde61a7d);
++			RELEASE(pD3D);
++			if ((pD3D = _Direct3DCreate9(D3D_SDK_VERSION)) == NULL) {
++				dx9AltExit();
++				return 1;
++			}
++		}
++	}
++
++	if (pD3DDevice == NULL && FAILED(pD3D->CreateDevice(nD3DAdapter, D3DDEVTYPE_HAL, hVidWnd, dwBehaviorFlags, &d3dpp, &pD3DDevice))) {
+ 
+ #ifdef PRINT_DEBUG_INFO
+ 		dprintf(_T("  * Error: Couldn't create Direct3D device.\n"));
+ #endif
+ 
+-		if (nVidFullscreen) {
++		if (nVidFullscreen && z87bb0e1 == 0) {
+ 			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
+ 			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
+ 				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
+@@ -2337,8 +3303,7 @@
+ 	// HardFX gets initted here
+ 	dx9AltSetHardFX(nVidDX9HardFX);
+ 
+-	pD3DDevice->SetSamplerState(0, D3DSAMP_MINFILTER, bVidDX9Bilinear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
+-	pD3DDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, bVidDX9Bilinear ? D3DTEXF_LINEAR : D3DTEXF_POINT);
++	z25d83b0();
+ 
+ 	nImageWidth = 0; nImageHeight = 0;
+ 
+@@ -2401,6 +3366,8 @@
+ 	// apply vertex alpha values to texture
+ 	pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+ 
++	z25d83b0();
++
+ 	dx9AltTextureInit();
+ 
+ 	nImageWidth = 0; nImageHeight = 0;
+@@ -2447,6 +3414,11 @@
+ 	if (pVidImage == NULL) return 1;
+ 
+ 	GetClientRect(hVidWnd, &Dest);
++
++	if (z4ec5c40) {
++		Dest.left = 0; Dest.top = 0;
++		Dest.right = (LONG)d3dpp.BackBufferWidth; Dest.bottom = (LONG)d3dpp.BackBufferHeight;
++	}
+ 
+ 	if (nVidFullscreen == 0) {
+ 		Dest.top += nMenuHeight;
+@@ -2475,7 +3447,7 @@
+ 			int nWidth = nGameImageWidth;
+ 			int nHeight = nGameImageHeight;
+ 
+-			if (nPreScaleEffect) {
++			if (nPreScaleEffect && !(pVidEffect && pVidEffect->IsValid())) {
+ 				if (nPreScale & 1) {
+ 					nWidth *= nPreScaleZoom;
+ 				}
+@@ -2484,7 +3456,7 @@
+ 				}
+ 			}
+ 
+-			if (nVidFullscreen) {
++			if (nVidFullscreen || z4ec5c40) {
+ 				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, nRotateGame ? Dest.top : Dest.left, nRotateGame ? Dest.left : Dest.top, nImageWidth, nImageHeight);
+ 			} else {
+ 				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, 0, 0, nImageWidth, nImageHeight);
+@@ -2497,7 +3469,7 @@
+ 			D3DVIEWPORT9 vp;
+ 
+ 			// Set the size of the image on the PC screen
+-			if (nVidFullscreen) {
++			if (nVidFullscreen || z4ec5c40) {
+ 				vp.X = Dest.left;
+ 				vp.Y = Dest.top;
+ 				vp.Width = Dest.right - Dest.left;
+@@ -2519,9 +3491,19 @@
+ 
+ 	ClearD3D9SurfaceEntirety<true>();
+ 
++	if (z4ec5c40) {
++		D3DVIEWPORT9 z47242a2 = { 0, 0, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, 0.0f, 1.0f };
++		D3DVIEWPORT9 z7d2c011 = { (DWORD)Dest.left, (DWORD)Dest.top, (DWORD)(Dest.right - Dest.left), (DWORD)(Dest.bottom - Dest.top), 0.0f, 1.0f };
++		pD3DDevice->SetViewport(&z47242a2);
++		pD3DDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
++		pD3DDevice->SetViewport(&z7d2c011);
++	}
++
+ 	UpdateShaderVariables(); // once per frame
+ 
+ 	pD3DDevice->BeginScene();
++
++	z147484e();
+ 
+ 	{
+ 		// Copy the game image onto a texture for rendering
+@@ -2531,7 +3513,7 @@
+ 			int pitch = d3dlr.Pitch;
+ 			unsigned char* pd = (unsigned char*)d3dlr.pBits;
+ 
+-			if (nPreScaleEffect) {
++			if (nPreScaleEffect && !(pVidEffect && pVidEffect->IsValid())) {
+ 				VidFilterApplyEffect(pd, pitch);
+ 			} else {
+ 				unsigned char* ps = pVidImage + nVidImageLeft * nVidImageBPP;
+@@ -2545,6 +3527,7 @@
+ 						VidSCpyImg16(pd, pitch, ps, s, nVidImageWidth, nVidImageHeight);
+ 						break;
+ 				}
++				if (zd5f510b) zf60a69a(pd, pitch);
+ 			}
+ 
+ 			pTexture->UnlockRect(0);
+@@ -2624,6 +3607,67 @@
+ 	return 0;
+ }
+ 
++static void ze5f8e01()
++{
++	static int z8e47a77 = -2, z34bca24 = 0, zea262ff = 0;
++	if (z8e47a77 == -2) {
++		char v[24];
++		z8e47a77 = GetEnvironmentVariableA("RBF_BBDUMP", v, sizeof(v)) ? atoi(v[0] == 'p' ? v + 1 : v) : -1;
++		z34bca24 = (z8e47a77 >= 0 && v[0] == 'p');
++	}
++	zea262ff++;
++	const int zec5e271 = z34bca24 ? zea262ff : zb71d2fc() ? (int)zca74129() : (int)nCurrentFrame;
++	if (z8e47a77 < 0 || zec5e271 < z8e47a77) return;
++	const int nFrame = zec5e271;
++	z8e47a77 = -1;
++	z5d90bae("teste: RBF_BBDUMP - gravando o backbuffer");
++
++	IDirect3DSurface9* zf9ff641 = NULL;
++	IDirect3DSurface9* zfce91b6 = NULL;
++	if (FAILED(pD3DDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &zf9ff641)) || zf9ff641 == NULL) {
++		z5d90bae("teste: RBF_BBDUMP - sem o backbuffer");
++		return;
++	}
++	D3DSURFACE_DESC desc;
++	zf9ff641->GetDesc(&desc);
++	if (SUCCEEDED(pD3DDevice->CreateOffscreenPlainSurface(desc.Width, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &zfce91b6, NULL)) &&
++	    SUCCEEDED(pD3DDevice->GetRenderTargetData(zf9ff641, zfce91b6))) {
++		RECT r = Dest;
++		if (!nVidFullscreen && !z8ed576d) { r.right -= r.left; r.bottom -= r.top; r.left = 0; r.top = 0; }
++		if (r.left < 0) r.left = 0;
++		if (r.top < 0) r.top = 0;
++		if (r.right > (LONG)desc.Width) r.right = desc.Width;
++		if (r.bottom > (LONG)desc.Height) r.bottom = desc.Height;
++		const int w = r.right - r.left, h = r.bottom - r.top;
++		D3DLOCKED_RECT lr;
++		if (w > 0 && h > 0 && (desc.Format == D3DFMT_X8R8G8B8 || desc.Format == D3DFMT_A8R8G8B8) &&
++		    SUCCEEDED(zfce91b6->LockRect(&lr, NULL, D3DLOCK_READONLY))) {
++			char szName[64];
++			snprintf(szName, sizeof(szName), "rbf-bb-%s-%d.bmp", z8ed576d ? "flip" : "copy", nFrame);
++			FILE* f = fopen(szName, "wb");
++			if (f) {
++				BITMAPFILEHEADER bf; BITMAPINFOHEADER bi;
++				memset(&bf, 0, sizeof(bf)); memset(&bi, 0, sizeof(bi));
++				bi.biSize = sizeof(bi); bi.biWidth = w; bi.biHeight = -h; bi.biPlanes = 1; bi.biBitCount = 32; bi.biCompression = BI_RGB;
++				bf.bfType = 0x4D42; bf.bfOffBits = sizeof(bf) + sizeof(bi); bf.bfSize = bf.bfOffBits + w * h * 4;
++				fwrite(&bf, sizeof(bf), 1, f); fwrite(&bi, sizeof(bi), 1, f);
++				for (int y = 0; y < h; y++) {
++					const unsigned char* row = (const unsigned char*)lr.pBits + (r.top + y) * lr.Pitch + r.left * 4;
++					fwrite(row, 4, w, f);
++				}
++				fclose(f);
++				char zde61a7d[160];
++				snprintf(zde61a7d, sizeof(zde61a7d), "teste: backbuffer %ux%u, imagem %dx%d em (%ld,%ld) -> %s",
++				         desc.Width, desc.Height, w, h, r.left, r.top, szName);
++				z5d90bae(zde61a7d);
++			}
++			zfce91b6->UnlockRect();
++		}
++	}
++	RELEASE(zfce91b6);
++	RELEASE(zf9ff641);
++}
++
+ // Paint the BlitFX surface onto the primary surface
+ static int dx9AltPaint(int bValidate)
+ {
+@@ -2632,6 +3676,30 @@
+ 	}
+ 
+ 	RECT rect = { 0, 0, 0, 0 };
++
++	if (z4ec5c40) {
++		if (!z404f5a5 && !IsIconic(hVidWnd)) {
++			RECT rc = { 0, 0, 0, 0 };
++			GetClientRect(hVidWnd, &rc);
++			if (rc.right > 0 && rc.bottom > 0 &&
++			    ((UINT)rc.right != d3dpp.BackBufferWidth || (UINT)rc.bottom != d3dpp.BackBufferHeight)) {
++				z404f5a5 = 1;
++				char zde61a7d[160];
++				snprintf(zde61a7d, sizeof(zde61a7d), "video: flip em janela - a janela foi para %ldx%ld, o buffer e %ux%u (o Windows estica)",
++				         rc.right, rc.bottom, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight);
++				z5d90bae(zde61a7d);
++			}
++		}
++		if (bValidate & 2) {
++			dx9AltRender();
++		}
++		ze5f8e01();
++		pD3DDevice->Present(NULL, NULL, NULL, NULL);
++		if (bValidate & 1) {
++			ValidateRect(hVidWnd, NULL);
++		}
++		return 0;
++	}
+ 
+ 	if (!nVidFullscreen) {
+ 		GetClientScreenRect(hVidWnd, &rect);
+@@ -2649,6 +3717,7 @@
+ 	}
+ 
+ 	if (nVidFullscreen) {
++		ze5f8e01();
+ 		pD3DDevice->Present(NULL, NULL, NULL, NULL);
+ 	} else {
+ 		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
+@@ -2656,6 +3725,7 @@
+ 		ClientToScreen(hVidWnd, &c);
+ 		RECT dst = { rect.left - c.x, rect.top - c.y, rect.right - c.x, rect.bottom - c.y };
+ 
++		ze5f8e01();
+ 		pD3DDevice->Present(&src, &dst, NULL, NULL);
+ 
+ 		// Validate the rectangle we just drew
+diff --git a/src/intf/video/win32/vid_directx_support.cpp b/src/intf/video/win32/vid_directx_support.cpp
+--- a/src/intf/video/win32/vid_directx_support.cpp
++++ b/src/intf/video/win32/vid_directx_support.cpp
+@@ -387,11 +387,13 @@
+ 	if (FAILED(pDD->SetDisplayMode(nWidth, nHeight, nDepth, nVidRefresh, 0))) {
+ 		VidSRestoreScreenMode();
+ 
+-		FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), nWidth, nHeight, nDepth);
+-		if (bVidArcaderes && (nWidth != 320 && nHeight != 240)) {
+-			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
+-		}
+-		FBAPopupDisplay(PUF_TYPE_ERROR);
++		if (z87bb0e1 == 0) {
++			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), nWidth, nHeight, nDepth);
++			if (bVidArcaderes && (nWidth != 320 && nHeight != 240)) {
++				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
++			}
++			FBAPopupDisplay(PUF_TYPE_ERROR);
++		}
+ 
+ 		nVidScrnWidth = 0;
+ 		nVidScrnHeight = 0;
