@@ -108,6 +108,12 @@ long long zdd43f35(void);
 int zc77e2be(void);
 int zab20c35(void);
 
+#define z67a7ed4 640
+typedef void (*zd9eb82a)(int kind, int id, const char* text, int len, void* user);
+int  z77d22b7(const char* utf8, int len);
+void z018147a(int zd7ce357);
+void z9949c17(zd9eb82a fn, void* user);
+
 int zbff6c98(void);
 
 int zcb8e9fd(void);

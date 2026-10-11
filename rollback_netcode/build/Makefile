@@ -32,6 +32,7 @@ OUR_SRC += $(ROOT)/core/port_map.cpp
 OUR_SRC += $(ROOT)/fbneo/fbneo_host.cpp
 OUR_SRC += $(ROOT)/fbneo/ram_probe.cpp
 OUR_SRC += $(ROOT)/fbneo/match_score.cpp
+OUR_SRC += $(ROOT)/fbneo/ficha.cpp
 OUR_SRC += $(ROOT)/fbneo/overlay.cpp
 OUR_SRC += $(ROOT)/fbneo/hud.cpp
 OUR_SRC += $(ROOT)/fbneo/end_notice.cpp
@@ -44,6 +45,7 @@ OUR_SRC += $(ROOT)/fbneo/img_hash.cpp
 OUR_SRC += $(ROOT)/fbneo/frame_pacer.cpp
 OUR_SRC += $(ROOT)/fbneo/rom_notice.cpp
 OUR_SRC += $(ROOT)/fbneo/anticheat.cpp
+OUR_SRC += $(ROOT)/fbneo/chat.cpp
 OUR_SRC += $(ROOT)/fbneo/input_display.cpp
 OUR_SRC += $(ROOT)/fbneo/stream_files.cpp
 

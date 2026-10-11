@@ -76,6 +76,8 @@ public:
    void OnMsg(UdpMsg *msg, int len);
    void Disconnect();
    void SayGoodbye();   // LOCAL PATCH 5 (LOCAL-PATCHES.md): avisa o outro lado que estamos saindo
+   void SendRbfChat(int kind, int id, const void *data, int len);   // LOCAL PATCH 7
+   bool PollRbfChat(int *kind, int *id, void *data, int *len);
   
    void GetNetworkStats(struct GGPONetworkStats *stats);
    bool GetEvent(UdpProtocol::Event &e);
@@ -122,6 +124,7 @@ protected:
    bool OnQualityReport(UdpMsg *msg, int len);
    bool OnQualityReply(UdpMsg *msg, int len);
    bool OnKeepAlive(UdpMsg *msg, int len);
+   bool OnRbfChat(UdpMsg *msg, int len);
 
 protected:
    /*
@@ -192,6 +195,8 @@ protected:
    bool                       _disconnect_notify_sent;
 
    uint16                     _next_send_seq;
+   struct RbfChatEntry { int kind, id, len; uint8 data[640]; };
+   RingBuffer<RbfChatEntry, 16> _rbf_chat_in;
    uint16                     _next_recv_seq;
 
    /*

@@ -24,6 +24,7 @@ struct UdpMsg
       QualityReply  = 5,
       KeepAlive     = 6,
       InputAck      = 7,
+      RbfChat       = 8,   /* LOCAL PATCH 7 */
    };
 
    struct connect_status {
@@ -73,6 +74,13 @@ struct UdpMsg
          int               ack_frame:31;
       } input_ack;
 
+      struct {
+         uint8             kind;
+         uint16            id;
+         uint16            len;
+         uint8             data[640];
+      } rbf_chat;
+
    } u;
 
 public:
@@ -89,6 +97,7 @@ public:
       case QualityReport: return sizeof(u.quality_report);
       case QualityReply:  return sizeof(u.quality_reply);
       case InputAck:      return sizeof(u.input_ack);
+      case RbfChat:       return (int)((char *)&u.rbf_chat.data - (char *)&u.rbf_chat) + u.rbf_chat.len;
       case KeepAlive:     return 0;
       case Input:
          size = (int)((char *)&u.input.bits - (char *)&u.input);

@@ -519,8 +519,11 @@ int zc0f640d(const z4238888* cfg, const zd7729d0* host, int zb9843b9)
 	return z30e34bc;
 }
 
+static void z8568293(void);
+
 void z30d5c32(void)
 {
+	z8568293();
 	if (z621d134) {
 		ggpo_rbf_goodbye(z621d134);
 		ggpo_close_session(z621d134);
@@ -530,6 +533,87 @@ void z30d5c32(void)
 	z1e19f4f = 0;
 	z1147efa = GGPO_INVALID_HANDLE;
 	zeef0821();
+}
+
+#define za597b7b       8
+#define z2fccc5f 300
+#define z9f591f9     40
+#define z9b47d1d      64
+static struct { int id, len, tries; unsigned int at; char data[z67a7ed4]; } z393ae09[za597b7b];
+static int          zb976334 = 1;
+static int          z7d268b5[z9b47d1d];
+static int          z1cc3408  = 0;
+static int          z08447af = 0, zabefa69 = 0;
+static unsigned int z2042a0b = 0;
+
+static void z8568293(void)
+{
+	memset(z393ae09, 0, sizeof(z393ae09));
+	zb976334 = 1;
+	z1cc3408 = 0;
+	z08447af = zabefa69 = 0;
+}
+
+int z77d22b7(const char* utf8, int len)
+{
+	if (!z18703bb || !z621d134 || z1e19f4f || !utf8 || len <= 0 || len > z67a7ed4) return 0;
+	for (int i = 0; i < za597b7b; i++) {
+		if (z393ae09[i].id) continue;
+		const int id = zb976334++;
+		if (zb976334 > 0x7FFF) zb976334 = 1;
+		z393ae09[i].id = id;
+		z393ae09[i].len = len;
+		z393ae09[i].tries = 1;
+		z393ae09[i].at = GetTickCount();
+		memcpy(z393ae09[i].data, utf8, len);
+		ggpo_rbf_chat_send(z621d134, 0, id, utf8, len);
+		return id;
+	}
+	return 0;
+}
+
+void z018147a(int zd7ce357)
+{
+	if (zd7ce357 <= z08447af && zabefa69 == 0) return;
+	if (zd7ce357 > z08447af) z08447af = zd7ce357;
+	zabefa69 = 3;
+	z2042a0b = 0;
+}
+
+void z9949c17(zd9eb82a fn, void* user)
+{
+	if (!z18703bb || !z621d134 || z1e19f4f) return;
+	const unsigned int now = GetTickCount();
+	for (int i = 0; i < za597b7b; i++) {
+		if (!z393ae09[i].id || now - z393ae09[i].at < z2fccc5f) continue;
+		if (z393ae09[i].tries >= z9f591f9) { z393ae09[i].id = 0; continue; }
+		z393ae09[i].tries++;
+		z393ae09[i].at = now;
+		ggpo_rbf_chat_send(z621d134, 0, z393ae09[i].id, z393ae09[i].data, z393ae09[i].len);
+	}
+	if (zabefa69 > 0 && now - z2042a0b >= z2fccc5f) {
+		zabefa69--;
+		z2042a0b = now;
+		ggpo_rbf_chat_send(z621d134, 2, z08447af, NULL, 0);
+	}
+	int kind = 0, id = 0, len = 0;
+	char buf[z67a7ed4];
+	while (ggpo_rbf_chat_poll(z621d134, &kind, &id, buf, &len)) {
+		if (kind == 0) {
+			ggpo_rbf_chat_send(z621d134, 1, id, NULL, 0);
+			int seen = 0;
+			for (int k = 0; k < z1cc3408; k++) if (z7d268b5[k] == id) { seen = 1; break; }
+			if (seen) continue;
+			if (z1cc3408 == z9b47d1d) { memmove(z7d268b5, z7d268b5 + 1, sizeof(int) * (z9b47d1d - 1)); z1cc3408--; }
+			z7d268b5[z1cc3408++] = id;
+			if (fn) fn(0, id, buf, len, user);
+		} else if (kind == 1) {
+			for (int i = 0; i < za597b7b; i++) if (z393ae09[i].id == id) z393ae09[i].id = 0;
+			if (fn) fn(1, id, NULL, 0, user);
+		} else if (kind == 2) {
+			if (fn) fn(2, id, NULL, 0, user);
+		}
+	}
 }
 
 int ze41ba77(void)

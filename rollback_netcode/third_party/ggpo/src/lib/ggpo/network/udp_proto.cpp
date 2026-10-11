@@ -282,6 +282,57 @@ UdpProtocol::SayGoodbye()
 }
 
 void
+UdpProtocol::SendRbfChat(int kind, int id, const void *data, int len)
+{
+   if (!_udp || _current_state != Running || len < 0 || len > (int)sizeof(((UdpMsg *)0)->u.rbf_chat.data)) {
+      return;
+   }
+   UdpMsg *msg = new UdpMsg(UdpMsg::RbfChat);
+   msg->u.rbf_chat.kind = (uint8)kind;
+   msg->u.rbf_chat.id = (uint16)id;
+   msg->u.rbf_chat.len = (uint16)len;
+   if (len > 0) {
+      memcpy(msg->u.rbf_chat.data, data, len);
+   }
+   SendMsg(msg);
+}
+
+bool
+UdpProtocol::OnRbfChat(UdpMsg *msg, int len)
+{
+   const int head = (int)((char *)&msg->u.rbf_chat.data - (char *)msg);
+   const int n = msg->u.rbf_chat.len;
+   if (len < head || n > (int)sizeof(msg->u.rbf_chat.data) || head + n > len) {
+      return false;
+   }
+   if (_rbf_chat_in.size() >= 15) {
+      _rbf_chat_in.pop();
+   }
+   RbfChatEntry e;
+   e.kind = msg->u.rbf_chat.kind;
+   e.id = msg->u.rbf_chat.id;
+   e.len = n;
+   memcpy(e.data, msg->u.rbf_chat.data, n);
+   _rbf_chat_in.push(e);
+   return true;
+}
+
+bool
+UdpProtocol::PollRbfChat(int *kind, int *id, void *data, int *len)
+{
+   if (_rbf_chat_in.empty()) {
+      return false;
+   }
+   RbfChatEntry &e = _rbf_chat_in.front();
+   *kind = e.kind;
+   *id = e.id;
+   *len = e.len;
+   memcpy(data, e.data, e.len);
+   _rbf_chat_in.pop();
+   return true;
+}
+
+void
 UdpProtocol::SendSyncRequest()
 {
    _state.sync.random = rand() & 0xFFFF;
@@ -331,6 +382,7 @@ UdpProtocol::OnMsg(UdpMsg *msg, int len)
       &UdpProtocol::OnQualityReply,        /* QualityReply */
       &UdpProtocol::OnKeepAlive,           /* KeepAlive */
       &UdpProtocol::OnInputAck,            /* InputAck */
+      &UdpProtocol::OnRbfChat,             /* RbfChat */
    };
 
    // filter out messages that don't match what we expect
@@ -459,6 +511,9 @@ UdpProtocol::LogMsg(const char *prefix, UdpMsg *msg)
       break;
    case UdpMsg::InputAck:
       Log("%s input ack.\n", prefix);
+      break;
+   case UdpMsg::RbfChat:
+      Log("%s rbf chat %d.\n", prefix, msg->u.rbf_chat.kind);
       break;
    default:
       ASSERT(FALSE && "Unknown UdpMsg type.");

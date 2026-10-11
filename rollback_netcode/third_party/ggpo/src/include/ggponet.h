@@ -423,6 +423,12 @@ GGPO_API GGPOErrorCode __cdecl ggpo_close_session(GGPOSession *);
  */
 GGPO_API GGPOErrorCode __cdecl ggpo_rbf_goodbye(GGPOSession *);
 
+/*
+ * ggpo_rbf_chat_send / ggpo_rbf_chat_poll -- LOCAL PATCH 7
+ */
+GGPO_API GGPOErrorCode __cdecl ggpo_rbf_chat_send(GGPOSession *, int kind, int id, const void *data, int len);
+GGPO_API int __cdecl ggpo_rbf_chat_poll(GGPOSession *, int *kind, int *id, void *data, int *len);
+
 
 /*
  * ggpo_set_frame_delay --

@@ -60,6 +60,29 @@ Peer2PeerBackend::~Peer2PeerBackend()
    delete [] _endpoints;
 }
 
+// LOCAL PATCH 7
+GGPOErrorCode
+Peer2PeerBackend::RbfChatSend(int kind, int id, const void *data, int len)
+{
+   for (int i = 0; i < _num_players; i++) {
+      if (_endpoints[i].IsInitialized()) {
+         _endpoints[i].SendRbfChat(kind, id, data, len);
+      }
+   }
+   return GGPO_OK;
+}
+
+int
+Peer2PeerBackend::RbfChatPoll(int *kind, int *id, void *data, int *len)
+{
+   for (int i = 0; i < _num_players; i++) {
+      if (_endpoints[i].IsInitialized() && _endpoints[i].PollRbfChat(kind, id, data, len)) {
+         return 1;
+      }
+   }
+   return 0;
+}
+
 // LOCAL PATCH 5: every remote player still running hears that we are leaving.
 GGPOErrorCode
 Peer2PeerBackend::RbfGoodbye()

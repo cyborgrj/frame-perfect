@@ -159,6 +159,25 @@ ggpo_get_network_stats(GGPOSession *ggpo,
 }
 
 
+// LOCAL PATCH 7
+GGPOErrorCode
+ggpo_rbf_chat_send(GGPOSession *ggpo, int kind, int id, const void *data, int len)
+{
+   if (!ggpo) {
+      return GGPO_ERRORCODE_INVALID_SESSION;
+   }
+   return ggpo->RbfChatSend(kind, id, data, len);
+}
+
+int
+ggpo_rbf_chat_poll(GGPOSession *ggpo, int *kind, int *id, void *data, int *len)
+{
+   if (!ggpo) {
+      return 0;
+   }
+   return ggpo->RbfChatPoll(kind, id, data, len);
+}
+
 // LOCAL PATCH 5: see UdpProtocol::SayGoodbye.
 GGPOErrorCode
 ggpo_rbf_goodbye(GGPOSession *ggpo)

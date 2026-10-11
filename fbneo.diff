@@ -1658,7 +1658,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  			if (!DebugLog || bEchoLog) {
  				_sntprintf(szConsoleBuffer + _tcslen(szConsoleBuffer), 1024 - _tcslen(szConsoleBuffer), _T(", and echod to this console"));
  			}
-@@ -775,6 +789,181 @@
+@@ -775,6 +789,185 @@
  
  #include <wininet.h>
  
@@ -1746,6 +1746,10 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +			else if (_tcscmp(tok, _T("quadros")) == 0) za2d4792 = _ttoi(val) ? 1 : 0;
 +			else if (_tcscmp(tok, _T("ritmo"))   == 0) z3e35fae   = _ttoi(val) ? 1 : 0;
 +			else if (_tcscmp(tok, _T("flip"))    == 0) z60255f4 = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("vol"))     == 0) {
++				const int v = _ttoi(val);
++				if (v >= 0 && v <= 100 && !_tcsstr(szCmdLine, _T("-rbffundo"))) nAudVolume = v * 100;
++			}
 +			else if (_tcscmp(tok, _T("fx"))      == 0) {
 +				int n = 0;
 +				for (; val[n] && n < 40; n++) {
@@ -1840,7 +1844,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  static int AppInit()
  {
  #if defined (_MSC_VER) && defined (_DEBUG)
-@@ -791,6 +980,14 @@
+@@ -791,6 +984,14 @@
  
  	// Load config for the application
  	ConfigAppLoad();
@@ -1855,7 +1859,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	LookupSubDirThreads();
  
  #if defined (FBNEO_DEBUG)
-@@ -811,7 +1008,7 @@
+@@ -811,7 +1012,7 @@
  
  	if (bMonitorAutoCheck) MonitorAutoCheck();
  
@@ -1864,7 +1868,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	// print a warning if we're running for the 1st time
  	if (nIniVersion < nBurnVer) {
  		ScrnInit();
-@@ -863,6 +1060,12 @@
+@@ -863,6 +1064,12 @@
  	//  2 Silent + specified path
  	INT32 nExport = ParseExportPath(szCmdLine, NULL, NULL);
  
@@ -1877,7 +1881,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	// Suppresses ROMs scanning when full list is exported
  	if (-1 == nExport) {
  		// Build the ROM information
-@@ -1039,6 +1242,233 @@
+@@ -1039,6 +1246,234 @@
  	unzip_close_context(&titles_zip);
  	unzip_close_context(&previews_zip);
  	return;
@@ -1970,6 +1974,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +			strncpy(cfg->z7dd7ec2, a, sizeof(cfg->z7dd7ec2) - 1);
 +		}
 +		else if (_tcscmp(key, _T("solo"))      == 0) cfg->zc5cc23a        = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("chat"))      == 0) cfg->z115149b        = _ttoi(val) ? 1 : 0;
 +		else if (_tcscmp(key, _T("relaytoken")) == 0) {
 +			char* a = TCHARToANSI(val, NULL, 0);
 +			strncpy(cfg->z4a06e1f, a, sizeof(cfg->z4a06e1f) - 1);
@@ -2111,7 +2116,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  }
  
  int ProcessCmdLine()
-@@ -1250,6 +1680,10 @@
+@@ -1250,6 +1685,10 @@
  			bFullscreen = 0;
  		}
  
@@ -2122,7 +2127,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  		if (bFullscreen) {
  			nVidFullscreen = 1;
  		}
-@@ -1312,6 +1746,13 @@
+@@ -1312,6 +1751,13 @@
  			for (i = 0; i < nBurnDrvCount; i++) {
  				nBurnDrvActive = i;
  				if ((_tcscmp(BurnDrvGetText(DRV_NAME), szName) == 0) && (!(BurnDrvGetFlags() & BDF_BOARDROM))) {
@@ -2136,7 +2141,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  					TCHAR* szSub = _tcsstr(szCmdLine, _T("-sub"));	// Handling -sub additional parameters
  					if (szSub) {									// With -sub parameters
  						szSub += _tcslen(_T("-sub"));				// The parameter does not contain the identifier itself
-@@ -1400,11 +1841,117 @@
+@@ -1400,11 +1846,117 @@
  						IpsPatchInit();		// Entry point: cmdline launch
  					}
  
@@ -2254,7 +2259,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  					break;
  				}
  			}
-@@ -1413,6 +1960,10 @@
+@@ -1413,6 +1965,10 @@
  
  			if (i == nBurnDrvCount) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_NOSUPPORT), szName, _T(APP_TITLE));
@@ -2265,7 +2270,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  				FBAPopupDisplay(PUF_TYPE_ERROR);
  				return 1;
  			}
-@@ -1489,9 +2040,62 @@
+@@ -1489,9 +2045,62 @@
  	}
  }
  
@@ -2328,7 +2333,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	DSCore_Init();
  	DICore_Init();
  	DDCore_Init();
-@@ -1556,12 +2160,21 @@
+@@ -1556,12 +2165,21 @@
  	if (!(AppInit())) {							// Init the application
  		if (bAlwaysCreateSupportFolders) CreateSupportFolders();
  		if (!(ProcessCmdLine())) {
@@ -2790,14 +2795,14 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  {
 +	{
 +		static int z7fc7e68 = 0;
-+		const int z1873f03 = (bHasFocus && (GetAsyncKeyState(VK_TAB) & 0x8000)) ? 1 : 0;
++		const int z1873f03 = (bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_TAB) & 0x8000)) ? 1 : 0;
 +		if (z1873f03 && !z7fc7e68 && z4b7d267()) z1c35054();
 +		z7fc7e68 = z1873f03;
 +	}
 +
 +	{
 +		static int z9d2db69 = 0;
-+		const int zc4e8e23 = (bHasFocus && (GetAsyncKeyState(VK_BACK) & 0x8000)) ? 1 : 0;
++		const int zc4e8e23 = (bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_BACK) & 0x8000)) ? 1 : 0;
 +		if (zc4e8e23 && !z9d2db69) z06e3af7();
 +		z9d2db69 = zc4e8e23;
 +	}
@@ -2976,7 +2981,56 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			StateRewindDoFrame(macroSystemRewind || bAppDoRewind, macroSystemRewindCancel, bRunPause);
  		}
  
-@@ -565,10 +896,11 @@
+@@ -527,6 +858,48 @@
+ // Keyboard callback function, a way to provide a driver with shifted/unshifted ASCII data from the keyboard.  see drv/msx/d_msx.cpp for usage
+ void (*cBurnerKeyCallback)(UINT8 code, UINT8 KeyType, UINT8 down) = NULL;
+ 
++static int z51b645c(UINT16 nCode)
++{
++	if (GameInp == NULL) return 0;
++	for (UINT32 i = 0; i < nGameInpCount + nMacroCount; i++) {
++		const struct GameInp* pgi = &GameInp[i];
++		if (i < nGameInpCount) {
++			if (pgi->nInput == GIT_SWITCH && pgi->Input.Switch.nCode == nCode) return 1;
++		} else if (pgi->Macro.nMode && pgi->Macro.Switch.nCode == nCode) {
++			return 1;
++		}
++	}
++	return 0;
++}
++
++static void z5c225cf(WPARAM vk)
++{
++	int up;
++	UINT16 nCode;
++	if      (vk == VK_OEM_PLUS)  { up = 1; nCode = 0x0D; }
++	else if (vk == VK_ADD)       { up = 1; nCode = 0x4E; }
++	else if (vk == VK_OEM_MINUS) { up = 0; nCode = 0x0C; }
++	else if (vk == VK_SUBTRACT)  { up = 0; nCode = 0x4A; }
++	else return;
++	if (z51b645c(nCode)) return;
++	nAudVolume += up ? 1000 : -1000;
++	if (nAudVolume > 10000) nAudVolume = 10000;
++	if (nAudVolume < 0) nAudVolume = 0;
++	AudSoundSetVolume();
++	z2184d23(nAudVolume / 100);
++	z6987e0c(nAudVolume / 100);
++}
++
++static int ze7c80ec(WPARAM vk)
++{
++	if (!z60692a4()) return 0;
++	if (z806b0c0()) return z2b7bad9((unsigned int)vk);
++	if (vk == 'T' && z51b645c(0x14)) return 0;
++	if (vk == VK_F1 && z51b645c(0x3B)) return 0;
++	if (vk != 'T' && vk != VK_F1 && vk != VK_F2) return 0;
++	return z2b7bad9((unsigned int)vk);
++}
++
+ static void BurnerHandlerKeyCallback(MSG *Msg, INT32 KeyDown, INT32 KeyType)
+ {
+ 	INT32 shifted = (GetAsyncKeyState(VK_SHIFT) & 0x80000000) ? 0xf0 : 0;
+@@ -565,10 +938,11 @@
  
  		RunInit();
  
@@ -2990,7 +3044,18 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  		GameInpCheckLeftAlt();
  		GameInpCheckMouse();															// Hide the cursor
-@@ -660,7 +992,7 @@
+@@ -650,6 +1024,10 @@
+ 					bRestartVideo = 1;
+ 					break;
+ 				}
++				if (Msg.message == WM_CHAR && z806b0c0()) {
++					z5fa0f19((unsigned int)Msg.wParam);
++					continue;
++				}
+ 
+ 				if (bMenuEnabled && nVidFullscreen == 0) {								// Handle keyboard messages for the menu
+ 					if (MenuHandleKeyboard(&Msg)) {
+@@ -660,7 +1038,7 @@
  				if (Msg.message == WM_SYSKEYDOWN || Msg.message == WM_KEYDOWN) {
  					if (Msg.lParam & 0x20000000) {
  						// An Alt/AltGr-key was pressed
@@ -2999,16 +3064,20 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  #if defined (FBNEO_DEBUG)
  							case 'C': {
-@@ -774,7 +1106,7 @@
+@@ -774,7 +1152,11 @@
  						if (cBurnerKeyCallback)
  							BurnerHandlerKeyCallback(&Msg, (Msg.message == WM_KEYDOWN) ? 1 : 0, 0);
  
 -						switch (Msg.wParam) {
++						if (Msg.message == WM_KEYDOWN && ze7c80ec(Msg.wParam)) continue;
++
++						if (Msg.message == WM_KEYDOWN && !z806b0c0()) z5c225cf(Msg.wParam);
++
 +						if (z87bb0e1 == 0 || Msg.wParam == VK_ESCAPE || Msg.wParam == VK_BACK) switch (Msg.wParam) {
  
  #if defined (FBNEO_DEBUG)
  							case 'N':
-@@ -798,8 +1130,8 @@
+@@ -798,8 +1180,8 @@
  								if (hwndChat) {
  									DeActivateChat();
  								} else {
@@ -3019,7 +3088,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  									} else {
  										if (nVidFullscreen) {
  											nVidFullscreen = 0;
-@@ -872,11 +1204,13 @@
+@@ -872,11 +1254,13 @@
  									}
  								} else
  								{ // Backspace: toggles FPS counter
@@ -3038,6 +3107,15 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  									}
  								}
  								break;
+@@ -923,7 +1307,7 @@
+ 				// Check for messages for dialogs etc.
+ 				if (AppMessage(&Msg)) {
+ 					if (TranslateAccelerator(hScrnWnd, hAccel, &Msg) == 0) {
+-						if (hwndChat) {
++						if (hwndChat || z806b0c0()) {
+ 							TranslateMessage(&Msg);
+ 						}
+ 						DispatchMessage(&Msg);
 diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
 --- a/src/burner/win32/scrn.cpp
 +++ b/src/burner/win32/scrn.cpp
@@ -3658,22 +3736,285 @@ diff --git a/src/intf/audio/win32/aud_dsound3.cpp b/src/intf/audio/win32/aud_dso
 diff --git a/src/intf/input/win32/inp_dinput.cpp b/src/intf/input/win32/inp_dinput.cpp
 --- a/src/intf/input/win32/inp_dinput.cpp
 +++ b/src/intf/input/win32/inp_dinput.cpp
-@@ -377,6 +377,15 @@
- 		}
- 		if (FAILED(ret)) {					// Failed to read the keyboard
- 			return 1;
-+		}
+@@ -15,6 +15,7 @@
+ //#endif
+ 
+ #include "dinput_core.h"
++#include "fbneo_host.h"
+ 
+ #define MAX_KEYBOARD	(1)
+ #define MAX_GAMEPAD		(32)
+@@ -38,6 +39,7 @@
+ 
+ 	struct devEnumGuids {
+ 		GUID guid;
++		GUID zf6c433a;
+ 	} devGuids[MAX_GAMEPAD];
+ 
+ 	struct gamepadData {
+@@ -63,6 +65,63 @@
+ 	// Number of usable Keyboards, gamepads & mice on this machine
+ 	int keyboardCount = 0;
+ 	int gamepadCount = 0;
 +
++	#define z5515ebd   30
++	#define z1afe295 1000
++	#define z43c6d29  2500
++	static GUID  zdd6920f[MAX_GAMEPAD], z98e66ca[MAX_GAMEPAD];
++	static int   zcaaa3fe[MAX_GAMEPAD], ze961caf[MAX_GAMEPAD], z1efbe65[MAX_GAMEPAD];
++	static DWORD z235ccb6 = 0;
++	static DWORD z281d2a0 = 0;
++	static DWORD zc1943a3 = 0;
++	static int   z307aed0 = -1;
++
++	static void zf7f7f17(int idx)
++	{
++		if (idx < 0 || idx >= MAX_GAMEPAD || !ze961caf[idx] || z1efbe65[idx]) return;
++		if (++zcaaa3fe[idx] < z5515ebd) return;
++		z1efbe65[idx] = 1;
++		z281d2a0 = GetTickCount() - z1afe295;
++		char m[64];
++		snprintf(m, sizeof(m), "controle: o %d caiu (desconectado)", idx);
++		z5d90bae(m);
++	}
++
++	static gamepadData* z4be8c9b()
++	{
++		return &gamepadProperties[z307aed0 >= 0 ? z307aed0 : gamepadCount];
++	}
++
++	struct z570e232 { GUID inst, zf6c433a; };
++	static z570e232       z53912c8[MAX_GAMEPAD];
++	static z570e232       z0d45c79[MAX_GAMEPAD];
++	static int           za6be0f1 = 0;
++	static volatile LONG z5ed7b1c = -1;
++	static volatile LONG z1529ae0 = 0;
++
++	static BOOL CALLBACK z81e6312(LPCDIDEVICEINSTANCE instance, LPVOID)
++	{
++		if (instance && za6be0f1 < MAX_GAMEPAD) {
++			z0d45c79[za6be0f1].inst = instance->guidInstance;
++			z0d45c79[za6be0f1].zf6c433a = instance->guidProduct;
++			za6be0f1++;
++		}
++		return DIENUM_CONTINUE;
++	}
++
++	static DWORD WINAPI z9605626(LPVOID)
++	{
++		IDirectInput8W* di = NULL;
++		za6be0f1 = 0;
++		if (SUCCEEDED(_DirectInput8Create(hAppInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&di, NULL)) && di) {
++			di->EnumDevices(DI8DEVCLASS_GAMECTRL, z81e6312, NULL, DIEDFL_ATTACHEDONLY);
++			di->Release();
++		}
++		memcpy(z53912c8, z0d45c79, sizeof(z53912c8));
++		InterlockedExchange(&z5ed7b1c, za6be0f1);
++		InterlockedExchange(&z1529ae0, 0);
++		return 0;
++	}
+ 	int mouseCount = 0;
+ 
+ 	// Number of GUIDS enumerated for mouse, gamepad
+@@ -73,7 +132,7 @@
+ 
+ 	int gamepadInitSingle()
+ 	{
+-		gamepadData* gamepad = &gamepadProperties[gamepadCount];
++		gamepadData* gamepad = z4be8c9b();
+ 		if (gamepad->lpdid == NULL) {
+ 			return 1;
+ 		}
+@@ -153,6 +212,7 @@
+ 		}
+ 
+ 		devGuids[guidCount].guid = instance->guidInstance;
++		devGuids[guidCount].zf6c433a = instance->guidProduct;
+ 		guidCount++;
+ 
+ 		return DIENUM_CONTINUE;
+@@ -173,7 +233,7 @@
+ 			return DIENUM_CONTINUE;
+ 		}
+ 
+-		gamepadData* p = &gamepadProperties[gamepadCount];
++		gamepadData* p = z4be8c9b();
+ 		p->dwAxisType[DIDFT_GETINSTANCE(instance->dwType)] = instance->dwType;
+ 
+ 		// Set axis range
+@@ -281,6 +341,10 @@
+ 		memset(&keyboardProperties, 0, sizeof(keyboardProperties));
+ 		memset(&gamepadProperties, 0, sizeof(gamepadProperties));
+ 		memset(&mouseProperties, 0, sizeof(mouseProperties));
++		memset(zcaaa3fe, 0, sizeof(zcaaa3fe));
++		memset(ze961caf, 0, sizeof(ze961caf));
++		memset(z1efbe65, 0, sizeof(z1efbe65));
++		z235ccb6 = 0;
+ 
+ 		if (FAILED(_DirectInput8Create(hAppInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&pDI, NULL))) {
+ 			return 1;
+@@ -325,6 +389,8 @@
+ 			// Create the DirectInput interface
+ 			if (SUCCEEDED(pDI->CreateDevice(devGuids[i].guid, &gamepadProperties[gamepadCount].lpdid, NULL))) {
+ 				if (!gamepadInitSingle()) {
++					zdd6920f[gamepadCount] = devGuids[i].guid;
++					z98e66ca[gamepadCount] = devGuids[i].zf6c433a;
+ 					gamepadCount++;
+ 				} else {
+ 					RELEASE(gamepadProperties[gamepadCount].lpdid)
+@@ -336,11 +402,92 @@
+ 	}
+ 
+ 	// Call before checking for Input in a frame
++	static int z78d41dd(int i, const GUID& inst, const GUID& zf6c433a)
++	{
++		gamepadData* g = &gamepadProperties[i];
++		if (g->lpdid) {
++			g->lpdid->Unacquire();
++			RELEASE(g->lpdid)
++		}
++		if (!pDI || FAILED(pDI->CreateDevice(inst, &g->lpdid, NULL)) || !g->lpdid) {
++			g->lpdid = NULL;
++			return 1;
++		}
++		z307aed0 = i;
++		const int r = gamepadInitSingle();
++		z307aed0 = -1;
++		if (r) {
++			RELEASE(g->lpdid)
++			return 1;
++		}
++		zdd6920f[i] = inst;
++		z98e66ca[i] = zf6c433a;
++		zcaaa3fe[i] = 0;
++		return 0;
++	}
++
++	static void zb9b43b3()
++	{
++		int lost = 0;
++		for (int i = 0; i < gamepadCount; i++) lost |= z1efbe65[i];
++		if (!lost) return;
++
++		if (zc1943a3 && GetTickCount() < zc1943a3) return;
++		const LONG n = InterlockedExchange(&z5ed7b1c, -1);
++		if (n >= 0) {
++			for (int i = 0; i < gamepadCount; i++) {
++				if (!z1efbe65[i]) continue;
++				int hit = -1;
++				for (int k = 0; k < n && hit < 0; k++)
++					if (IsEqualGUID(z53912c8[k].inst, zdd6920f[i])) hit = k;
++				if (hit < 0) {
++					for (int k = 0; k < n && hit < 0; k++) {
++						if (!IsEqualGUID(z53912c8[k].zf6c433a, z98e66ca[i])) continue;
++						int used = 0;
++						for (int j = 0; j < gamepadCount; j++)
++							if (!z1efbe65[j] && IsEqualGUID(zdd6920f[j], z53912c8[k].inst)) used = 1;
++						if (!used) hit = k;
++					}
++				}
++				if (hit >= 0) {
++					const int r = z78d41dd(i, z53912c8[hit].inst, z53912c8[hit].zf6c433a);
++					char m[96];
++					snprintf(m, sizeof(m), "controle: o %d foi religado - %s", i, r ? "nao deu para abrir" : "reconectado");
++					z5d90bae(m);
++				}
++			}
++		}
++		const DWORD now = GetTickCount();
++		if (!z1529ae0 && now - z281d2a0 >= z1afe295) {
++			z281d2a0 = now;
++			InterlockedExchange(&z1529ae0, 1);
++			HANDLE h = CreateThread(NULL, 0, z9605626, NULL, 0, NULL);
++			if (h) CloseHandle(h);
++			else InterlockedExchange(&z1529ae0, 0);
++		}
++	}
++
+ 	int newFrame()
+ 	{
+ 		// No gamepads have been read for this frame
+ 		for (int i = 0; i < gamepadCount; i++) {
+ 			gamepadProperties[i].readStatus = 0;
++		}
++		zb9b43b3();
++		{
++			static int z6539216 = -2, nFrame = 0, z61f04b9 = 0;
++			if (z6539216 == -2) {
++				char v[16] = "";
++				z6539216 = GetEnvironmentVariableA("RBF_TESTE_CONTROLE", v, sizeof(v)) ? atoi(v) : -1;
++				const char* c = strchr(v, ',');
++				z61f04b9 = c ? atoi(c + 1) : 0;
++			}
++			if (z6539216 > 0 && ++nFrame == z6539216 && gamepadCount > 0 && gamepadProperties[0].lpdid) {
++				gamepadProperties[0].lpdid->Unacquire();
++				RELEASE(gamepadProperties[0].lpdid)
++				if (z61f04b9 > 0) zc1943a3 = GetTickCount() + (DWORD)z61f04b9;
++				z5d90bae("teste: RBF_TESTE_CONTROLE - a conexao do controle 0 foi solta");
++			}
+ 		}
+ 
+ 		// mouse not read this frame
+@@ -379,6 +526,15 @@
+ 			return 1;
+ 		}
+ 
 +		{
 +			DWORD pid = 0;
 +			HWND fg = GetForegroundWindow();
 +			if (fg) GetWindowThreadProcessId(fg, &pid);
-+			if (pid != GetCurrentProcessId()) {
++			if (pid != GetCurrentProcessId() || z806b0c0()) {
 +				memset(keyboard->state, 0, sizeof(keyboard->state));
++			}
++		}
++
+ 		// The keyboard has been successfully Read this frame
+ 		keyboard->readStatus = 1;
+ 
+@@ -395,6 +551,7 @@
+ 			return 1;
+ 		}
+ 		if (!gamepad->lpdid) {
++			zf7f7f17((int)(gamepad - gamepadProperties));
+ 			return 1;
+ 		}
+ 
+@@ -411,8 +568,21 @@
+ 			}
+ 			gamepad->lpdid->Acquire();		// If DIERR_INPUTLOST, reacquire and try again
+ 		}
++		const int idx = (int)(gamepad - gamepadProperties);
+ 		if (FAILED(ret)) {
+-			return 1;
++			zf7f7f17(idx);
++			return 1;
++		}
++		if (idx >= 0 && idx < MAX_GAMEPAD) {
++			zcaaa3fe[idx] = 0;
++			ze961caf[idx] = 1;
++			if (z1efbe65[idx]) {
++				z1efbe65[idx] = 0;
++				z235ccb6 = GetTickCount();
++				char m[64];
++				snprintf(m, sizeof(m), "controle: o %d voltou", idx);
++				z5d90bae(m);
 +			}
  		}
  
- 		// The keyboard has been successfully Read this frame
+ 		// This gamepad had been successfully Read this frame
+@@ -918,3 +1088,12 @@
+ }
+ 
+ struct InputInOut InputInOutDInput = { init, exit, setCooperativeLevel, newFrame, getState, readGamepadAxis, readMouseAxis, find, getControlName, NULL, _T("DirectInput8 input") };
++
++int z7fb98df()
++{
++	for (int i = 0; i < gamepadCount; i++)
++		if (z1efbe65[i]) return 1;
++	if (z235ccb6 && GetTickCount() - z235ccb6 < z43c6d29) return 2;
++	return 0;
++}
++
 diff --git a/src/intf/video/vid_interface.cpp b/src/intf/video/vid_interface.cpp
 --- a/src/intf/video/vid_interface.cpp
 +++ b/src/intf/video/vid_interface.cpp
@@ -3897,7 +4238,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static void textout(ID3DXFont *font, TCHAR *str, RECT dst, DWORD shadow, DWORD flags, DWORD color)
  {
  	if (shadow) {
-@@ -1015,8 +1081,808 @@
+@@ -1015,8 +1081,952 @@
  	font->DrawText(NULL, str, -1, &dst, flags, color);
  }
  
@@ -4387,6 +4728,149 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	ze5f8e01();
 +}
 +
++static ID3DXFont* z701834f  = NULL;
++static int        z52e727e    = 0;
++static ID3DXFont* zd6fae8b = NULL;
++static int        z79e66c6 = 0;
++
++static int zb77b79f(ID3DXFont* f, const wchar_t* str, int w)
++{
++	RECT rc = { 0, 0, w, 0 };
++	f->DrawText(NULL, (TCHAR*)str, -1, &rc, DT_CALCRECT | DT_WORDBREAK | DT_LEFT, 0xFFFFFFFF);
++	return rc.bottom - rc.top;
++}
++
++static void za1e9ebb(ID3DXFont* f, const wchar_t* str, int x, int y, int w, int h, D3DCOLOR c, DWORD flags)
++{
++	RECT rc = { x, y, x + w, y + h };
++	f->DrawText(NULL, (TCHAR*)str, -1, &rc, flags, c);
++}
++
++static void z7bc4686(int x, int y, int w, int h, D3DCOLOR c)
++{
++	Boxxy(x, y, w, 2, c);
++	Boxxy(x, y + h - 2, w, 2, c);
++	Boxxy(x, y, 2, h, c);
++	Boxxy(x + w - 2, y, 2, h, c);
++}
++
++static void z337d22b(void*  , int x0, int y0, int x1, int y1, unsigned int rgb, int alpha)
++{
++	if (x1 <= x0 || y1 <= y0 || alpha <= 0) return;
++	Boxxy(x0, y0, x1 - x0, y1 - y0, D3DCOLOR_ARGB(alpha > 255 ? 255 : alpha, (rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF));
++}
++
++static void z13f3faf(RECT frec)
++{
++	z1ea8be6 V;
++	if (!z8ad8d82(&V)) return;
++	if (!nVidFullscreen) {
++		frec.top = 0; frec.left = 0;
++		frec.right = Dest.right - Dest.left;
++		frec.bottom = Dest.bottom - Dest.top;
++	}
++	const int W = frec.right - frec.left, H = frec.bottom - frec.top;
++	if (W <= 0 || H <= 0) return;
++	int px = H / 28;
++	if (px < 13) px = 13;
++	if (px > 34) px = 34;
++	ID3DXFont* f  = z836891f(&z701834f, &z52e727e, px, _T("Segoe UI"), FW_SEMIBOLD);
++	ID3DXFont* fs = z836891f(&zd6fae8b, &z79e66c6, px * 3 / 4, _T("Segoe UI"), FW_NORMAL);
++	if (!f || !fs) return;
++	const int pad = px / 2, small = px * 3 / 4 + 4, margin = 10;
++
++	const int ih = px * 13 / 10, iw = ih * 2;
++	const int ix = frec.left + (W - iw) / 2, iy = frec.top + H - margin - ih;
++
++	int pw = W * 60 / 100;
++	if (pw > px * 34) pw = px * 34;
++	if (pw < px * 14) pw = px * 14;
++	const int z9c875be = pw - pad * 2;
++	const int x0 = frec.left + (W - pw) / 2;
++
++	static wchar_t comp[z0452cf9][300];
++	int hl[z0452cf9];
++	for (int i = 0; i < V.z19ef79a; i++) {
++		const z9bafc5a& L = V.lines[i];
++		if (L.sys) _snwprintf(comp[i], 299, L"%s", L.text);
++		else _snwprintf(comp[i], 299, L"%s: %s%s", L.mine ? L"Voc\x00EA" : V.zd8f5856, L.text, L.mine && L.read ? L"  (lido)" : L"");
++		comp[i][299] = 0;
++		hl[i] = zb77b79f(L.sys ? fs : f, comp[i], z9c875be);
++	}
++	static wchar_t inp[260];
++	_snwprintf(inp, 259, L"%s%s", V.z1e5d86a ? V.z1e5d86a : L"", ((GetTickCount() / 500) & 1) ? L"|" : L" ");
++	inp[259] = 0;
++	const int z56f9ce9 = V.zcf8a8e5 ? (zb77b79f(f, inp, z9c875be - pad) > px + 4 ? zb77b79f(f, inp, z9c875be - pad) : px + 4) : 0;
++	const int z7884e38 = V.ze6affeb ? small + pad / 2 : 0;
++	const int fixed = pad + small + pad / 2 + z7884e38 + (V.zcf8a8e5 ? pad + z56f9ce9 + pad + small : 0) + pad;
++	const int z8eed30b = H * 60 / 100;
++	int first = 0, body = 0;
++	for (int i = V.z19ef79a - 1; i >= 0; i--) {
++		if (fixed + body + hl[i] + 4 > z8eed30b) { first = i + 1; break; }
++		body += hl[i] + 4;
++	}
++	if (V.z19ef79a == 0) body = small;
++	const int ph = fixed + body;
++	const int y0 = frec.top + H - margin - ph;
++
++	if (V.fOpen <= 0.001f) {
++		int bx = 0, by = 0, br = 0;
++		zb52af7e(z337d22b, NULL, ix, iy, iw, ih, 0x70, V.z92c652b, V.z822f0cf, &bx, &by, &br);
++		if (br > 0) {
++			static wchar_t num[8];
++			_snwprintf(num, 7, L"%d", V.z822f0cf > 99 ? 99 : V.z822f0cf);
++			num[7] = 0;
++			za1e9ebb(fs, num, bx - br, by - br, br * 2, br * 2, D3DCOLOR_ARGB(0xFF, 0x0B, 0x0D, 0x14), DT_CENTER | DT_VCENTER | DT_SINGLELINE);
++		}
++		return;
++	}
++	if (V.fOpen < 0.999f) {
++		const float t = V.fOpen;
++		const int x = (int)(ix + (x0 - ix) * t), y = (int)(iy + (y0 - iy) * t);
++		const int w = (int)(iw + (pw - iw) * t), h = (int)(ih + (ph - ih) * t);
++		const int r = (int)(ih / 2 + (px / 3 - ih / 2) * t);
++		z8eca64b(z337d22b, NULL, x, y, w, h, r, 0x4DD0E1, (int)(0x60 + (0xFF - 0x60) * t));
++		z8eca64b(z337d22b, NULL, x + 2, y + 2, w - 4, h - 4, r > 2 ? r - 2 : r, 0x1B1F27, (int)(0x70 + (0xE6 - 0x70) * t));
++		return;
++	}
++
++	z8eca64b(z337d22b, NULL, x0, y0, pw, ph, px / 3, 0x4DD0E1, 0xFF);
++	z8eca64b(z337d22b, NULL, x0 + 2, y0 + 2, pw - 4, ph - 4, px / 3 - 2 > 1 ? px / 3 - 2 : 1, 0x12141A, 0xE6);
++	int y = y0 + pad;
++	static wchar_t title[80];
++	_snwprintf(title, 79, L"CHAT \x00B7 %s", V.zd8f5856);
++	title[79] = 0;
++	za1e9ebb(fs, title, x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
++	za1e9ebb(fs, V.z92c652b ? L"F2 ativa" : L"T escreve \x00B7 F1 esconde \x00B7 F2 desativa", x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_RIGHT | DT_SINGLELINE);
++	y += small + pad / 2;
++	if (V.ze6affeb) {
++		za1e9ebb(fs, V.ze6affeb, x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0xFF, 0xB8, 0x6C), DT_LEFT | DT_SINGLELINE);
++		y += z7884e38;
++	}
++	if (V.z19ef79a == 0) {
++		za1e9ebb(fs, L"Nenhuma mensagem ainda.", x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
++		y += small;
++	}
++	for (int i = first; i < V.z19ef79a; i++) {
++		const D3DCOLOR c = V.lines[i].sys ? D3DCOLOR_ARGB(0xFF, 0xF1, 0xFA, 0x8C)
++		                 : V.lines[i].mine ? D3DCOLOR_ARGB(0xFF, 0x7F, 0xE3, 0xF0) : D3DCOLOR_ARGB(0xFF, 0xF8, 0xF8, 0xF2);
++		za1e9ebb(V.lines[i].sys ? fs : f, comp[i], x0 + pad, y, z9c875be, hl[i] + 2, c, DT_LEFT | DT_WORDBREAK);
++		y += hl[i] + 4;
++	}
++	if (V.zcf8a8e5) {
++		y += pad;
++		Boxxy(x0 + pad, y, z9c875be, z56f9ce9 + pad / 2, D3DCOLOR_ARGB(0xFF, 0x1B, 0x1F, 0x27));
++		z7bc4686(x0 + pad, y, z9c875be, z56f9ce9 + pad / 2, D3DCOLOR_ARGB(0xFF, 0x2E, 0x34, 0x40));
++		za1e9ebb(f, inp, x0 + pad + pad / 2, y + pad / 4, z9c875be - pad, z56f9ce9, D3DCOLOR_ARGB(0xFF, 0xF8, 0xF8, 0xF2), DT_LEFT | DT_WORDBREAK);
++		y += z56f9ce9 + pad / 2 + pad / 2;
++		static wchar_t cnt[24];
++		_snwprintf(cnt, 23, L"%d/%d", V.nInput, V.nMax);
++		cnt[23] = 0;
++		za1e9ebb(fs, L"Enter envia \x00B7 Esc fecha", x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
++		za1e9ebb(fs, cnt, x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_RIGHT | DT_SINGLELINE);
++	}
++}
++
 +static unsigned int z6a8fe85(const char* s)
 +{
 +	if (!strcmp(s, "A")) return 0xFF5555;
@@ -4701,12 +5185,13 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	zaa1245f(frec);
 +	z0c13773(frec);
 +	z28223fd(frec);
++	z13f3faf(frec);
 +	za7fbc0d(frec);
 +
  	if (nVidSDisplayStatus == 0) {
  		return;
  	}
-@@ -1190,7 +2056,7 @@
+@@ -1190,7 +2200,7 @@
  		dprintf(_T("  * Error: Couldn't create Direct3D device.\n"));
  #endif
  
@@ -4715,7 +5200,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
  			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
-@@ -1692,6 +2558,7 @@
+@@ -1692,6 +2702,7 @@
  //	VidSDisplayOSD(pddsBlitFX[nUseSys], &rect, 0);
  
  	if (nVidFullscreen) {
@@ -4723,7 +5208,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		pD3DDevice->Present(NULL, NULL, NULL, NULL);
  	} else {
  		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
-@@ -1906,6 +2773,7 @@
+@@ -1906,6 +2917,7 @@
  {
  	VidSoftFXExit();
  
@@ -4731,7 +5216,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	dx9AltReleaseTexture();
  
  	VidSFreeVidImage();
-@@ -2136,13 +3004,25 @@
+@@ -2136,13 +3148,25 @@
  	}
  
  	// HardFX
@@ -4759,7 +5244,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	}
  	else
  	{
-@@ -2153,6 +3033,50 @@
+@@ -2153,6 +3177,50 @@
  	return r;
  }
  
@@ -4810,7 +5295,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static int dx9AltInit()
  {
  	if (hScrnWnd == NULL) {
-@@ -2166,14 +3090,16 @@
+@@ -2166,14 +3234,16 @@
  #endif
  
  	// Get pointer to Direct3D
@@ -4829,7 +5314,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	nRotateGame = 0;
  	if (bDrvOkay) {
  		if (BurnDrvGetFlags() & BDF_ORIENTATION_VERTICAL) {
-@@ -2251,13 +3177,53 @@
+@@ -2251,13 +3321,53 @@
  		dwBehaviorFlags |= D3DCREATE_SOFTWARE_VERTEXPROCESSING;
  	}
  
@@ -4885,7 +5370,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
  			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
-@@ -2337,8 +3303,7 @@
+@@ -2337,8 +3447,7 @@
  	// HardFX gets initted here
  	dx9AltSetHardFX(nVidDX9HardFX);
  
@@ -4895,7 +5380,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	nImageWidth = 0; nImageHeight = 0;
  
-@@ -2401,6 +3366,8 @@
+@@ -2401,6 +3510,8 @@
  	// apply vertex alpha values to texture
  	pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
  
@@ -4904,7 +5389,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	dx9AltTextureInit();
  
  	nImageWidth = 0; nImageHeight = 0;
-@@ -2447,6 +3414,11 @@
+@@ -2447,6 +3558,11 @@
  	if (pVidImage == NULL) return 1;
  
  	GetClientRect(hVidWnd, &Dest);
@@ -4916,7 +5401,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	if (nVidFullscreen == 0) {
  		Dest.top += nMenuHeight;
-@@ -2475,7 +3447,7 @@
+@@ -2475,7 +3591,7 @@
  			int nWidth = nGameImageWidth;
  			int nHeight = nGameImageHeight;
  
@@ -4925,7 +5410,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				if (nPreScale & 1) {
  					nWidth *= nPreScaleZoom;
  				}
-@@ -2484,7 +3456,7 @@
+@@ -2484,7 +3600,7 @@
  				}
  			}
  
@@ -4934,7 +5419,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, nRotateGame ? Dest.top : Dest.left, nRotateGame ? Dest.left : Dest.top, nImageWidth, nImageHeight);
  			} else {
  				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, 0, 0, nImageWidth, nImageHeight);
-@@ -2497,7 +3469,7 @@
+@@ -2497,7 +3613,7 @@
  			D3DVIEWPORT9 vp;
  
  			// Set the size of the image on the PC screen
@@ -4943,7 +5428,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				vp.X = Dest.left;
  				vp.Y = Dest.top;
  				vp.Width = Dest.right - Dest.left;
-@@ -2519,9 +3491,19 @@
+@@ -2519,9 +3635,19 @@
  
  	ClearD3D9SurfaceEntirety<true>();
  
@@ -4963,7 +5448,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	{
  		// Copy the game image onto a texture for rendering
-@@ -2531,7 +3513,7 @@
+@@ -2531,7 +3657,7 @@
  			int pitch = d3dlr.Pitch;
  			unsigned char* pd = (unsigned char*)d3dlr.pBits;
  
@@ -4972,7 +5457,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				VidFilterApplyEffect(pd, pitch);
  			} else {
  				unsigned char* ps = pVidImage + nVidImageLeft * nVidImageBPP;
-@@ -2545,6 +3527,7 @@
+@@ -2545,6 +3671,7 @@
  						VidSCpyImg16(pd, pitch, ps, s, nVidImageWidth, nVidImageHeight);
  						break;
  				}
@@ -4980,7 +5465,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			}
  
  			pTexture->UnlockRect(0);
-@@ -2624,6 +3607,67 @@
+@@ -2624,6 +3751,67 @@
  	return 0;
  }
  
@@ -5048,7 +5533,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  // Paint the BlitFX surface onto the primary surface
  static int dx9AltPaint(int bValidate)
  {
-@@ -2632,6 +3676,30 @@
+@@ -2632,6 +3820,30 @@
  	}
  
  	RECT rect = { 0, 0, 0, 0 };
@@ -5079,7 +5564,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	if (!nVidFullscreen) {
  		GetClientScreenRect(hVidWnd, &rect);
-@@ -2649,6 +3717,7 @@
+@@ -2649,6 +3861,7 @@
  	}
  
  	if (nVidFullscreen) {
@@ -5087,7 +5572,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		pD3DDevice->Present(NULL, NULL, NULL, NULL);
  	} else {
  		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
-@@ -2656,6 +3725,7 @@
+@@ -2656,6 +3869,7 @@
  		ClientToScreen(hVidWnd, &c);
  		RECT dst = { rect.left - c.x, rect.top - c.y, rect.right - c.x, rect.bottom - c.y };
  

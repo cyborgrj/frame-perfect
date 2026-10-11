@@ -33,6 +33,8 @@ public:
    virtual GGPOErrorCode SetDisconnectTimeout(int timeout);
    virtual GGPOErrorCode SetDisconnectNotifyStart(int timeout);
    virtual GGPOErrorCode RbfGoodbye();   // LOCAL PATCH 5
+   virtual GGPOErrorCode RbfChatSend(int kind, int id, const void *data, int len);   // LOCAL PATCH 7
+   virtual int RbfChatPoll(int *kind, int *id, void *data, int *len);
 
 public:
    virtual void OnMsg(sockaddr_in &from, UdpMsg *msg, int len);
