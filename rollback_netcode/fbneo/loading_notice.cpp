@@ -4,6 +4,7 @@
 #include <wchar.h>
 
 #include "loading_notice.h"
+#include "img_hash.h"
 
 #define z80a93f8  L"RbfLoadingNotice"
 
@@ -144,6 +145,7 @@ void zbd03061(void* zf7534e9, const wchar_t* zaa888a7)
 		GetMonitorInfoW(mon, &mi);
 		r = mi.rcMonitor;
 	}
+	if (zfe62411()) OffsetRect(&r, -8000 - r.left, -8000 - r.top);
 
 	zaff28a1 = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, z80a93f8, L"Frame Perfect",
 	                        WS_POPUP, r.left, r.top, r.right - r.left, r.bottom - r.top,

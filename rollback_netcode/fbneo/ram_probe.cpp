@@ -34,7 +34,7 @@ static int    z737d45f = 0;
 static UINT32 ze9bc394     = 0;
 static UINT32 z4aada97   = 0;
 static UINT32 ze24b71c   = 0;
-static void  (*zf2fc3fb)(const char*) = NULL;
+static void  (*g_log)(const char*) = NULL;
 
 static void z17945bb(void (*pfn)(const char*), const char* fmt, ...)
 {
@@ -178,7 +178,7 @@ int zb8ed435(int nInterval, void (*z930c6f2)(const char*))
 	ze9bc394     = 0;
 	z4aada97   = 0;
 	ze24b71c   = 0;
-	zf2fc3fb       = z930c6f2;
+	g_log       = z930c6f2;
 
 	char z4af555c[32]; memset(z4af555c, 0, sizeof(z4af555c));
 	strncpy(z4af555c, szGame, sizeof(z4af555c) - 1);
@@ -334,7 +334,7 @@ void z1907e87(void)
 	z4aada97++;
 
 	if (ze24b71c >= z988262b) {
-		z17945bb(zf2fc3fb, "ram probe: %u MB recorded - stopping before this fills "
+		z17945bb(g_log, "ram probe: %u MB recorded - stopping before this fills "
 		                 "the disk. Far more than one match needs.",
 		          ze24b71c / (1024u * 1024u));
 		z2702846();
@@ -352,9 +352,9 @@ void z2702846(void)
 	free(z69306aa);
 	z69306aa = NULL;
 
-	z17945bb(zf2fc3fb, "ram probe: %u samples over %u frames, %u KB.",
+	z17945bb(g_log, "ram probe: %u samples over %u frames, %u KB.",
 	          z4aada97, ze9bc394, (ze24b71c + 1023) / 1024);
-	zf2fc3fb = NULL;
+	g_log = NULL;
 }
 
 int z307837a(void) { return z22f2a7a != NULL; }

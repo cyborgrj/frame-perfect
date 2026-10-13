@@ -2,6 +2,7 @@
 #include "match_score.h"
 #include "anticheat.h"
 #include "input_display.h"
+#include "lang.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -11,6 +12,8 @@
 
 extern "C" void z5d90bae(const char* s);
 extern "C" int  zedf061d(void);
+extern "C" int  z1b0f145(void);
+extern "C" int  zf796ce3(void);
 extern "C" int  zf5650f6(int* pSide, int* z4b39f95);
 
 #define z66711b9    0x8BE9FDu
@@ -20,9 +23,10 @@ extern "C" int  zf5650f6(int* pSide, int* z4b39f95);
 #define z937b93b     0x282A36u
 #define z8f95492  0xFFB86Cu
 #define z01db8b8     0xFF5555u
+#define z940b7f3     0xF5C542u
 #define z170e95d   216
 
-#define zad641fd 24
+#define zad641fd 40
 #define z9f11055 9
 #define z15094f0 12
 #define z0b35ab8   9
@@ -397,17 +401,17 @@ void z6987e0c(int z5cddbe5)
 int z70213e0(z2c2b1a7* out)
 {
 	if (!out) return 0;
-	const int za9e2613 = z910e658 ? zedf061d() : -1;
+	const int za9e2613 = (z910e658 || zf796ce3()) ? zedf061d() : -1;
 	const int pad = za9e2613 >= 0 ? 0 : z7fb98df();
 	if (pad) {
 		memset(out, 0, sizeof(*out));
 		out->z8b6ca0e = -1;
 		if (pad == 1) {
-			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "CONTROLE DESCONECTADO");
-			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "RECONECTE PARA CONTINUAR");
+			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("CONTROLE DESCONECTADO"));
+			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("RECONECTE PARA CONTINUAR"));
 			out->zd4c6117 = z8f95492;
 		} else {
-			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "CONTROLE RECONECTADO");
+			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("CONTROLE RECONECTADO"));
 			out->zd4c6117 = z8f95492;
 		}
 		out->z0456974    = z937b93b;
@@ -416,7 +420,7 @@ int z70213e0(z2c2b1a7* out)
 	}
 	if (za9e2613 < 0 && z818de3a && (int)(z818de3a - GetTickCount()) > 0) {
 		memset(out, 0, sizeof(*out));
-		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "VOLUME");
+		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("VOLUME"));
 		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%d%%", zbeeb4de);
 		out->zd4c6117   = z8f95492;
 		out->z0456974    = z937b93b;
@@ -428,8 +432,13 @@ int z70213e0(z2c2b1a7* out)
 	if (!z910e658) return 0;
 	if (za9e2613 >= 0) {
 		memset(out, 0, sizeof(*out));
-		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "ENCERRANDO A PARTIDA");
-		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "HAVERA PERDA DE PONTOS...");
+		if (z1b0f145()) {
+			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("ENCERRANDO A PARTIDA"));
+			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("HAVERA PERDA DE PONTOS..."));
+		} else {
+			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("FECHANDO O JOGO"));
+			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("SOLTE PARA CONTINUAR"));
+		}
 		out->zd4c6117   = z8f95492;
 		out->z0456974    = z937b93b;
 		out->z70f9d25 = z170e95d;
@@ -442,8 +451,8 @@ int z70213e0(z2c2b1a7* out)
 		const int ask = zf5650f6(&side, &pct);
 		if (ask) {
 			memset(out, 0, sizeof(*out));
-			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "RECOMECAR A PARTIDA?");
-			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", ask == 1 ? "AGUARDANDO O ADVERSARIO" : "APERTE F3 PARA ACEITAR");
+			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("RECOMECAR A PARTIDA?"));
+			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", ask == 1 ? z34ba319("AGUARDANDO O ADVERSARIO") : z34ba319("APERTE F3 PARA ACEITAR"));
 			out->zd4c6117   = z8f95492;
 			out->z0456974    = z937b93b;
 			out->z70f9d25 = z170e95d;
@@ -456,7 +465,7 @@ int z70213e0(z2c2b1a7* out)
 		if (!z8486cb4(&side, &kind)) return 0;
 		memset(out, 0, sizeof(*out));
 		out->z8b6ca0e = -1;
-		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", kind == z0f4913a ? "POSSIVEL MACRO" : "POSSIVEL TURBO");
+		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", kind == z0f4913a ? z34ba319("POSSIVEL MACRO") : z34ba319("POSSIVEL TURBO"));
 		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", side == 1 ? (z93f4c3c[0] ? z93f4c3c : "P1") : (z55eba79[0] ? z55eba79 : "P2"));
 		out->zd4c6117   = z8f95492;
 		out->z0456974    = z937b93b;
@@ -468,13 +477,13 @@ int z70213e0(z2c2b1a7* out)
 
 	memset(out, 0, sizeof(*out));
 	out->z8b6ca0e = -1;
-	snprintf(out->z0f6d336, sizeof(out->z0f6d336), "INATIVIDADE DO %s",
-	         side == 3 ? "P1 E DO P2" : side == 1 ? "P1" : "P2");
+	snprintf(out->z0f6d336, sizeof(out->z0f6d336), z34ba319("INATIVIDADE DO %s"),
+	         side == 3 ? z34ba319("P1 E DO P2") : side == 1 ? "P1" : "P2");
 	if (stage == 1) {
-		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "A PARTIDA SERA ENCERRADA");
+		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("A PARTIDA SERA ENCERRADA"));
 		out->zd4c6117 = z8f95492;
 	} else {
-		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "ENCERRANDO EM %d", (left + 59) / 60);
+		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), z34ba319("ENCERRANDO EM %d"), (left + 59) / 60);
 		out->zd4c6117 = z01db8b8;
 	}
 	out->z0456974    = z937b93b;
@@ -796,7 +805,7 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, z1d5151e, z8f95492, 0);
 		y += lh;
 	}
-	if (nShow == 0) { zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, "Nenhuma mensagem ainda.", 0x8A93A6, 0); y += lh; }
+	if (nShow == 0) { zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, z34ba319("Nenhuma mensagem ainda."), 0x8A93A6, 0); y += lh; }
 	for (int i = first; i < nShow; i++) {
 		char t[512];
 		z610fb2b(t, sizeof(t), V.lines[i].text);
@@ -804,7 +813,7 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 			y += lh * z7827c08(img, w, h, bpp, pitch, t, z7108971 + pad, y, tw, lh, 0xF1FA8C, 1, 3);
 			continue;
 		}
-		snprintf(line, sizeof(line), "%s: %s%s", V.lines[i].mine ? "Voc\xEA" : name, t, V.lines[i].mine && V.lines[i].read ? " (lido)" : "");
+		snprintf(line, sizeof(line), "%s: %s%s", V.lines[i].mine ? z34ba319("Voc\xEA") : name, t, V.lines[i].mine && V.lines[i].read ? z34ba319(" (lido)") : "");
 		z43680e3(line, 0, tw);
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, line, V.lines[i].mine ? 0x7FE3F0 : z98784dd, 0);
 		y += lh;
@@ -819,7 +828,7 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, p, z98784dd, 0);
 		y += lh;
 		char z1d5151e[80];
-		snprintf(z1d5151e, sizeof(z1d5151e), "Enter envia - Esc fecha   %d/%d", V.nInput, V.nMax);
+		snprintf(z1d5151e, sizeof(z1d5151e), z34ba319("Enter envia - Esc fecha   %d/%d"), V.nInput, V.nMax);
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, z1d5151e, 0x8A93A6, 0);
 	}
 }
@@ -856,6 +865,19 @@ static void z444375c(unsigned char* img, int w, int h, int bpp, int pitch)
 
 	const int idx = (L.nMode == 2) ? 1 : 0;
 
+	auto zbbb2811 = [&](int x, const char* s, unsigned int rgb) -> int {
+		int n = 0;
+		if (s && s[0] == '[')
+			for (int i = 1; s[i] && i < 12; i++)
+				if (s[i] == ']') { n = s[i + 1] ? i + 1 : 0; break; }
+		if (!n) return zd1ca55b(img, w, h, bpp, pitch, x, 1, s, rgb, idx);
+		char tag[16];
+		memcpy(tag, s, n);
+		tag[n] = 0;
+		const int wt = zd1ca55b(img, w, h, bpp, pitch, x, 1, tag, z940b7f3, idx);
+		return wt + zd1ca55b(img, w, h, bpp, pitch, x + wt, 1, s + n, rgb, idx);
+	};
+
 	int th = 0;
 	const int w1  = z50ccdbc(L.z733a844, idx, &th);
 	const int ws1 = z50ccdbc(L.zfad56d7, idx, NULL);
@@ -875,13 +897,13 @@ static void z444375c(unsigned char* img, int w, int h, int bpp, int pitch)
 
 	int x = mid - half - ws1;
 	zd1ca55b(img, w, h, bpp, pitch, x, y, L.zfad56d7, L.ze871279, idx);
-	zd1ca55b(img, w, h, bpp, pitch, x - gap - w1, y, L.z733a844, L.z03b5823, idx);
+	zbbb2811(x - gap - w1, L.z733a844, L.z03b5823);
 
 	if (z8d214a5) zd1ca55b(img, w, h, bpp, pitch, mid - z8d214a5 / 2, y, L.z5ea9399, L.z73d250a, idx);
 
 	x = mid + half;
 	zd1ca55b(img, w, h, bpp, pitch, x, y, L.z561be8d, L.ze871279, idx);
-	const int wp2 = zd1ca55b(img, w, h, bpp, pitch, x + z6437052 + gap, y, L.zd5e0939, L.z20dcc8d, idx);
+	const int wp2 = zbbb2811(x + z6437052 + gap, L.zd5e0939, L.z20dcc8d);
 
 	z16fe25d  = x + z6437052 + gap + wp2;
 	z72f5dac = z404a75f;

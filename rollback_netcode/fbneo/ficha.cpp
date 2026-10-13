@@ -98,7 +98,7 @@ static int attach(void (*z930c6f2)(const char*))
 		unsigned char* p = zd164f58("Main RAM", ACB_MEMORY_RAM, &n);
 		if (p && (z0c24531 ^ 3) < n) { za065e40 = zaa0734c; z7e75214 = p; zf2d7d46 = n; zf5ee0a8 = z0c24531 ^ 3; return 1; }
 	}
-	if (z1abe89d("umk3")) {
+	if (z1abe89d("umk3") || z1abe89d("umk3jug")) {
 		unsigned int n = 0;
 		unsigned char* p = zd164f58("NV RAM", ACB_NVRAM, &n);
 		if (p && zfa670f3 < n) { za065e40 = z3ffc86e; z7e75214 = p; zf2d7d46 = n; return 1; }

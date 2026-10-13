@@ -34,9 +34,9 @@ static void z2e91ce7(void (*z930c6f2)(const char*), const char* fmt, ...)
     z930c6f2(buf);
 }
 
-int z82369e2(const char* zf785ae5, char* szOut, int z58ab65b)
+int z82369e2(const char* zf785ae5, char* szOut, int nOut)
 {
-    if (!zf785ae5 || !*zf785ae5 || !szOut || z58ab65b < 16) return zbc061ae;
+    if (!zf785ae5 || !*zf785ae5 || !szOut || nOut < 16) return zbc061ae;
 
     WSADATA z2957bc2;
     int z0b00021 = (WSAStartup(MAKEWORD(2, 2), &z2957bc2) == 0);
@@ -49,7 +49,7 @@ int z82369e2(const char* zf785ae5, char* szOut, int z58ab65b)
     int rc = za5b59f5;
     if (getaddrinfo(zf785ae5, NULL, &hints, &ai) == 0 && ai != NULL) {
         struct sockaddr_in* sin = (struct sockaddr_in*)ai->ai_addr;
-        if (inet_ntop(AF_INET, &sin->sin_addr, szOut, (size_t)z58ab65b) != NULL) rc = z10fc2a7;
+        if (inet_ntop(AF_INET, &sin->sin_addr, szOut, (size_t)nOut) != NULL) rc = z10fc2a7;
         freeaddrinfo(ai);
     }
 
@@ -68,35 +68,107 @@ static void z43d2e83(const struct sockaddr_in* a, char* z20c0c1d, int z2c76d3c, 
     *pPort = ntohs(a->sin_port);
 }
 
-static int z4e1173f(const char* buf, const char* zb306bef, int nSide)
+#define z08ac216     64
+#define zc3ee0aa    3000
+#define za578b35  8
+#define zd88337f    400
+#define ze528625   25
+
+typedef struct { int n; int a[z08ac216]; } Zs;
+
+static LARGE_INTEGER z244b958;
+
+static unsigned z1363da3(void)
+{
+    LARGE_INTEGER c;
+    if (!z244b958.QuadPart) QueryPerformanceFrequency(&z244b958);
+    if (!z244b958.QuadPart) return GetTickCount();
+    QueryPerformanceCounter(&c);
+    return (unsigned)((c.QuadPart / z244b958.QuadPart) * 1000 + (c.QuadPart % z244b958.QuadPart) * 1000 / z244b958.QuadPart);
+}
+
+static void z702da46(Zs* z, unsigned t)
+{
+    const int d = (int)(z1363da3() - t);
+    if (d < 0 || d > zc3ee0aa || z->n >= z08ac216) return;
+    z->a[z->n++] = d;
+}
+
+static int zbc882b0(const Zs* z)
+{
+    if (z->n <= 0) return -1;
+    int b[z08ac216];
+    for (int i = 0; i < z->n; i++) {
+        int v = z->a[i], j = i;
+        while (j > 0 && b[j - 1] > v) { b[j] = b[j - 1]; j--; }
+        b[j] = v;
+    }
+    return (z->n & 1) ? b[z->n / 2] : (b[z->n / 2 - 1] + b[z->n / 2] + 1) / 2;
+}
+
+static void zf9f1a5a(SOCKET s, int m)
+{
+    int ms = m >= 0 ? m + m / 2 + 40 : 120;
+    if (ms < 60)  ms = 60;
+    if (ms > 600) ms = 600;
+    DWORD t0 = GetTickCount();
+    while ((int)(GetTickCount() - t0) < ms) {
+        fd_set rf;
+        FD_ZERO(&rf);
+        FD_SET(s, &rf);
+        struct timeval tv = { 0, 10 * 1000 };
+        if (select(0, &rf, NULL, NULL, &tv) <= 0) continue;
+        char buf[256];
+        struct sockaddr_in from;
+        int z7c61b00 = sizeof(from);
+        recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr*)&from, &z7c61b00);
+    }
+}
+
+static void z4ad172f(SOCKET s, const struct sockaddr_in* to, const char* zb306bef, int nSide)
+{
+    char b[160];
+    int n = _snprintf(b, sizeof(b) - 1, "RBF1 PUNCH %s %d %u\n", zb306bef, nSide, z1363da3());
+    if (n > 0) sendto(s, b, n, 0, (const struct sockaddr*)to, sizeof(*to));
+}
+
+static void z12300ac(SOCKET s, const struct sockaddr_in* to, int zd227c9f, const char* zb306bef, int nSide,
+                 int z9eb1eeb, unsigned t)
+{
+    char b[160];
+    int n = z9eb1eeb ? _snprintf(b, sizeof(b) - 1, "RBF1 PACK %s %d %u\n", zb306bef, nSide, t)
+               : _snprintf(b, sizeof(b) - 1, "RBF1 PACK %s %d\n", zb306bef, nSide);
+    if (n > 0) sendto(s, b, n, 0, (const struct sockaddr*)to, zd227c9f);
+}
+
+static int z4e1173f(const char* buf, const char* zb306bef, int nSide, unsigned* pT, int* pT1)
 {
     char kind[8], mid[64];
     int side = 0;
-    if (sscanf(buf, "RBF1 %7s %63s %d", kind, mid, &side) != 3) return 0;
+    unsigned t = 0;
+    const int k = sscanf(buf, "RBF1 %7s %63s %d %u", kind, mid, &side, &t);
+    if (k < 3) return 0;
     if (strcmp(mid, zb306bef) != 0 || side == nSide) return 0;
+    *pT  = t;
+    *pT1 = (k == 4);
     if (strcmp(kind, "PUNCH") == 0) return 1;
     if (strcmp(kind, "PACK")  == 0) return 2;
     return 0;
 }
 
 static int z202e320(SOCKET s, const struct sockaddr_in* peer, const char* zb306bef, int nSide,
-                     struct sockaddr_in* heard)
+                     struct sockaddr_in* heard, Zs* z)
 {
-    char z29ecf34[160], zd8c1604[160];
-    int zdf124c2 = _snprintf(z29ecf34, sizeof(z29ecf34) - 1, "RBF1 PUNCH %s %d\n", zb306bef, nSide);
-    int z7bf521b   = _snprintf(zd8c1604,   sizeof(zd8c1604) - 1,   "RBF1 PACK %s %d\n",  zb306bef, nSide);
-    if (zdf124c2 < 0 || z7bf521b < 0) return 0;
-
-    int z8910c81 = 0, z0f3467b = 0;
-    DWORD tStart = GetTickCount(), z34b2b3a = 0;
+    int z8910c81 = 0, z0f3467b = 0, z9eb1eeb = 0;
+    DWORD tStart = GetTickCount(), z34b2b3a = 0, zbdf5b19 = 0;
     int z85f7d84 = 0;
 
-    while (!z0f3467b && (int)(GetTickCount() - tStart) < zdf5ef98) {
+    while ((int)(GetTickCount() - tStart) < zdf5ef98) {
         DWORD now = GetTickCount();
-        if (!z85f7d84 || (int)(now - z34b2b3a) >= za5d7e68) {
-            sendto(s, z29ecf34, zdf124c2, 0, (struct sockaddr*)peer, sizeof(*peer));
-            if (z8910c81 && !z385c1f9(heard, peer))
-                sendto(s, z29ecf34, zdf124c2, 0, (struct sockaddr*)heard, sizeof(*heard));
+        if (z0f3467b && (!z9eb1eeb || z->n >= za578b35 || (int)(now - zbdf5b19) >= zd88337f)) break;
+        if (!z85f7d84 || (int)(now - z34b2b3a) >= (z0f3467b ? ze528625 : za5d7e68)) {
+            z4ad172f(s, peer, zb306bef, nSide);
+            if (z8910c81 && !z385c1f9(heard, peer)) z4ad172f(s, heard, zb306bef, nSide);
             z34b2b3a = now;
             z85f7d84 = 1;
         }
@@ -104,7 +176,7 @@ static int z202e320(SOCKET s, const struct sockaddr_in* peer, const char* zb306b
         fd_set rf;
         FD_ZERO(&rf);
         FD_SET(s, &rf);
-        struct timeval tv = { 0, 30 * 1000 };
+        struct timeval tv = { 0, (z0f3467b ? 5 : 30) * 1000 };
         if (select(0, &rf, NULL, NULL, &tv) <= 0) continue;
 
         char buf[256];
@@ -114,32 +186,39 @@ static int z202e320(SOCKET s, const struct sockaddr_in* peer, const char* zb306b
         if (n <= 0) continue;
         buf[n] = '\0';
 
-        int kind = z4e1173f(buf, zb306bef, nSide);
+        unsigned t = 0;
+        int zf75ca5c = 0;
+        int kind = z4e1173f(buf, zb306bef, nSide, &t, &zf75ca5c);
         if (kind == 0) continue;
         if (!z8910c81) { *heard = from; z8910c81 = 1; }
-        if (kind == 1) sendto(s, zd8c1604, z7bf521b, 0, (struct sockaddr*)&from, z7c61b00);
-        else           z0f3467b = 1;
+        if (kind == 1) {
+            z12300ac(s, &from, z7c61b00, zb306bef, nSide, zf75ca5c, t);
+        } else {
+            if (!z0f3467b) { z0f3467b = 1; zbdf5b19 = GetTickCount(); }
+            if (zf75ca5c) { z9eb1eeb = 1; z702da46(z, t); }
+        }
     }
     return z8910c81;
 }
 
-static int z9d4a926(SOCKET s, const struct sockaddr_in* z2e0c9f4,
+static int z9d4a926(SOCKET s, const struct sockaddr_in* srv,
                       const struct sockaddr_in* relay, const char* zca72890, int z8860887,
-                      const char* zb306bef, int nSide, int z9e7d179)
+                      const char* zb306bef, int nSide, int z9e7d179, Zs* z, int* pD)
 {
-    char zbe25e4c[160], zd8c1604[160];
-    int z7908632 = _snprintf(zbe25e4c, sizeof(zbe25e4c) - 1, "RBF1 CHECK %s %d %s\n",
-                           zb306bef, nSide, z9e7d179 ? "ok" : "fail");
-    int z7bf521b   = _snprintf(zd8c1604, sizeof(zd8c1604) - 1, "RBF1 PACK %s %d\n", zb306bef, nSide);
-    if (z7908632 < 0 || z7bf521b < 0) return -1;
-
+    *pD = -1;
     DWORD tStart = GetTickCount(), z34b2b3a = 0;
     int z85f7d84 = 0;
 
     while ((int)(GetTickCount() - tStart) < za3c5a83) {
         DWORD now = GetTickCount();
         if (!z85f7d84 || (int)(now - z34b2b3a) >= z4dc4e87) {
-            sendto(s, zbe25e4c, z7908632, 0, (struct sockaddr*)z2e0c9f4, sizeof(*z2e0c9f4));
+            char zbe25e4c[160];
+            const int m = z9e7d179 ? zbc882b0(z) : -1;
+            int z7908632 = m >= 0
+                ? _snprintf(zbe25e4c, sizeof(zbe25e4c) - 1, "RBF1 CHECK %s %d ok %d\n", zb306bef, nSide, m)
+                : _snprintf(zbe25e4c, sizeof(zbe25e4c) - 1, "RBF1 CHECK %s %d %s\n",
+                            zb306bef, nSide, z9e7d179 ? "ok" : "fail 0");
+            if (z7908632 > 0) sendto(s, zbe25e4c, z7908632, 0, (struct sockaddr*)srv, sizeof(*srv));
             if (zca72890) sendto(s, zca72890, z8860887, 0, (struct sockaddr*)relay, sizeof(*relay));
             z34b2b3a = now;
             z85f7d84 = 1;
@@ -159,11 +238,20 @@ static int z9d4a926(SOCKET s, const struct sockaddr_in* z2e0c9f4,
         buf[n] = '\0';
 
         char mid[64], mode[16];
-        if (sscanf(buf, "RBF1 GO %63s %15s", mid, mode) == 2 && strcmp(mid, zb306bef) == 0)
-            return strcmp(mode, "relay") == 0 ? za95c540 : zaf33281;
+        int d = -1;
+        const int k = sscanf(buf, "RBF1 GO %63s %15s %d", mid, mode, &d);
+        if (k >= 2 && strcmp(mid, zb306bef) == 0) {
+            if (strcmp(mode, "relay") == 0) return za95c540;
+            if (strcmp(mode, "none") == 0)  return z7199250;
+            if (k == 3 && strcmp(mode, "direct") == 0 && d >= 0 && d <= 4) *pD = d;
+            return zaf33281;
+        }
 
-        if (z4e1173f(buf, zb306bef, nSide) == 1)
-            sendto(s, zd8c1604, z7bf521b, 0, (struct sockaddr*)&from, z7c61b00);
+        unsigned t = 0;
+        int zf75ca5c = 0;
+        const int kind = z4e1173f(buf, zb306bef, nSide, &t, &zf75ca5c);
+        if (kind == 1)                z12300ac(s, &from, z7c61b00, zb306bef, nSide, zf75ca5c, t);
+        else if (kind == 2 && zf75ca5c && z9e7d179) z702da46(z, t);
     }
     return -1;
 }
@@ -184,6 +272,10 @@ int z416a606(const char*      z12df4dc,
 
     memset(out, 0, sizeof(*out));
     out->mode = zaf33281;
+    out->z5c6ee43  = -1;
+    out->zf3e1f1a  = -1;
+    Zs z;
+    z.n = 0;
 
     WSADATA z2957bc2;
     int z0b00021 = (WSAStartup(MAKEWORD(2, 2), &z2957bc2) == 0);
@@ -201,7 +293,7 @@ int z416a606(const char*      z12df4dc,
         if (z0b00021) WSACleanup();
         return za5b59f5;
     }
-    struct sockaddr_in z2e0c9f4 = *(struct sockaddr_in*)ai->ai_addr;
+    struct sockaddr_in srv = *(struct sockaddr_in*)ai->ai_addr;
     freeaddrinfo(ai);
 
     SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
@@ -224,7 +316,7 @@ int z416a606(const char*      z12df4dc,
         return z1e2b454;
     }
 
-    struct sockaddr_in relay = z2e0c9f4;
+    struct sockaddr_in relay = srv;
     relay.sin_port = htons(zaece3c9);
 
     char zfd298cf[160];
@@ -249,7 +341,7 @@ int z416a606(const char*      z12df4dc,
     while (!za0fcda0 && (int)(GetTickCount() - tStart) < zf13fff5) {
         DWORD now = GetTickCount();
         if (!zb1e2e23 || (int)(now - z99e41ec) >= zfcd9de7) {
-            sendto(s, zfd298cf, zed97df0, 0, (struct sockaddr*)&z2e0c9f4, sizeof(z2e0c9f4));
+            sendto(s, zfd298cf, zed97df0, 0, (struct sockaddr*)&srv, sizeof(srv));
             if (zaece3c9) sendto(s, zca72890, z8860887, 0, (struct sockaddr*)&relay, sizeof(relay));
             z99e41ec = now;
             zb1e2e23 = 1;
@@ -286,6 +378,7 @@ int z416a606(const char*      z12df4dc,
             za0fcda0  = 1;
             if      (strcmp(z041e3da, "relay") == 0) out->mode = za95c540;
             else if (strcmp(z041e3da, "lan")   == 0) out->mode = z1b155da;
+            else if (strcmp(z041e3da, "none")  == 0) out->mode = z7199250;
             else                                   out->mode = zaf33281;
         } else if (sscanf(buf, "RBF1 GSELF %63s %u", ip, &port) == 2) {
             if (!zfb060a6) {
@@ -312,7 +405,9 @@ int z416a606(const char*      z12df4dc,
         ze15ce46[0] && strcmp(ze15ce46, z10e203a) == 0)
         out->mode = z1b155da;
 
-    if (za0fcda0 && out->mode == z1b155da) {
+    if (za0fcda0 && out->mode == z7199250) {
+        z2e91ce7(z930c6f2, "nat punch: rendezvous: none");
+    } else if (za0fcda0 && out->mode == z1b155da) {
         z2e91ce7(z930c6f2, "nat punch: peer is behind the same NAT as us (%s) - staying on the LAN", ze15ce46);
     } else if (za0fcda0 && out->mode == za95c540) {
         z2e91ce7(z930c6f2, "nat punch: NAT simetrico - a partida vai pelo relay udp/%u", (unsigned)zaece3c9);
@@ -330,7 +425,7 @@ int z416a606(const char*      z12df4dc,
         if (inet_pton(AF_INET, z10e203a, &peer.sin_addr) == 1) {
             struct sockaddr_in heard;
             memset(&heard, 0, sizeof(heard));
-            int z9e7d179 = z202e320(s, &peer, zb306bef, nSide, &heard);
+            int z9e7d179 = z202e320(s, &peer, zb306bef, nSide, &heard, &z);
 
             if (z9e7d179) {
                 char z20c0c1d[64];
@@ -349,21 +444,30 @@ int z416a606(const char*      z12df4dc,
                 z2e91ce7(z930c6f2, "nat punch: nothing came back from the peer in %d ms", zdf5ef98);
             }
 
-            int z860360a = z9d4a926(s, &z2e0c9f4, &relay, zaece3c9 ? zca72890 : NULL, z8860887,
-                                     zb306bef, nSide, z9e7d179);
+            int z2c3d532 = -1;
+            int z860360a = z9d4a926(s, &srv, &relay, zaece3c9 ? zca72890 : NULL, z8860887,
+                                     zb306bef, nSide, z9e7d179, &z, &z2c3d532);
             if (z860360a == za95c540) {
                 out->mode = za95c540;
                 z2e91ce7(z930c6f2, "nat punch: no direct path between us - the match goes through the relay udp/%u",
                           (unsigned)zaece3c9);
+            } else if (z860360a == z7199250) {
+                out->mode = z7199250;
+                z2e91ce7(z930c6f2, "nat punch: rendezvous: none");
             } else if (z860360a == zaf33281) {
+                out->zf3e1f1a = z2c3d532;
                 z2e91ce7(z930c6f2, "nat punch: rendezvous confirmed the direct path");
             } else {
                 z2e91ce7(z930c6f2, "nat punch: rendezvous gave no ruling (old server?) - trying direct");
             }
+            if (z860360a != za95c540 && z860360a != z7199250) zf9f1a5a(s, zbc882b0(&z));
         }
     } else {
         z2e91ce7(z930c6f2, "nat punch: peer never registered within %d ms", zf13fff5);
     }
+
+    out->z5c6ee43 = zbc882b0(&z);
+    out->zae7efac = z.n;
 
     closesocket(s);
     if (z0b00021) WSACleanup();

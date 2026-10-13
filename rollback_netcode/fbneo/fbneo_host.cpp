@@ -18,6 +18,8 @@
 #include "replay_menu.h"
 #include "speedrun.h"
 #include "img_hash.h"
+#include "lang.h"
+#include "hud.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -240,6 +242,23 @@ static int       z4698017 = 5;
 static int       zc67fd07(void);
 static int  z2862e37(void);
 static void z2466609(const char* z733a844, const char* zd5e0939, const char* szGame);
+
+static void z256ef6d(char* s)
+{
+	if (!s) return;
+	char* o = s;
+	for (const char* i = s; *i; i++) {
+		int hi = -1, lo = -1;
+		if (i[0] == '%' && i[1] && i[2]) {
+			hi = i[1]; lo = i[2];
+			hi = (hi >= '0' && hi <= '9') ? hi - '0' : ((hi | 32) >= 'a' && (hi | 32) <= 'f') ? (hi | 32) - 'a' + 10 : -1;
+			lo = (lo >= '0' && lo <= '9') ? lo - '0' : ((lo | 32) >= 'a' && (lo | 32) <= 'f') ? (lo | 32) - 'a' + 10 : -1;
+		}
+		if (hi >= 0 && lo >= 0) { *o++ = (char)((hi << 4) | lo); i += 2; }
+		else *o++ = *i;
+	}
+	*o = '\0';
+}
 static void z4ec6bf1(long long f);
 static void z2861a61(long long f);
 static int  z698ca60(long long target);
@@ -738,6 +757,10 @@ static void z703d600(void)
 		const int left = z719f6d2(s);
 		if (left > 0 && left <= 60) side |= 1 << (s - 1);
 	}
+	if (!side && zd82262d >= 1 && zd82262d <= 2 && z26c0539(zd82262d)) {
+		side = 1 << (zd82262d - 1);
+		z503808b("inatividade: o outro lado saiu com o aviso de inatividade do P%d na tela.", zd82262d);
+	}
 	if (!side) return;
 	z1cd003b = side;
 	zb702c05  = "ausente";
@@ -912,6 +935,8 @@ static int z909038f(const z54dec38* cfg)
 	if (!bDrvOkay)                                             return -1;
 
 	z94aaa38         = *cfg;
+	z256ef6d(z94aaa38.zd843ce2);
+	z256ef6d(z94aaa38.z7dd7ec2);
 	z3332e9c    = cfg->z0d29982;
 	zd82262d = cfg->ze08b6ae;
 	z05f35c5 = (cfg->z7606996 >= 1 && cfg->z7606996 <= cfg->z0d29982) ? cfg->z7606996 : 1;
@@ -973,7 +998,7 @@ static int zf868484(int z1af252e, int zf13fff5)
 {
 	if (z1af252e >= zee8a580) {
 		if (!zef1a6d1()) {
-			zbd03061(hScrnWnd, L"Esperando o advers\x00E1rio");
+			zbd03061(hScrnWnd, z6f2968c(L"Esperando o advers\x00E1rio"));
 			z503808b("nat punch: o adversario ainda nao chegou - tela de espera (ate %d s)", zf13fff5 / 1000);
 		}
 		zea13d64((double)z1af252e / zf13fff5);
@@ -996,10 +1021,90 @@ static int z9568fa1(const z54dec38* cfg)
 const char* z83650cd(void) { return (zcef8663 && z2cf405c && z0bdc044[0]) ? z0bdc044 : NULL; }
 int         zdd5bb4f(void)  { return z5aa079a; }
 
+int z3a135ef = 0;
+static int z6303ef7[2] = { 0, 0 };
+static int ze3ce0f1[2]  = { 0, 0 };
+
+static int z4febd14(void)
+{
+	return ze41ba77() && !z5aa079a && !z90c98a2 && z3332e9c == 2;
+}
+
+int z38fea27(void)
+{
+	return (z3a135ef & 3) && z4febd14();
+}
+
+static int z0ff5272(void)
+{
+	int k = bRunAhead;
+	if (k < 0) k = 0;
+	if (k > 2) k = 2;
+	return k;
+}
+
+void zfd67ef1(int w)
+{
+	if (!(z3a135ef & 1) || !z4febd14()) return;
+	int d = z2db5ead();
+	int k = z0ff5272();
+	if (w == 0) {
+		d = d ? 0 : 1;
+		if (z2549f00(d) < 0) return;
+		z0d8fbe5(d, 2000);
+	} else {
+		k = (k + 1) % 3;
+		bRunAhead = k;
+		z0d8fbe5(k, 2000);
+	}
+	if (++z6303ef7[w] > 250) z6303ef7[w] = 1;
+	const char m[4] = { 0x01, (char)('a' + w), (char)('a' + (w == 0 ? d : k)), (char)z6303ef7[w] };
+	z77d22b7(m, 4);
+	z503808b("q %d %d", d, k);
+}
+
+int z7675262(const char* p, int n)
+{
+	if (!p || n < 1 || p[0] != 0x01) return 0;
+	if (!(z3a135ef & 2) || !z4febd14() || n < 4) return 1;
+	const int w = p[1] - 'a', v = p[2] - 'a', q = (unsigned char)p[3];
+	if (w < 0 || w > 1 || v < 0 || v > (w == 0 ? 1 : 2) || q < 1 || q > 250) return 1;
+	if (ze3ce0f1[w] && (signed char)(q - ze3ce0f1[w]) <= 0) return 1;
+	ze3ce0f1[w] = q;
+	if (w == 0) { if (v != z2db5ead()) z2549f00(v); }
+	else bRunAhead = v;
+	z503808b("q< %d %d", z2db5ead(), z0ff5272());
+	return 1;
+}
+
+static char        z11d30a9[256] = "";
+static const char* zb3afc55     = NULL;
+static int         z9da76f5   = 0;
+
+static void zb6d9c60(void)
+{
+	if (!z9da76f5) {
+		z9da76f5 = 1;
+		if (GetEnvironmentVariableA("RBF_TESTE_Q", z11d30a9, sizeof(z11d30a9)) && z11d30a9[0]) {
+			zb3afc55 = z11d30a9;
+			z503808b("teste: RBF_TESTE_Q=%s", z11d30a9);
+		}
+	}
+	if (!zb3afc55 || !*zb3afc55) return;
+	long long f = 0;
+	int w = 0;
+	if (sscanf(zb3afc55, "%lld:%d", &f, &w) != 2) { zb3afc55 = NULL; return; }
+	if (z91b3ccd() < f) return;
+	zfd67ef1(w);
+	const char* n = strchr(zb3afc55, ';');
+	zb3afc55 = n ? n + 1 : NULL;
+}
+
 int z054c841(const z54dec38* cfg)
 {
 	if (zcef8663) z912bf82();
 	z9ecf998 = 1;
+	z6303ef7[0] = z6303ef7[1] = ze3ce0f1[0] = ze3ce0f1[1] = 0;
 	{
 		char v[16] = "";
 		z3bfe586 = GetEnvironmentVariableA("RBF_TESTE_RESET", v, sizeof(v)) ? atoi(v) : 0;
@@ -1061,7 +1166,7 @@ int z054c841(const z54dec38* cfg)
 		if (rc == z95c4b69 && plan.ze3a737a) {
 			z503808b("nat punch: o adversario nao conectou em %d s - partida encerrada", z8b8720c / 1000);
 			if (!zef1a6d1()) zbd03061(hScrnWnd, L"");
-			zba9d2b1(L"O advers\x00E1rio n\x00E3o conectou");
+			zba9d2b1(z6f2968c(L"O advers\x00E1rio n\x00E3o conectou"));
 			zea13d64(1.0);
 			for (int i = 0; i < 30; i++) {
 				MSG msg;
@@ -1073,6 +1178,27 @@ int z054c841(const z54dec38* cfg)
 			_exit(0);
 		}
 		z0b86b9d();
+		if (rc == z10fc2a7) {
+			const int d0 = bc.z3b2036b;
+			if (plan.mode == zaf33281 && plan.zf3e1f1a >= 0) {
+				z94aaa38.z3b2036b = plan.zf3e1f1a;
+				bc.z3b2036b    = plan.zf3e1f1a;
+			}
+			static const char* const zc8e4451[] = { "direct", "lan", "relay", "none" };
+			char z0[16] = "-", z1[16] = "-";
+			if (plan.z5c6ee43 >= 0) _snprintf(z0, sizeof(z0) - 1, "%d ms", plan.z5c6ee43);
+			if (plan.mode != z7199250) _snprintf(z1, sizeof(z1) - 1, "%d", bc.z3b2036b);
+			z503808b("nat punch: rtt %s (%d) - %s - delay %s (lobby %d)",
+			       z0, plan.zae7efac, zc8e4451[plan.mode & 3], z1, d0);
+			if (plan.mode == z7199250) {
+				za07fb62();
+				zd0938e8(z6f2968c(L"N\x00E3o foi poss\x00EDvel conectar direto com o seu advers\x00E1rio."),
+				                  z6f2968c(L"A conex\x00E3o pelo servidor deixaria a partida lenta demais para voc\x00EAs dois."),
+				                  8);
+				z503808b("nat punch: fim (%d)", 7);
+				_exit(7);
+			}
+		}
 		if (rc != z10fc2a7) {
 			z503808b("nat punch failed (%d) - falling back to %s:%d (LAN / port-forward)",
 			       rc, bc.z37f80f0, bc.zbf4b4be);
@@ -1110,7 +1236,7 @@ int z054c841(const z54dec38* cfg)
 
 	zcef8663 = 1;
 	z503808b("session up.");
-	z2e5f4c9(z94aaa38.z115149b && !z5aa079a && z3332e9c == 2, zd82262d == 1 ? z94aaa38.z7dd7ec2 : z94aaa38.zd843ce2);
+	z2e5f4c9(z94aaa38.z115149b && !z5aa079a && z3332e9c == 2, zd82262d == 1 ? z94aaa38.z7dd7ec2 : z94aaa38.zd843ce2, z94aaa38.z744cae6);
 	if (z94aaa38.z115149b) z503808b("chat: ligado (T escreve, F1 mostra/esconde)");
 	zfe8da2e = zfb10f62();
 	zf299840(zfe8da2e);
@@ -1222,6 +1348,8 @@ int ze0d3fd3(const z9f83179* cfg)
 		return -1;
 	}
 	z7e412e1(&info);
+	z256ef6d(info.z733a844);
+	z256ef6d(info.zd5e0939);
 	z98879fd  = z5d6903e && cfg->za501967;
 	zd3b974b = z5d6903e && !z98879fd && cfg->zc85e9f4;
 	z61f4c2a = z5d6903e && !z98879fd && cfg->za54c3d7 > 0;
@@ -2323,7 +2451,7 @@ static int z5fd788a(void)
 		ze68f43f();
 		if (!z8e1a4e8 && GetTickCount() - z676a119 > 150) {
 			z8e1a4e8 = 1;
-			zbd03061(hScrnWnd, L"Carregando");
+			zbd03061(hScrnWnd, z6f2968c(L"Carregando"));
 		}
 		if (z8e1a4e8) {
 			const double total = zff60ae5 ? 3600.0 : (double)(z2811a1f - z11e9799);
@@ -2560,68 +2688,68 @@ static void zb59901e(void)
 
 	if (z381a6bc == z39a7471) {
 		wcscpy(title, L"Replay");
-		swprintf(buf[0], 96, L"\x00cdndice da FT");
-		swprintf(sub[0], 128, L"As partidas e os rounds, para ir direto");
-		swprintf(buf[1], 96, L"Favoritar esta partida");
-		swprintf(sub[1], 128, L"Fica em Replays salvos (s\x00f3 neste computador)");
-		swprintf(buf[2], 96, L"Tomar o controle: %d s", z4698017);
-		swprintf(sub[2], 128, L"Quanto o trecho dura (2 bot\x00f5" L"es juntos; com esquerda, volta antes)");
-		swprintf(buf[3], 96, L"Voltar ao replay");
+		swprintf(buf[0], 96, L"%ls", z6f2968c(L"\x00cdndice da FT"));
+		swprintf(sub[0], 128, L"%ls", z6f2968c(L"As partidas e os rounds, para ir direto"));
+		swprintf(buf[1], 96, L"%ls", z6f2968c(L"Favoritar esta partida"));
+		swprintf(sub[1], 128, L"%ls", z6f2968c(L"Fica em Replays salvos (s\x00f3 neste computador)"));
+		swprintf(buf[2], 96, z6f2968c(L"Tomar o controle: %d s"), z4698017);
+		swprintf(sub[2], 128, L"%ls", z6f2968c(L"Quanto o trecho dura (2 bot\x00f5" L"es juntos; com esquerda, volta antes)"));
+		swprintf(buf[3], 96, L"%ls", z6f2968c(L"Voltar ao replay"));
 		sub[3][0] = 0;
 		{
 			const wchar_t* names[4] = { L"P1", L"P2", L"Ambos", L"Desativado" };
 			wchar_t row[96] = L"Mostrar inputs:";
 			for (int i = 0; i < 4; i++) {
 				wchar_t one[24];
-				swprintf(one, 24, L"   %lc %ls", (wint_t)(z5596a03[i] == z0c5a8be() ? 0x25CF : 0x25CB), names[i]);
+				swprintf(one, 24, L"   %lc %ls", (wint_t)(z5596a03[i] == z0c5a8be() ? 0x25CF : 0x25CB), z6f2968c(names[i]));
 				wcsncat(row, one, 95 - wcslen(row));
 			}
 			wcsncpy(buf[4], row, 95);
 			buf[4][95] = 0;
-			swprintf(sub[4], 128, L"Esquerda/direita escolhe");
+			swprintf(sub[4], 128, L"%ls", z6f2968c(L"Esquerda/direita escolhe"));
 		}
 		n = 5;
-		if (!foot[0]) wcscpy(foot, L"Cima/baixo escolhe  -  soco/chute fraco confirma  -  Start fecha");
+		if (!foot[0]) wcscpy(foot, z6f2968c(L"Cima/baixo escolhe  -  soco/chute fraco confirma  -  Start fecha"));
 	} else if (z381a6bc == zb188efd) {
-		wcscpy(title, L"\x00cdndice da FT");
-		swprintf(buf[0], 96, L"\x2039  Voltar");
+		wcscpy(title, z6f2968c(L"\x00cdndice da FT"));
+		swprintf(buf[0], 96, L"%ls", z6f2968c(L"\x2039  Voltar"));
 		sub[0][0] = 0;
 		n = 1;
 		for (int i = 0; i < z687a7e0 && n < z2f253e7 + 1; i++, n++) {
 			const z9317e56* g = &z38dd576[i];
 			swprintf(buf[n], 96, L"Partida %d  -  %ls %d x %d %ls", i + 1, z264edf7, g->p1g, g->p2g, zde3b108);
 			if (g->winner < 0)
-				swprintf(sub[n], 128, L"n\x00e3o terminou (%d x %d em rounds)", g->p1r, g->p2r);
+				swprintf(sub[n], 128, z6f2968c(L"n\x00e3o terminou (%d x %d em rounds)"), g->p1r, g->p2r);
 			else
-				swprintf(sub[n], 128, L"%ls venceu, %d x %d em rounds",
-				         g->winner == 1 ? z264edf7 : g->winner == 2 ? zde3b108 : L"ningu\x00e9m", g->p1r, g->p2r);
+				swprintf(sub[n], 128, z6f2968c(L"%ls venceu, %d x %d em rounds"),
+				         g->winner == 1 ? z264edf7 : g->winner == 2 ? zde3b108 : z6f2968c(L"ningu\x00e9m"), g->p1r, g->p2r);
 		}
 		if (!foot[0]) {
 			if (!z70b9d5d && z9e1660b > 0)
-				swprintf(foot, 200, L"Analisando o replay... %d%%", (int)(100 * z38f8986 / z9e1660b));
+				swprintf(foot, 200, z6f2968c(L"Analisando o replay... %d%%"), (int)(100 * z38f8986 / z9e1660b));
 			else if (z687a7e0 == 0)
-				wcscpy(foot, L"Nenhuma partida completa neste replay.");
+				wcscpy(foot, z6f2968c(L"Nenhuma partida completa neste replay."));
 		}
 	} else if (z381a6bc == z6e50563) {
 		swprintf(title, 96, L"Partida %d", z68ee208);
-		swprintf(buf[0], 96, L"\x2039  Voltar");
+		swprintf(buf[0], 96, L"%ls", z6f2968c(L"\x2039  Voltar"));
 		sub[0][0] = 0;
 		n = 1;
 		for (int i = 0; i < z0bcd0d3 && n < z2f253e7 + 1; i++) {
 			const z82b59e7* r = &ze51d6db[i];
 			if (r->game != z68ee208) continue;
 			swprintf(buf[n], 96, L"Round %d", r->num);
-			if (r->winner < 0) swprintf(sub[n], 128, L"n\x00e3o terminou");
+			if (r->winner < 0) swprintf(sub[n], 128, L"%ls", z6f2968c(L"n\x00e3o terminou"));
 			else if (r->winner == 0) swprintf(sub[n], 128, L"empate");
-			else swprintf(sub[n], 128, L"%ls venceu", r->winner == 1 ? z264edf7 : zde3b108);
+			else swprintf(sub[n], 128, z6f2968c(L"%ls venceu"), r->winner == 1 ? z264edf7 : zde3b108);
 			n++;
 		}
 	} else {
-		wcscpy(title, L"Tomar o controle");
+		wcscpy(title, z6f2968c(L"Tomar o controle"));
 		const int secs[3] = { 5, 10, 15 };
 		for (int i = 0; i < 3; i++) {
 			swprintf(buf[i], 96, L"%d segundos", secs[i]);
-			swprintf(sub[i], 128, L"%ls", secs[i] == z4698017 ? L"o de agora" : L"");
+			swprintf(sub[i], 128, L"%ls", secs[i] == z4698017 ? z6f2968c(L"o de agora") : L"");
 		}
 		n = 3;
 	}
@@ -2707,8 +2835,8 @@ static void zab249f1(int dirs, unsigned long long act, unsigned long long pau, u
 			zc533c68(zb188efd, cur > 0 ? cur : (z687a7e0 > 0 ? 1 : 0));
 		} else if (z5ed723f == 1) {
 			z620129c(1);
-			wcscpy(z57caa55, z777d921() ? L"Salvo em Replays salvos (s\x00f3 neste computador)."
-			                            : L"N\x00e3o deu para salvar esta partida.");
+			wcscpy(z57caa55, z777d921() ? z6f2968c(L"Salvo em Replays salvos (s\x00f3 neste computador).")
+			                            : z6f2968c(L"N\x00e3o deu para salvar esta partida."));
 			zb59901e();
 		} else if (z5ed723f == 2) {
 			zc533c68(zf1af1dc, z4698017 == 15 ? 2 : z4698017 == 10 ? 1 : 0);
@@ -2739,7 +2867,7 @@ static void zab249f1(int dirs, unsigned long long act, unsigned long long pau, u
 		const int secs[3] = { 5, 10, 15 };
 		z4698017 = secs[z5ed723f < 0 ? 0 : z5ed723f > 2 ? 2 : z5ed723f];
 		z8d2ffc5();
-		swprintf(z57caa55, 160, L"Tomar o controle: %d segundos.", z4698017);
+		swprintf(z57caa55, 160, z6f2968c(L"Tomar o controle: %d segundos."), z4698017);
 		z381a6bc = z39a7471;
 		z5ed723f = 2;
 		zb59901e();
@@ -2760,26 +2888,26 @@ static void z05be0c2(int left)
 {
 	const int snk = z387ce91();
 	const wchar_t* items[7] = {
-		snk ? L"A ou B" : L"Soco ou chute fraco",
-		snk ? L"C ou D" : L"Soco ou chute m\x00e9" L"dio",
-		L"Esquerda / direita seguradas",
-		L"Cima / baixo",
-		L"2 bot\x00f5" L"es juntos",
-		L"Esquerda + 2 bot\x00f5" L"es",
+		snk ? z6f2968c(L"A ou B") : z6f2968c(L"Soco ou chute fraco"),
+		snk ? z6f2968c(L"C ou D") : z6f2968c(L"Soco ou chute m\x00e9" L"dio"),
+		z6f2968c(L"Esquerda / direita seguradas"),
+		z6f2968c(L"Cima / baixo"),
+		z6f2968c(L"2 bot\x00f5" L"es juntos"),
+		z6f2968c(L"Esquerda + 2 bot\x00f5" L"es"),
 		L"Start",
 	};
 	const wchar_t* subs[7] = {
-		L"Pausa e continua",
-		L"Velocidade: 1x, 2x, 4x, 8x",
-		L"Volta / avan\x00e7" L"a r\x00e1pido (com pausa: um quadro)",
-		L"Pr\x00f3ximo round / round anterior",
-		L"Tomar o controle a partir daqui",
-		L"Tomar o controle voltando antes",
-		L"Menu: \x00edndice da FT, favoritar, tempo do tomar o controle",
+		z6f2968c(L"Pausa e continua"),
+		z6f2968c(L"Velocidade: 1x, 2x, 4x, 8x"),
+		z6f2968c(L"Volta / avan\x00e7" L"a r\x00e1pido (com pausa: um quadro)"),
+		z6f2968c(L"Pr\x00f3ximo round / round anterior"),
+		z6f2968c(L"Tomar o controle a partir daqui"),
+		z6f2968c(L"Tomar o controle voltando antes"),
+		z6f2968c(L"Menu: \x00edndice da FT, favoritar, tempo do tomar o controle"),
 	};
 	wchar_t foot[96];
-	swprintf(foot, 96, L"Come\x00e7" L"a em %d s  -  qualquer bot\x00e3o come\x00e7" L"a agora", left);
-	zec06d2b(L"Comandos do replay", items, subs, 7, -1, foot);
+	swprintf(foot, 96, z6f2968c(L"Come\x00e7" L"a em %d s  -  qualquer bot\x00e3o come\x00e7" L"a agora"), left);
+	zec06d2b(z6f2968c(L"Comandos do replay"), items, subs, 7, -1, foot);
 }
 
 static int z9e81268(int dirs, unsigned long long act)
@@ -2814,10 +2942,10 @@ static void zca242a7(void)
 	const wchar_t* t = NULL;
 	wchar_t b[32];
 	if (zb055ed5 || z41ac9d8) t = NULL;
-	else if (z2e12e17) t = L"FIM DO REPLAY";
-	else if (z6b37769) t = L"VOLTANDO";
-	else if (z34de379) t = L"PAUSADO";
-	else if (z36e8985 >= z573496e) { swprintf(b, 32, L"AVAN\x00c7" L"ANDO %dx", z4331087 >= 4 ? 8 : 4); t = b; }
+	else if (z2e12e17) t = z6f2968c(L"FIM DO REPLAY");
+	else if (z6b37769) t = z6f2968c(L"VOLTANDO");
+	else if (z34de379) t = z6f2968c(L"PAUSADO");
+	else if (z36e8985 >= z573496e) { swprintf(b, 32, z6f2968c(L"AVAN\x00c7" L"ANDO %dx"), z4331087 >= 4 ? 8 : 4); t = b; }
 	else if (z4331087 > 1) { swprintf(b, 32, L"%dx", z4331087); t = b; }
 	zc0b38b8(hScrnWnd, t);
 }
@@ -3240,7 +3368,7 @@ static int zc224ed5(int bDraw)
 		z6b3941a   = 1;
 		zdf61b15  = 0;
 		zdd2f6bc = 0;
-		zbd03061(hScrnWnd, L"Carregando partida");
+		zbd03061(hScrnWnd, z6f2968c(L"Carregando partida"));
 		z503808b("watch: %d quadros atras do ao vivo - carregando%s", zef6e7c8(),
 		       zef1a6d1() ? "" : " (a tela de carregando nao abriu)");
 		if (!zef1a6d1()) z503808b("watch: erro da janela de carregando: %lu (janela do jogo %p)", zb56cb39(), (void*)hScrnWnd);
@@ -3409,6 +3537,16 @@ void z912bf82(void)
 			z30d5c32();
 			z4568e55();
 			za07fb62();
+			if ((strcmp(zb702c05, "quit") == 0 || strcmp(zb702c05, "closed") == 0) &&
+			    z3332e9c == 2 && !z5aa079a && (zd82262d == 1 || zd82262d == 2)) {
+				const int z07cb90d = zd82262d == 1 ? 2 : 1;
+				if (z26c0539(z07cb90d)) {
+					z1cd003b = 1 << (z07cb90d - 1);
+					zb702c05  = "ausente";
+					z3440738(z1cd003b);
+					z503808b("inatividade: saiu com o aviso de inatividade do P%d na tela.", z07cb90d);
+				}
+			}
 			zb31ef22(z94aaa38.zb306bef, z94aaa38.ze6bfbdc, zb702c05, z6cc50c1);
 			z9e6bdfe(z6cc50c1);
 			z503808b("session closed.");
@@ -3451,6 +3589,10 @@ int ze9b2e0c(void) { return strcmp(zb702c05, "limit") == 0; }
 static unsigned long long zb65b6cf = 0;
 static int                z897beb2   = -1;
 static int                z8a9a977  = 0;
+static int                z1bebf91      = 0;
+
+void z8a35ea7(int z4067262) { z1bebf91 = z4067262 ? 1 : 0; }
+int  zf796ce3(void) { return z1bebf91; }
 
 int z1b0f145(void)
 {
@@ -3476,8 +3618,9 @@ static int z685eaf8(void)
 int z17f8ebd(int bHasFocus)
 {
 	if (z8a9a977) return 0;
-	const int held = z1b0f145() &&
-	                 ((bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000)) || z685eaf8());
+	const int held = z1bebf91 ||
+	                 (z1b0f145() &&
+	                  ((bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000)) || z685eaf8()));
 	if (!held) {
 		zb65b6cf = 0;
 		z897beb2   = -1;
@@ -3489,8 +3632,9 @@ int z17f8ebd(int bHasFocus)
 	z897beb2 = el >= zdedc5dd ? 100 : (int)(el * 100 / zdedc5dd);
 	if (el < zdedc5dd) return 0;
 	z8a9a977 = 1;
-	if (strcmp(zb702c05, "closed") == 0) zb702c05 = "quit";
-	z503808b("o jogador daqui segurou para sair: a partida acaba aqui (quit).");
+	if (z1b0f145() && strcmp(zb702c05, "closed") == 0) zb702c05 = "quit";
+	z503808b(z1bebf91 ? "o jogador daqui segurou o X da janela: o emulador fecha (quit)."
+	                  : "o jogador daqui segurou para sair: a partida acaba aqui (quit).");
 	return 1;
 }
 
@@ -3523,7 +3667,7 @@ void ze69a66a(void)
 	z22ec6fe(z94aaa38.zd843ce2, L"P1", p1, 40);
 	z22ec6fe(z94aaa38.z7dd7ec2, L"P2", p2, 40);
 
-	_snwprintf(head, 64, L"FT%d encerrada", z94aaa38.ze6bfbdc);
+	_snwprintf(head, 64, z6f2968c(L"FT%d encerrada"), z94aaa38.ze6bfbdc);
 	_snwprintf(score, 160, L"%ls   %d x %d   %ls", p1, z6a2ac86, z6a3da4b, p2);
 	head[63] = score[159] = 0;
 
@@ -3535,18 +3679,18 @@ void zb97f210(long long nRan)
 	if (zfe62411()) { z503808b("fim (teste de fundo): sem o aviso na tela"); return; }
 	if (strcmp(zb702c05, "ausente") == 0) {
 		const int z1b39dee = (z1cd003b & (1 << (zd82262d - 1))) != 0;
-		z639f64f(z1b39dee ? L"Partida encerrada por inatividade" : L"Adversário inativo",
-		              z1b39dee ? L"você ficou sem jogar" : L"partida encerrada", 3);
+		z639f64f(z1b39dee ? z6f2968c(L"Partida encerrada por inatividade") : z6f2968c(L"Adversário inativo"),
+		              z1b39dee ? z6f2968c(L"você ficou sem jogar") : z6f2968c(L"partida encerrada"), 3);
 		return;
 	}
-	z639f64f(nRan == 0 ? L"Sem conexão com o adversário" : L"Partida encerrada", NULL, 3);
+	z639f64f(nRan == 0 ? z6f2968c(L"Sem conexão com o adversário") : z6f2968c(L"Partida encerrada"), NULL, 3);
 }
 
 void z7c206bb(void)
 {
 	if (zfe62411()) { z503808b("fim (teste de fundo): sem o aviso na tela"); return; }
-	if (z61f4c2a) { z639f64f(L"Fim da demonstra\u00e7\u00e3o", NULL, 3); return; }
-	z639f64f(L"Transmissão encerrada", NULL, 3);
+	if (z61f4c2a) { z639f64f(z6f2968c(L"Fim da demonstra\u00e7\u00e3o"), NULL, 3); return; }
+	z639f64f(z6f2968c(L"Transmissão encerrada"), NULL, 3);
 }
 
 static int ze11fccc(void)
@@ -3613,6 +3757,7 @@ int z607366a(int bDraw)
 	zcbf2334++;
 	if (z5aa079a) return ze11fccc();
 
+	zb6d9c60();
 	int r = zeba63f1();
 	zfc2ac67();
 

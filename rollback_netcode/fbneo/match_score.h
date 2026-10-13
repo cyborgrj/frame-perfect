@@ -75,11 +75,14 @@ void z65fd730(void);
 #define z5149dd1  3600
 #define z6fc34b9 10
 #define z1d4bc00 300
+#define zb2570fd 35500
 void z9fff242(int bOn);
 int  ze2aa305(void);
+int  zb139002(void);
 int  z969ea27(int* pSide, int* z5a4156e, int* z335f6f7);
 int  zf7cdc79(void);
 int  z719f6d2(int nSide);
+int  z26c0539(int nSide);
 void z3440738(int nSide);
 
 void z770c6b6(int bOn);

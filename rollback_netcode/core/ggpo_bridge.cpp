@@ -42,6 +42,7 @@ static zd7729d0    z75a2617;
 
 static GGPOPlayerHandle  z57d68da[z897cf46];
 static GGPOPlayerHandle  z1147efa = GGPO_INVALID_HANDLE;
+static int z99794a6 = -1;
 
 #define z864fc22 64
 static int z5fcc7d4 = 0;
@@ -483,6 +484,7 @@ int ze0e3d01(const z4238888* cfg, const zd7729d0* host)
 		return w;
 	}
 
+	z99794a6 = -1;
 	z18703bb = 1;
 	return z30e34bc;
 }
@@ -531,6 +533,7 @@ void z30d5c32(void)
 	}
 	z18703bb  = 0;
 	z1e19f4f = 0;
+	z99794a6 = -1;
 	z1147efa = GGPO_INVALID_HANDLE;
 	zeef0821();
 }
@@ -731,6 +734,23 @@ int       zbff6c98(void) { return g_rbfSyncTestErrors; }
 int       z3186ab5(void)  { return z32cace1; }
 long long za0ce261(void) { return za76ac89; }
 int       zcb8e9fd(void) { return z18703bb ? z94aaa38.z3b2036b : 0; }
+
+int z2549f00(int v)
+{
+	if (!z18703bb || !z621d134 || z1e19f4f || z1147efa == GGPO_INVALID_HANDLE) return -1;
+	if (v < 0) v = 0;
+	if (v > 4) v = 4;
+	GGPOErrorCode r = ggpo_set_frame_delay(z621d134, z1147efa, v);
+	if (!GGPO_SUCCEEDED(r)) { z32cace1 = r; return -1; }
+	z99794a6 = v;
+	return v;
+}
+
+int z2db5ead(void)
+{
+	if (!z18703bb) return 0;
+	return z99794a6 >= 0 ? z99794a6 : (z94aaa38.z3b2036b > 0 ? z94aaa38.z3b2036b : 0);
+}
 int       zfc9bc19(void) { return zf10a59f; }
 
 int z57e44c7(void)

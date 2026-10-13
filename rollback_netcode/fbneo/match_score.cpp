@@ -121,7 +121,7 @@ static int  zd49138a = 0;
 static int  z6329982   = 0;
 static char z20725d5[48] = "";
 static int  z36b7768 = -1, zb200482 = -1;
-static void (*zf2fc3fb)(const char*) = NULL;
+static void (*g_log)(const char*) = NULL;
 static int  z323ac1f = 0;
 static int  z6a90649 = 0, z671f77c = 0;
 static int  za4fdb46 = 0, zb271d66 = 0, z6cbdaa2 = 0;
@@ -147,11 +147,85 @@ typedef struct zb409662 {
 static int     zd7cb6f8 = 0;
 static zb409662 z05863a7[2];
 static int     zea0bcb5 = 0, zcc83e81 = 0;
+static long long z860b20e[2] = { 0, 0 };
+static int       z6e9fbde = 0;
 static int     z5cd9a92 = 0;
 #define z9c67193 120
 static int     z085f58c = -1, z0e05425 = 0, zf71c1cb = 0;
 static int     zcbd65b0 = 0;
 static void z49cfe13(void);
+
+typedef struct {
+	const char*  szGame;
+	char         cType;
+	unsigned int zc40dd08, zb1468ac;
+	int          z0eee1db;
+} za60c9c9;
+
+static const za60c9c9 zbb8301a[] = {
+	{ "kof98",    'G', 0x10DAF9, 0x10DAFB, 1 },
+	{ "kof97",    'G', 0x10DAF5, 0x10DAF7, 1 },
+	{ "kof2002",  'G', 0x10DAB7, 0x10DAB9, 1 },
+	{ "garou",    'G', 0x107483, 0x107485 },
+	{ "garou",    'R', 0x107477, 0x107476 },
+	{ "samsho2",  'G', 0x100D0C, 0x100D1C, 1 },
+	{ "samsho4",  'R', 0x108462, 0x108662 },
+	{ "lastbld2", 'G', 0x10E362, 0x10E363 },
+	{ "lastbld2", 'R', 0x1006E8, 0x1006E9 },
+	{ "rbff2",    'G', 0x107C1B, 0x107C1D },
+	{ "rbff2",    'R', 0x107C0F, 0x107C0E },
+	{ "rbffspec", 'R', 0x106A83, 0x106A82 },
+	{ "breakrev", 'R', 0x10717B, 0x1076DB },
+	{ "sfa2",     'G', 0xFF84B0, 0xFF88B0, 1 },
+	{ "sfa3",     'G', 0xFF8530, 0xFF8930, 1 },
+	{ "sfa3",     'G', 0xFF8563, 0xFF8963 },
+	{ "vsav",     'G', 0xFF879F, 0xFF8B9F },
+	{ "vsavj",    'G', 0xFF879F, 0xFF8B9F },
+	{ "mvsc",     'G', 0xFF32A4, 0xFF36A4 },
+	{ "xmvsf",    'G', 0xFF4244, 0xFF4644 },
+	{ "mshvsf",   'G', 0xFF3A84, 0xFF3E84 },
+	{ "msh",      'R', 0xFF4802, 0xFF4803 },
+	{ "sfiii3",   'G', 0x02016CD5, 0x02016CD7, 1 },
+	{ "umk3",     'G', 0x010622F0, 0x01062300 },
+};
+
+#define z4c3d052 4
+typedef struct {
+	int zda5b744[2];
+	int zd01acad[2];
+	int z83cba3a[2];
+} z19df62d;
+static const za60c9c9* z5cf2ba5[z4c3d052];
+static int         z45febb2 = 0;
+static int         zaf5bb81   = 0;
+static z19df62d z4104fea[z4c3d052];
+static int         z495ea96 = 0;
+#define zfcd69f2 600
+#define z58b8ba7  1500
+static int       zee708d8 = 0;
+static long long zaac41d8 = 0;
+static int       zbbba39d = 0;
+static long long z54eb609 = 0;
+static int       z4c1b295 = 0, zff473ed = 1;
+static int       z311e729 = 0;
+
+static void zdc5347d(const char* szGame)
+{
+	z45febb2 = 0;
+	for (unsigned i = 0; i < sizeof(zbb8301a) / sizeof(zbb8301a[0]) && z45febb2 < z4c3d052; i++)
+		if (strcmp(szGame, zbb8301a[i].szGame) == 0) z5cf2ba5[z45febb2++] = &zbb8301a[i];
+	for (int i = 0; i < z4c3d052; i++)
+		for (int s = 0; s < 2; s++) { z4104fea[i].zda5b744[s] = -1; z4104fea[i].zd01acad[s] = -1; z4104fea[i].z83cba3a[s] = 0; }
+	zaf5bb81 = z45febb2 && z5cf2ba5[0]->zc40dd08 >= 0x100000 && z5cf2ba5[0]->zc40dd08 < 0x110000;
+	z495ea96 = 0;
+	zee708d8 = 0;
+	zaac41d8 = 0;
+	zbbba39d = 0;
+	z54eb609 = 0;
+	z4c1b295 = 0;
+	zff473ed = 1;
+	z311e729 = 0;
+}
 
 void za069b92(z309d1ab pfn) { z960fc96 = pfn; }
 
@@ -167,7 +241,9 @@ static void z399002f(int nType, int zdb52f45)
 	X(z3d8a142) X(z24af3f3) X(z8dcdb7e) \
 	X(z3a4dc4d) X(z41f7547) X(za9212d1) X(zd0532d6) X(ze4f6240) X(zd58046c) X(z9095135) \
 	X(z05863a7) X(zea0bcb5) X(zcc83e81) X(z085f58c) X(z0e05425) X(zf71c1cb) X(zcbd65b0) \
-	X(zf48ab02) X(z5d651a9) X(z30cdea0) X(z1037ebf) X(z49f03e5)
+	X(z860b20e) X(z6e9fbde) \
+	X(zf48ab02) X(z5d651a9) X(z30cdea0) X(z1037ebf) X(z49f03e5) 	X(z4104fea) X(z495ea96) X(zee708d8) X(zaac41d8) X(zbbba39d) \
+	X(z54eb609) X(z4c1b295) X(zff473ed) X(z311e729)
 
 int zf480b00(void)
 {
@@ -235,10 +311,10 @@ static void z23525cb(int* ze8821d1, int* z0f82ab8)
 	*z0f82ab8 = z93ce11c ? 2 : ((ze42b016 <= z3c35b6f->z03bf6c7 / 2) ? 1 : 0);
 }
 
-static size_t z961cbec(const char* zb306bef, char* szOut, size_t z58ab65b)
+static size_t z961cbec(const char* zb306bef, char* szOut, size_t nOut)
 {
 	size_t n = 0;
-	for (size_t i = 0; zb306bef && zb306bef[i] && n + 1 < z58ab65b; i++) {
+	for (size_t i = 0; zb306bef && zb306bef[i] && n + 1 < nOut; i++) {
 		const char c = zb306bef[i];
 		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') ||
 		    (c >= 'A' && c <= 'Z') || c == '-') szOut[n++] = c;
@@ -247,9 +323,9 @@ static size_t z961cbec(const char* zb306bef, char* szOut, size_t z58ab65b)
 	return n;
 }
 
-static void zb533d50(char* szOut, size_t z58ab65b)
+static void zb533d50(char* szOut, size_t nOut)
 {
-	snprintf(szOut, z58ab65b, "rbf-live-%s.txt", z20725d5);
+	snprintf(szOut, nOut, "rbf-live-%s.txt", z20725d5);
 }
 
 static void z3534113(void)
@@ -306,7 +382,7 @@ void z65fd730(void)
 	z48f734b();
 	if (!z3c35b6f) return;
 	if (z323ac1f && (z9165167.z726041c || z9165167.zae1a069))
-		zaf4dd4f(zf2fc3fb, "score: f%lld partida interrompida pelo F3: rounds %d x %d nao contam",
+		zaf4dd4f(g_log, "score: f%lld partida interrompida pelo F3: rounds %d x %d nao contam",
 		          ze9bc394, z9165167.z726041c, z9165167.zae1a069);
 	zefadd78();
 }
@@ -316,7 +392,7 @@ static void z0695713(void)
 	int p1 = z9165167.z726041c, p2 = z9165167.zae1a069;
 	if (z3c35b6f && z3c35b6f->z5be7c34) z23525cb(&p1, &p2);
 	if (z323ac1f)
-		zaf4dd4f(zf2fc3fb, "score: f%lld fim de partida: rounds %d x %d%s", ze9bc394, p1, p2,
+		zaf4dd4f(g_log, "score: f%lld fim de partida: rounds %d x %d%s", ze9bc394, p1, p2,
 		          (p1 == 0 && p2 == 0) ? " (0 x 0: nao conta)" : "");
 
 	if (p1 == 0 && p2 == 0) {
@@ -325,6 +401,17 @@ static void z0695713(void)
 	}
 
 	const int zdb52f45 = (p1 > p2) ? 1 : (p2 > p1) ? 2 : 0;
+	z54eb609  = ze9bc394;
+	z4c1b295   = zdb52f45;
+	zff473ed = 0;
+	z311e729         = 0;
+	if (zee708d8) {
+		if (zee708d8 != zdb52f45)
+			zaf4dd4f(g_log, "score: f%lld testemunha: o jogo deu a partida ao P%d e o leitor ao P%d (fica a do leitor)",
+			          ze9bc394, zee708d8, zdb52f45);
+		zee708d8 = 0;
+		zff473ed = 1;
+	}
 	if (zdb52f45 == 1)      z9165167.z45e0144++;
 	else if (zdb52f45 == 2) z9165167.z78ca99a++;
 	z9095135 = 0;
@@ -468,12 +555,12 @@ static void z4f1c6d2(int nSide, unsigned int nAddr)
 	if (v == z4ca563e || v == z4d63468) zd0532d6[nSide][v]++;
 }
 
-static void z2b71de9(char* szOut, size_t z58ab65b, const int* pChars, int nCount, int zab46fd3)
+static void z2b71de9(char* szOut, size_t nOut, const int* pChars, int nCount, int zab46fd3)
 {
-	if (!zab46fd3 || nCount <= 0) { snprintf(szOut, z58ab65b, "?"); return; }
-	int n = snprintf(szOut, z58ab65b, "%d", pChars[0]);
-	for (int i = 1; i < nCount && n > 0 && n < (int)z58ab65b; i++)
-		n += snprintf(szOut + n, z58ab65b - n, "/%d", pChars[i]);
+	if (!zab46fd3 || nCount <= 0) { snprintf(szOut, nOut, "?"); return; }
+	int n = snprintf(szOut, nOut, "%d", pChars[0]);
+	for (int i = 1; i < nCount && n > 0 && n < (int)nOut; i++)
+		n += snprintf(szOut + n, nOut - n, "/%d", pChars[i]);
 }
 
 void zea0d2fd(int bOn) { z323ac1f = bOn ? 1 : 0; }
@@ -483,7 +570,7 @@ void z97e971e(int bOn) { zbde1601 = bOn ? 1 : 0; }
 int z5ebf79e(int ze6bfbdc, void (*z930c6f2)(const char*))
 {
 	z3c35b6f = NULL;
-	zf2fc3fb = z930c6f2;
+	g_log = z930c6f2;
 	z6a90649 = z671f77c = 0;
 	za4fdb46 = zb271d66 = z6cbdaa2 = 0;
 	z748e839 = z5042295 = -1;
@@ -502,17 +589,21 @@ int z5ebf79e(int ze6bfbdc, void (*z930c6f2)(const char*))
 	z9095135 = 0;
 	memset(z05863a7, 0, sizeof(z05863a7));
 	zea0bcb5 = zcc83e81 = 0;
+	z860b20e[0] = z860b20e[1] = 0;
+	z6e9fbde = 0;
 	z085f58c = -1;
 	z0e05425 = 0;
 	zf71c1cb = 0;
 	zcbd65b0 = 0;
 	z5cd9a92 = 0;
+	zdc5347d("");
 
 	if (zfc8fae7(z930c6f2) != z7e634bf)
 		return z58c624b;
 
 	const char* szGame = BurnDrvGetTextA(DRV_NAME);
 	if (!szGame) szGame = "";
+	if (!strcmp(szGame, "umk3jug")) szGame = "umk3";
 	strncpy(z9165167.szGame, szGame, sizeof(z9165167.szGame) - 1);
 
 	for (unsigned i = 0; i < sizeof(z7090d52) / sizeof(z7090d52[0]); i++) {
@@ -535,6 +626,8 @@ int z5ebf79e(int ze6bfbdc, void (*z930c6f2)(const char*))
 	}
 
 	z9165167.z37051f2 = z3c35b6f->z37051f2;
+	zdc5347d(szGame);
+	if (z45febb2) zaf4dd4f(z930c6f2, "score: segunda testemunha: %d contador(es) do jogo", z45febb2);
 	if (z6329982 > 0)
 		zaf4dd4f(z930c6f2, "score: reading %s, limite FT%d", szGame, z6329982);
 	else
@@ -548,6 +641,7 @@ void z770c6b6(int bOn) { zf71007b = bOn ? 1 : 0; }
 
 void z9fff242(int bOn) { zd7cb6f8 = bOn ? 1 : 0; }
 int  ze2aa305(void) { return z3c35b6f && zea0bcb5; }
+int  zb139002(void) { return z3c35b6f ? z6e9fbde : 0; }
 
 void z3440738(int nSide) { z5cd9a92 = nSide; }
 
@@ -555,6 +649,12 @@ int z719f6d2(int nSide)
 {
 	if (!z3c35b6f || !zd7cb6f8 || nSide < 1 || nSide > 2) return 0;
 	return z05863a7[nSide - 1].nCount;
+}
+
+int z26c0539(int nSide)
+{
+	if (!z3c35b6f || !zd7cb6f8 || nSide < 1 || nSide > 2) return 0;
+	return (z05863a7[nSide - 1].z0222e74 || z05863a7[nSide - 1].nCount) ? 1 : 0;
 }
 
 int zf7cdc79(void)
@@ -630,7 +730,7 @@ static void ze7c83ba(int s, int z0623ddc)
 		if (z0ba0002 && ++a->zbefba42 >= z6fc34b9) {
 			memset(a, 0, sizeof(*a));
 			a->z3b7e8a8 = bits;
-			zaf4dd4f(zf2fc3fb, "score: f%lld o P%d voltou depois do fim da contagem (replay antigo)", ze9bc394, s + 1);
+			zaf4dd4f(g_log, "score: f%lld o P%d voltou depois do fim da contagem (replay antigo)", ze9bc394, s + 1);
 		}
 		return;
 	}
@@ -642,7 +742,7 @@ static void ze7c83ba(int s, int z0623ddc)
 		if (--a->nCount == 0) {
 			a->zabda886 = 1;
 			a->zbefba42 = 0;
-			zaf4dd4f(zf2fc3fb, "score: f%lld inatividade do P%d - fim da contagem, a partida acaba", ze9bc394, s + 1);
+			zaf4dd4f(g_log, "score: f%lld inatividade do P%d - fim da contagem, a partida acaba", ze9bc394, s + 1);
 		}
 		return;
 	}
@@ -651,19 +751,31 @@ static void ze7c83ba(int s, int z0623ddc)
 			a->z0222e74  = 1;
 			a->zbefba42  = 0;
 			a->z165cb5c = 0;
-			zaf4dd4f(zf2fc3fb, "score: f%lld inatividade: o P%d nao aperta nada ha 1 min - aviso na tela, placar pausado",
+			zaf4dd4f(g_log, "score: f%lld inatividade: o P%d nao aperta nada ha 1 min - aviso na tela",
 			          ze9bc394, s + 1);
+			if (z860b20e[s] && ze9bc394 - z860b20e[s] < zb2570fd) {
+				if (!(z6e9fbde & (1 << s)))
+					zaf4dd4f(g_log, "score: f%lld inatividade repetida do P%d (o aviso anterior foi no quadro %lld): "
+					          "a partida em andamento nao conta e a sessao nao vale pontos", ze9bc394, s + 1, z860b20e[s]);
+				else
+					zaf4dd4f(g_log, "score: f%lld inatividade repetida do P%d de novo: a partida em andamento nao conta",
+					          ze9bc394, s + 1);
+				z6e9fbde |= 1 << s;
+				zefadd78();
+				z311e729 = 1;
+			}
+			z860b20e[s] = ze9bc394;
 		}
 		return;
 	}
 	if (z0ba0002 && ++a->zbefba42 >= z6fc34b9) {
 		a->z0222e74 = 0;
-		zaf4dd4f(zf2fc3fb, "score: f%lld o P%d voltou (%d toques) - o aviso sai", ze9bc394, s + 1, a->zbefba42);
+		zaf4dd4f(g_log, "score: f%lld o P%d voltou (%d toques) - o aviso sai", ze9bc394, s + 1, a->zbefba42);
 		return;
 	}
 	if (a->z165cb5c >= z5149dd1) {
 		a->nCount = z1d4bc00;
-		zaf4dd4f(zf2fc3fb, "score: f%lld inatividade do P%d de novo, depois do aviso - contagem de 5 s",
+		zaf4dd4f(g_log, "score: f%lld inatividade do P%d de novo, depois do aviso - contagem de 5 s",
 		          ze9bc394, s + 1);
 	}
 }
@@ -680,27 +792,97 @@ static int zb1bab8e(int l1, int l2)
 	}
 	ze7c83ba(0, z0623ddc);
 	ze7c83ba(1, z0623ddc);
-	const int z423f8b3 = z05863a7[0].z0222e74 || z05863a7[0].nCount || z05863a7[0].zabda886 ||
-	                  z05863a7[1].z0222e74 || z05863a7[1].nCount || z05863a7[1].zabda886;
+	const int z423f8b3 = z05863a7[0].zabda886 || z05863a7[1].zabda886;
 
 	if (z423f8b3 && !zea0bcb5) {
 		zea0bcb5 = 1;
 		zcc83e81   = 0;
 		if (z9165167.z726041c || z9165167.zae1a069)
-			zaf4dd4f(zf2fc3fb, "score: f%lld a partida em andamento (rounds %d x %d) nao conta",
+			zaf4dd4f(g_log, "score: f%lld inatividade ate o fim: a partida em andamento (rounds %d x %d) nao conta",
 			          ze9bc394, z9165167.z726041c, z9165167.zae1a069);
 		zefadd78();
+		z311e729 = 1;
 	} else if (zea0bcb5 && !z423f8b3) {
 		zea0bcb5 = 0;
 		zcc83e81   = 1;
-		zaf4dd4f(zf2fc3fb, "score: f%lld sem aviso de inatividade - o placar volta na proxima partida", ze9bc394);
+		zaf4dd4f(g_log, "score: f%lld sem aviso de inatividade - o placar volta na proxima partida", ze9bc394);
 	}
 	if (zcc83e81 && z96e973d(l1, l2)) {
 		zcc83e81 = 0;
 		zefadd78();
-		zaf4dd4f(zf2fc3fb, "score: f%lld partida nova - o placar volta a contar", ze9bc394);
+		zaf4dd4f(g_log, "score: f%lld partida nova - o placar volta a contar", ze9bc394);
 	}
 	return zea0bcb5 || zcc83e81;
+}
+
+static void zc2b6372(int nSide, long long f);
+
+static void zc3bdec0(void)
+{
+	for (int i = 0; i < z45febb2; i++) {
+		z19df62d* w = &z4104fea[i];
+		for (int s = 0; s < 2; s++) {
+			const int v = zaefff6f(s ? z5cf2ba5[i]->zb1468ac : z5cf2ba5[i]->zc40dd08);
+			if (w->zda5b744[s] < 0) { w->zda5b744[s] = v; w->zd01acad[s] = v; w->z83cba3a[s] = 0; continue; }
+			if (v == w->zda5b744[s]) { w->zd01acad[s] = v; w->z83cba3a[s] = 0; continue; }
+			if (v != w->zd01acad[s]) { w->zd01acad[s] = v; w->z83cba3a[s] = 1; continue; }
+			if (++w->z83cba3a[s] < z70b1c52) continue;
+			const long long f = ze9bc394 + z495ea96 - (z70b1c52 - 1);
+			if (zaf5bb81)
+				zaf4dd4f(g_log, "score: f%lld testemunha %c%d P%d %d -> %d (BIOS %d%d, inatividade %d, rounds %d x %d, luta %d)",
+				          f, z5cf2ba5[i]->cType, i, s + 1, w->zda5b744[s], v,
+				          zaefff6f(0x10FDB6), zaefff6f(0x10FDB7), zea0bcb5 || zcc83e81,
+				          z9165167.z726041c, z9165167.zae1a069, z9165167.z2ed2c96);
+			else
+				zaf4dd4f(g_log, "score: f%lld testemunha %c%d P%d %d -> %d (inatividade %d, rounds %d x %d, luta %d)",
+				          f, z5cf2ba5[i]->cType, i, s + 1, w->zda5b744[s], v, zea0bcb5 || zcc83e81,
+				          z9165167.z726041c, z9165167.zae1a069, z9165167.z2ed2c96);
+			const int zac3f25d = v > w->zda5b744[s];
+			w->zda5b744[s] = v;
+			w->z83cba3a[s] = 0;
+			if (zac3f25d && z5cf2ba5[i]->z0eee1db) zc2b6372(s + 1, f);
+		}
+	}
+}
+
+static void zc2b6372(int nSide, long long f)
+{
+	if (zbde1601 || z9165167.z1f29c92) return;
+	if (!zff473ed && f - z54eb609 <= z58b8ba7) {
+		zff473ed = 1;
+		if (nSide != z4c1b295)
+			zaf4dd4f(g_log, "score: f%lld testemunha: o jogo deu a partida ao P%d e o leitor ao P%d (fica a do leitor)",
+			          f, nSide, z4c1b295);
+		return;
+	}
+	if (z311e729) {
+		z311e729 = 0;
+		zaf4dd4f(g_log, "score: f%lld testemunha: o jogo deu ao P%d a partida anulada por inatividade - nao conta",
+		          f, nSide);
+		return;
+	}
+	zee708d8 = nSide;
+	zaac41d8   = f;
+	zbbba39d = !z3c35b6f->zdad73f6 || zacd238a();
+}
+
+static void zff2c22e(void)
+{
+	if (!zee708d8 || ze9bc394 - zaac41d8 < zfcd69f2) return;
+	const int nSide = zee708d8;
+	zee708d8 = 0;
+	if (!zbbba39d || zea0bcb5 || !z9165167.zd61d2b1) {
+		zaf4dd4f(g_log, "score: f%lld testemunha: o jogo deu a partida ao P%d, mas fora de uma luta entre os dois - nao conta",
+		          ze9bc394, nSide);
+		return;
+	}
+	const int z4048f0e = z3c35b6f->z8b4af0c > 0 ? z3c35b6f->z8b4af0c : 2;
+	if (nSide == 1 && z9165167.z726041c < z4048f0e) z9165167.z726041c = z4048f0e;
+	if (nSide == 2 && z9165167.zae1a069 < z4048f0e) z9165167.zae1a069 = z4048f0e;
+	zaf4dd4f(g_log, "score: f%lld testemunha: o leitor nao fechou a partida que o jogo deu ao P%d - fecha agora (%d x %d)",
+	          ze9bc394, nSide, z9165167.z726041c, z9165167.zae1a069);
+	z0695713();
+	zff473ed = 1;
 }
 
 static void ze46111d(void)
@@ -711,9 +893,12 @@ static void ze46111d(void)
 
 	if (!z3c35b6f) return;
 
-	if (z9165167.z1f29c92) return;
+	if (z9165167.z1f29c92) { z495ea96++; zc3bdec0(); return; }
 
 	ze9bc394++;
+	zc3bdec0();
+	zff2c22e();
+	if (z9165167.z1f29c92) return;
 
 	const int l1 = zaba0fbe(0);
 	const int l2 = zaba0fbe(1);
@@ -725,7 +910,7 @@ static void ze46111d(void)
 	}
 
 	if (z323ac1f && ((l1 < 0) != (z6a90649 < 0) || (l2 < 0) != (z671f77c < 0))) {
-		zaf4dd4f(zf2fc3fb, "score: f%lld vida P1 %d -> %d, P2 %d -> %d  (na tela %d x %d, iniciada=%d, rounds %d x %d)",
+		zaf4dd4f(g_log, "score: f%lld vida P1 %d -> %d, P2 %d -> %d  (na tela %d x %d, iniciada=%d, rounds %d x %d)",
 		          ze9bc394, z6a90649, l1, z671f77c, l2,
 		          z3c35b6f->z5ba4a3e ? zaefff6f(z3c35b6f->z5ba4a3e) : -1,
 		          z3c35b6f->z73d0ac3 ? zaefff6f(z3c35b6f->z73d0ac3) : -1,
@@ -742,7 +927,7 @@ static void ze46111d(void)
 		z9165167.zd61d2b1 = 1;
 		if (!z6c98266)     z6c98266     = ze9bc394;
 		if (!z9165167.nStartFrame) z9165167.nStartFrame = ze9bc394;
-		if (z323ac1f) zaf4dd4f(zf2fc3fb, "score: f%lld luta comecou (vidas cheias)", ze9bc394);
+		if (z323ac1f) zaf4dd4f(g_log, "score: f%lld luta comecou (vidas cheias)", ze9bc394);
 		z9095135 = 0;
 		z399002f(z69eb802, 0);
 	}
@@ -760,7 +945,7 @@ static void ze46111d(void)
 			memset(z41f7547, 0, sizeof(z41f7547));
 			memset(za9212d1, 0, sizeof(za9212d1));
 			memset(zd0532d6, 0, sizeof(zd0532d6));
-			if (z323ac1f) zaf4dd4f(zf2fc3fb, "score: f%lld o relogio andou: daqui em diante e a luta", ze9bc394);
+			if (z323ac1f) zaf4dd4f(g_log, "score: f%lld o relogio andou: daqui em diante e a luta", ze9bc394);
 		}
 		z8dcdb7e = (t != z24af3f3) ? 0 : (z8dcdb7e < 1000000 ? z8dcdb7e + 1 : z8dcdb7e);
 		z24af3f3 = t;
@@ -806,7 +991,7 @@ static void ze46111d(void)
 					if (w2 == z5d651a9 + 1) { z9165167.zae1a069++; z9165167.nEndFrame = ze9bc394; zbc89174 = 1; }
 					if (w1 == 0 && w2 == 0 && (z9165167.z726041c || z9165167.zae1a069)) z176d922 = 1;
 				} else if (z323ac1f && (w1 > zf48ab02 || w2 > z5d651a9)) {
-					zaf4dd4f(zf2fc3fb, "score: f%lld contador de rounds do jogo %d x %d -> %d x %d fora de uma luta (nao conta)",
+					zaf4dd4f(g_log, "score: f%lld contador de rounds do jogo %d x %d -> %d x %d fora de uma luta (nao conta)",
 					          ze9bc394, zf48ab02, z5d651a9, w1, w2);
 				}
 				zf48ab02 = w1; z5d651a9 = w2; z49f03e5 = 0;
@@ -842,7 +1027,7 @@ static void ze46111d(void)
 	}
 
 	if (z323ac1f && (zbc89174 || zc28386e))
-		zaf4dd4f(zf2fc3fb, "score: f%lld NOCAUTE %s  (vida %d / %d, na tela %d x %d) -> rounds %d x %d",
+		zaf4dd4f(g_log, "score: f%lld NOCAUTE %s  (vida %d / %d, na tela %d x %d) -> rounds %d x %d",
 		          ze9bc394, (zbc89174 && zc28386e) ? "duplo" : zc28386e ? "do P1 (P2 caiu)" : "do P2 (P1 caiu)", l1, l2,
 		          z3c35b6f->z5ba4a3e ? zaefff6f(z3c35b6f->z5ba4a3e) : -1,
 		          z3c35b6f->z73d0ac3 ? zaefff6f(z3c35b6f->z73d0ac3) : -1,
@@ -885,7 +1070,7 @@ static void ze46111d(void)
 				z9095135 = 1;
 				z399002f(zafb1e7e, (zbc89174 == zc28386e) ? 0 : zc28386e ? 1 : 2);
 				if (z323ac1f)
-					zaf4dd4f(zf2fc3fb, "score: f%lld TEMPO ESGOTADO (vida %d / %d, na tela %d x %d%s): %s -> rounds %d x %d",
+					zaf4dd4f(g_log, "score: f%lld TEMPO ESGOTADO (vida %d / %d, na tela %d x %d%s): %s -> rounds %d x %d",
 					          ze9bc394, l1, l2,
 					          z3c35b6f->z5ba4a3e ? zaefff6f(z3c35b6f->z5ba4a3e) : -1,
 					          z3c35b6f->z73d0ac3 ? zaefff6f(z3c35b6f->z73d0ac3) : -1,
@@ -912,7 +1097,7 @@ static void ze46111d(void)
 		if (z738d2b6 && !zcbd65b0) {
 			zcbd65b0 = 1;
 			if (z323ac1f)
-				zaf4dd4f(zf2fc3fb, "score: f%lld empate em %d x %d nos ultimos lutadores: o round FINAL decide a partida",
+				zaf4dd4f(g_log, "score: f%lld empate em %d x %d nos ultimos lutadores: o round FINAL decide a partida",
 				          ze9bc394, z9165167.z726041c, z9165167.zae1a069);
 		} else if (!z738d2b6 || zbc89174 || zc28386e) {
 			z0695713();
@@ -920,7 +1105,7 @@ static void ze46111d(void)
 		}
 	}
 	if (z176d922) {
-		if (z323ac1f) zaf4dd4f(zf2fc3fb, "score: f%lld os contadores do jogo voltaram a 0: a partida acaba em %d x %d",
+		if (z323ac1f) zaf4dd4f(g_log, "score: f%lld os contadores do jogo voltaram a 0: a partida acaba em %d x %d",
 		                         ze9bc394, z9165167.z726041c, z9165167.zae1a069);
 		z0695713();
 		return;
@@ -1075,6 +1260,7 @@ int zb31ef22(const char* zb306bef, int ze6bfbdc, const char* z303e5ed,
 		zaf4dd4f(z930c6f2, "result: nao consegui escrever %s", szPath);
 		return -1;
 	}
+	if (z45febb2) zaf4dd4f(z930c6f2, "score: f%lld testemunha: fim da sessao", ze9bc394 + z495ea96);
 
 	fprintf(f, "match=%s\n",  zaa1e328);
 	fprintf(f, "game=%s\n",   d.szGame);
@@ -1084,7 +1270,7 @@ int zb31ef22(const char* zb306bef, int ze6bfbdc, const char* z303e5ed,
 	fprintf(f, "firstto=%d\n", ze6bfbdc);
 	fprintf(f, "reason=%s\n",  z303e5ed ? z303e5ed : "closed");
 	{
-		const int z003e6c6 = z5cd9a92 ? z5cd9a92 : zf7cdc79();
+		const int z003e6c6 = (z5cd9a92 ? z5cd9a92 : zf7cdc79()) | z6e9fbde;
 		if (z003e6c6) fprintf(f, "ausente=%d\n", z003e6c6);
 	}
 	for (int s = 1; s <= 2; s++) {

@@ -1,6 +1,7 @@
 #include "rom_notice.h"
 #include "img_hash.h"
 #include "fbneo_host.h"
+#include "lang.h"
 
 #include <windows.h>
 #include <stdio.h>
@@ -74,32 +75,32 @@ void z90fdabc(int z2642b88, const char* szFullName, const char* szShortName,
 	text[0] = 0;
 	const int n = (int)(sizeof(text) / sizeof(text[0]));
 	if (z2642b88 == z2d06792) {
-		cat(text, n, L"N\x00e3o encontramos a ROM de ");
+		cat(text, n, z6f2968c(L"N\x00e3o encontramos a ROM de "));
 		z3b029f1(text, n, title);
 		if (bOther) {
-			cat(text, n, bMany ? L" (faltam os arquivos " : L" (falta o arquivo ");
+			cat(text, n, bMany ? z6f2968c(L" (faltam os arquivos ") : z6f2968c(L" (falta o arquivo "));
 			z3b029f1(text, n, za6a9f59);
 			cat(text, n, L")");
 		}
-		cat(text, n, L".\n\nBaixe a ROM pelo Frame Perfect e tente de novo.");
+		cat(text, n, z6f2968c(L".\n\nBaixe a ROM pelo Frame Perfect e tente de novo."));
 	} else if (z2642b88 == z3724591) {
-		cat(text, n, L"A ROM de ");
+		cat(text, n, z6f2968c(L"A ROM de "));
 		z3b029f1(text, n, title);
-		cat(text, n, L" est\x00e1 incompleta ou \x00e9 de outra vers\x00e3o.\n\n");
+		cat(text, n, z6f2968c(L" est\x00e1 incompleta ou \x00e9 de outra vers\x00e3o.\n\n"));
 		if (zc6728fe && zc6728fe[0]) {
-			cat(text, n, L"Apague este arquivo e baixe a ROM de novo pelo Frame Perfect:\n");
+			cat(text, n, z6f2968c(L"Apague este arquivo e baixe a ROM de novo pelo Frame Perfect:\n"));
 			cat(text, n, zc6728fe);
 		} else {
-			cat(text, n, L"Apague o arquivo dela e baixe a ROM de novo pelo Frame Perfect.");
+			cat(text, n, z6f2968c(L"Apague o arquivo dela e baixe a ROM de novo pelo Frame Perfect."));
 		}
 	} else if (z2642b88 == z4f1931a) {
-		cat(text, n, L"Esta vers\x00e3o do emulador n\x00e3o tem o jogo ");
+		cat(text, n, z6f2968c(L"Esta vers\x00e3o do emulador n\x00e3o tem o jogo "));
 		z3b029f1(text, n, title);
-		cat(text, n, L".\n\nAtualize o Frame Perfect e tente de novo.");
+		cat(text, n, z6f2968c(L".\n\nAtualize o Frame Perfect e tente de novo."));
 	} else {
-		cat(text, n, L"N\x00e3o foi poss\x00edvel abrir ");
+		cat(text, n, z6f2968c(L"N\x00e3o foi poss\x00edvel abrir "));
 		z3b029f1(text, n, title);
-		cat(text, n, L".\n\nO motivo est\x00e1 em rbf-netplay.log, ao lado do emulador.");
+		cat(text, n, z6f2968c(L".\n\nO motivo est\x00e1 em rbf-netplay.log, ao lado do emulador."));
 	}
 
 	{

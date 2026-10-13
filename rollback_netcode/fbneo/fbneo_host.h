@@ -24,13 +24,14 @@ typedef struct z54dec38 {
 
 	char           z5737392[64];
 	unsigned short zc225a0e;
-	char           zd843ce2[32];
-	char           z7dd7ec2[32];
+	char           zd843ce2[64];
+	char           z7dd7ec2[64];
 	int            ze6bfbdc;
 	int            zed95901;
 	int            zc5cc23a;
 	char           z4a06e1f[40];
 	int            z115149b;
+	int            z744cae6;
 } z54dec38;
 
 typedef struct z9f83179 {
@@ -60,6 +61,8 @@ int  zdd5bb4f(void);
 int  z1b0f145(void);
 int  z17f8ebd(int bHasFocus);
 int  zedf061d(void);
+void z8a35ea7(int z4067262);
+int  zf796ce3(void);
 
 int  zf5650f6(int* pSide, int* z4b39f95);
 
@@ -67,9 +70,13 @@ int  z60692a4(void);
 int  z806b0c0(void);
 int  z2b7bad9(unsigned int vk);
 void z5fa0f19(unsigned int ch);
-void z2e5f4c9(int bOn, const char* zd8f5856);
+void z2e5f4c9(int bOn, const char* zd8f5856, int zb568fa4);
 void ze31c6f0(void);
 void zfc2ac67(void);
+
+void zfd67ef1(int w);
+int  z7675262(const char* p, int n);
+int  z38fea27(void);
 
 const char* z83650cd(void);
 

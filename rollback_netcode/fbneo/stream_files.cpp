@@ -39,25 +39,25 @@ static void z406dedc(const wchar_t* name, int n)
 	z00b0657(name, b);
 }
 
-static void z6fe6fdb(const char* z4601777, char* out, int z58ab65b)
+static void z6fe6fdb(const char* z4601777, char* out, int nOut)
 {
 	out[0] = 0;
 	if (!z4601777 || !z4601777[0]) return;
 	wchar_t w[128];
 	if (MultiByteToWideChar(CP_ACP, 0, z4601777, -1, w, 128) <= 0) return;
 	w[127] = 0;
-	if (WideCharToMultiByte(CP_UTF8, 0, w, -1, out, z58ab65b, NULL, NULL) <= 0) out[0] = 0;
-	out[z58ab65b - 1] = 0;
+	if (WideCharToMultiByte(CP_UTF8, 0, w, -1, out, nOut, NULL, NULL) <= 0) out[0] = 0;
+	out[nOut - 1] = 0;
 }
 
-static void z9c2fd51(const wchar_t* name, char* out, int z58ab65b)
+static void z9c2fd51(const wchar_t* name, char* out, int nOut)
 {
 	wchar_t w[64];
 	out[0] = 0;
 	DWORD n = GetEnvironmentVariableW(name, w, 64);
 	if (!n || n >= 64) return;
-	if (WideCharToMultiByte(CP_UTF8, 0, w, -1, out, z58ab65b, NULL, NULL) <= 0) out[0] = 0;
-	out[z58ab65b - 1] = 0;
+	if (WideCharToMultiByte(CP_UTF8, 0, w, -1, out, nOut, NULL, NULL) <= 0) out[0] = 0;
+	out[nOut - 1] = 0;
 }
 
 static void zeff54eb(const wchar_t* name, const char* z2831ef1)
@@ -82,6 +82,7 @@ static const char* canonical(const char* g)
 {
 	if (!strcmp(g, "vsavj"))  return "vsav";
 	if (!strcmp(g, "ssf2xj")) return "ssf2t";
+	if (!strcmp(g, "umk3jug")) return "umk3";
 	return g;
 }
 
@@ -121,7 +122,7 @@ void z5c3a407(const char* szGame, const char* zb306bef, const char* z733a844,
 	if (ze6bfbdc > 0) snprintf(vs, sizeof(vs), "FT%d", ze6bfbdc);
 	else strcpy(vs, "Livre");
 
-	z00b0657(L"game.txt", z716dbe5);
+	z00b0657(L"game.txt", canonical(z716dbe5));
 	z00b0657(L"gamequark.txt", zb306bef);
 	z00b0657(L"gametype.txt", type);
 	z00b0657(L"vs.txt", vs);

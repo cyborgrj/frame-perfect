@@ -17,7 +17,7 @@ void zf9658e7(unsigned char* pImage, int nWidth, int nHeight, int nBpp, int nPit
 
 typedef struct z1fa3283 {
 	int  nMode;
-	char z733a844[40], zfad56d7[8], z5ea9399[12], z561be8d[8], zd5e0939[40];
+	char z733a844[48], zfad56d7[8], z5ea9399[12], z561be8d[8], zd5e0939[48];
 	unsigned int z03b5823, z20dcc8d, ze871279, z73d250a, z02d18e2;
 	int  ze326e54;
 } z1fa3283;

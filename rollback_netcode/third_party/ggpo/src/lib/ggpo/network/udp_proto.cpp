@@ -403,11 +403,13 @@ UdpProtocol::OnMsg(UdpMsg *msg, int len)
       }
    }
 
-   _next_recv_seq = seq;
-   LogMsg("recv", msg);
    if (msg->hdr.type >= ARRAY_SIZE(table)) {
       OnInvalid(msg, len);
-   } else {
+      return;
+   }
+   _next_recv_seq = seq;
+   LogMsg("recv", msg);
+   {
       handled = (this->*(table[msg->hdr.type]))(msg, len);
    }
    if (handled) {
@@ -516,7 +518,8 @@ UdpProtocol::LogMsg(const char *prefix, UdpMsg *msg)
       Log("%s rbf chat %d.\n", prefix, msg->u.rbf_chat.kind);
       break;
    default:
-      ASSERT(FALSE && "Unknown UdpMsg type.");
+      Log("%s type %d.\n", prefix, msg->hdr.type);
+      break;
    }
 }
 
@@ -533,7 +536,7 @@ UdpProtocol::LogEvent(const char *prefix, const UdpProtocol::Event &evt)
 bool
 UdpProtocol::OnInvalid(UdpMsg *msg, int len)
 {
-   ASSERT(FALSE && "Invalid msg in UdpProtocol");
+   Log("ignoring msg type %d (%d bytes).\n", msg->hdr.type, len);
    return false;
 }
 

@@ -48,6 +48,7 @@ OUR_SRC += $(ROOT)/fbneo/anticheat.cpp
 OUR_SRC += $(ROOT)/fbneo/chat.cpp
 OUR_SRC += $(ROOT)/fbneo/input_display.cpp
 OUR_SRC += $(ROOT)/fbneo/stream_files.cpp
+OUR_SRC += $(ROOT)/fbneo/lang.cpp
 
 GGPO_SRC :=
 GGPO_SRC += $(GGPO)/lib/ggpo/bitvector.cpp

@@ -117,6 +117,8 @@ void z9949c17(zd9eb82a fn, void* user);
 int zbff6c98(void);
 
 int zcb8e9fd(void);
+int z2549f00(int v);
+int z2db5ead(void);
 
 int zfc9bc19(void);
 int z57e44c7(void);

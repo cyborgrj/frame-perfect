@@ -13,7 +13,7 @@
 
 #define zbd8e7ca   0xF8F8F2u
 
-static int z9126c4e = 0;
+static int z9126c4e = 1;
 
 static double    zf189423 = 0.0;
 static long long z43931b1 = 0;
@@ -103,12 +103,22 @@ static void num(char* dst, size_t cap, const char* fmt, int v)
 
 #define zbdede75 3000
 static long long ze1d07e8 = 0;
+static int z2fa674c = -1;
 
 void z34d19c6(void)
 {
 	const long long now = zfbe0196();
 	if (!now || !z43931b1) return;
+	z2fa674c = -1;
 	ze1d07e8 = now + (z43931b1 * zbdede75) / 1000;
+}
+
+void z0d8fbe5(int v, int ms)
+{
+	const long long now = zfbe0196();
+	if (!now || !z43931b1) return;
+	z2fa674c = v;
+	ze1d07e8 = now + (z43931b1 * ms) / 1000;
 }
 
 static int z8d3b69b(void)
@@ -127,7 +137,7 @@ void z8b4c8e3(void)
 
 void z06e3af7(void)
 {
-	z9126c4e = (z9126c4e == 0) ? 2 : (z9126c4e == 2) ? 1 : 0;
+	z9126c4e = z9126c4e ? 0 : 1;
 }
 
 int z2eabea4(void) { return z9126c4e; }
@@ -143,27 +153,17 @@ int z6100f60(z888fe22* out)
 	out->zd4c6117 = zbd8e7ca;
 
 	if (z9126c4e >= 1) {
-		char z3498d5c[16], z74869e4[16], z332de76[24];
+		char z389a2ee[16], z3498d5c[16];
+		num(z389a2ee, sizeof(z389a2ee), "%df", z806cc0e);
 		num(z3498d5c, sizeof(z3498d5c), "%dms", zd030f08);
-		num(z74869e4,  sizeof(z74869e4),  "%dms", z59e1b11);
-		snprintf(z332de76, sizeof(z332de76), "%.1f", zf189423);
-		for (char* p = z332de76; *p; p++) if (*p == '.') *p = ',';
-
-		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s%s | jit %s | %sfps",
-		         z5cc2cfc ? "DESYNC | " : "", z3498d5c, z74869e4, z332de76);
-	}
-
-	if (z9126c4e >= 2) {
-		char z389a2ee[16], z8e96e9b[16];
-		num(z389a2ee,  sizeof(z389a2ee),  "%df", z806cc0e);
-		num(z8e96e9b, sizeof(z8e96e9b), "%df", zac282f1);
-		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "rollback %s | delay %s", z389a2ee, z8e96e9b);
+		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%srollback %s | ping %s",
+		         z5cc2cfc ? "DESYNC | " : "", z389a2ee, z3498d5c);
 	}
 
 	if (z7c2ac87) {
 		int ra = (bRunAhead > 0 && !(BurnDrvGetFlags() & BDF_RUNAHEAD_DISABLED)) ? bRunAhead : 0;
 		if (ra > 2) ra = 2;
-		snprintf(out->z30b14bc, sizeof(out->z30b14bc), "%d", ra);
+		snprintf(out->z30b14bc, sizeof(out->z30b14bc), "%d", z2fa674c >= 0 ? z2fa674c : ra);
 	}
 
 	return 1;

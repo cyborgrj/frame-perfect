@@ -210,6 +210,68 @@ diff --git a/src/burn/drv/konami/d_tmnt.cpp b/src/burn/drv/konami/d_tmnt.cpp
  	KonamiICScan(nAction);
  	
  	if (nAction & ACB_DRIVER_DATA) {
+diff --git a/src/burn/drv/midway/d_wunit.cpp b/src/burn/drv/midway/d_wunit.cpp
+--- a/src/burn/drv/midway/d_wunit.cpp
++++ b/src/burn/drv/midway/d_wunit.cpp
+@@ -1082,6 +1082,58 @@
+ };
+ 
+ 
++
++static struct BurnRomInfo umk3jugRomDesc[] = {
++	{ "um312u54.bin",	0x080000, 0x7bd7de7b, 1 | BRF_PRG | BRF_ESS },
++	{ "um312u63.bin",	0x080000, 0x03ba8907, 1 | BRF_PRG | BRF_ESS },
++
++	{ "l1.0_mortal_kombat_3_u2_ultimate.u2",	0x100000, 0x3838cfe5, 2 | BRF_PRG | BRF_ESS },
++	{ "l1_mortal_kombat_3_u3_music_spch.u3",	0x100000, 0x856fe411, 2 | BRF_PRG | BRF_ESS },
++	{ "l1_mortal_kombat_3_u4_music_spch.u4",	0x100000, 0x428a406f, 2 | BRF_PRG | BRF_ESS },
++	{ "l1_mortal_kombat_3_u5_music_spch.u5",	0x100000, 0x3b98a09f, 2 | BRF_PRG | BRF_ESS },
++
++	{ "l1_mortal_kombat_3_u133_game_rom.u133",	0x100000, 0x79b94667, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x00, 0) },
++	{ "l1_mortal_kombat_3_u132_game_rom.u132",	0x100000, 0x13e95228, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x00, 1) },
++	{ "l1_mortal_kombat_3_u131_game_rom.u131",	0x100000, 0x41001e30, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x00, 2) },
++	{ "l1_mortal_kombat_3_u130_game_rom.u130",	0x100000, 0x49379dd7, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x00, 3) },
++
++	{ "l1_mortal_kombat_3_u129_game_rom.u129",	0x100000, 0xa8b41803, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x04, 0) },
++	{ "l1_mortal_kombat_3_u128_game_rom.u128",	0x100000, 0xb410d72f, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x04, 1) },
++	{ "l1_mortal_kombat_3_u127_game_rom.u127",	0x100000, 0xbd985be7, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x04, 2) },
++	{ "l1_mortal_kombat_3_u126_game_rom.u126",	0x100000, 0xe7c32cf4, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x04, 3) },
++
++	{ "l1_mortal_kombat_3_u125_game_rom.u125",	0x100000, 0x9a52227e, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x08, 0) },
++	{ "l1_mortal_kombat_3_u124_game_rom.u124",	0x100000, 0x5c750ebc, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x08, 1) },
++	{ "l1_mortal_kombat_3_u123_game_rom.u123",	0x100000, 0xf0ab88a8, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x08, 2) },
++	{ "l1_mortal_kombat_3_u122_game_rom.u122",	0x100000, 0x9b87cdac, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x08, 3) },
++
++	{ "umk-u121.bin",	0x100000, 0xd17b30f3, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x0c, 0) },
++	{ "umk-u120.bin",	0x100000, 0xc80dbff9, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x0c, 1) },
++	{ "umk-u119.bin",	0x100000, 0x518f8083, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x0c, 2) },
++	{ "umk-u118.bin",	0x100000, 0xbbc57990, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x0c, 3) },
++
++	{ "mortal_kombat_iii_ultimate_u113_video_image.u113",	0x100000, 0x99d74a1e, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x14, 0) },
++	{ "mortal_kombat_iii_ultimate_u112_video_image.u112",	0x100000, 0xb5a46488, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x14, 1) },
++	{ "mortal_kombat_iii_ultimate_u111_video_image.u111",	0x100000, 0xa87523c8, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x14, 2) },
++	{ "mortal_kombat_iii_ultimate_u110_video_image.u110",	0x100000, 0x0038f205, 3 | BRF_GRA | BRF_ESS | WUNIT_GFX(0x14, 3) },
++	
++	{ "463_mk3_ultimate.u64", 0x1009, 0x4f425218, 0 | BRF_OPT },
++};
++
++STD_ROM_PICK(umk3jug)
++STD_ROM_FN(umk3jug)
++
++struct BurnDriver BurnDrvUmk3jug = {
++	"umk3jug", "umk3", NULL, NULL, "2010",
++	"Ultimate Mortal Kombat 3 Juggernaut (hack)\0", NULL, "Midway", "MIDWAY Wolf-Unit",
++	NULL, NULL, NULL, NULL,
++	BDF_GAME_WORKING | BDF_CLONE | BDF_HACK, 2, HARDWARE_MIDWAY_WUNIT, GBF_VSFIGHT, 0,
++	NULL, umk3jugRomInfo, umk3jugRomName, NULL, NULL, NULL, NULL, Mk3InputInfo, Mk3DIPInfo,
++    WolfUnitInit, WolfUnitExit, WolfUnitFrame, WolfUnitDraw, WolfUnitScan, &nWolfUnitRecalc, 0x8000,
++    WUNIT_SCREEN_WIDTH, WUNIT_SCREEN_HEIGHT, 4, 3
++};
++
++
+ // Ultimate Mortal Kombat 3 Uk (2021/07/20)
+ // Supports the latest special edition of FBNeo
+ // Before the latest special edition came out, IPS was recommended
 diff --git a/src/burn/drv/neogeo/neo_run.cpp b/src/burn/drv/neogeo/neo_run.cpp
 --- a/src/burn/drv/neogeo/neo_run.cpp
 +++ b/src/burn/drv/neogeo/neo_run.cpp
@@ -974,7 +1036,7 @@ diff --git a/src/burner/win32/bzip.cpp b/src/burner/win32/bzip.cpp
  	return ret;
 +}
 +
-+static void zb5e695c(const TCHAR* pszName, TCHAR* pszOut, INT32 z58ab65b)
++static void zb5e695c(const TCHAR* pszName, TCHAR* pszOut, INT32 nOut)
 +{
 +	TCHAR z7239005[MAX_PATH];
 +	_sntprintf(z7239005, MAX_PATH, _T("%s.zip"), pszName);
@@ -987,8 +1049,8 @@ diff --git a/src/burner/win32/bzip.cpp b/src/burner/win32/bzip.cpp
 +		if (FileExists(za12a96b)) _tcscpy(z7239005, za12a96b);
 +	}
 +#endif
-+	if (!GetFullPathName(z7239005, z58ab65b, pszOut, NULL)) _tcsncpy(pszOut, z7239005, z58ab65b - 1);
-+	pszOut[z58ab65b - 1] = 0;
++	if (!GetFullPathName(z7239005, nOut, pszOut, NULL)) _tcsncpy(pszOut, z7239005, nOut - 1);
++	pszOut[nOut - 1] = 0;
  }
  
  static INT32 FindRomByName(TCHAR* szName)
@@ -1600,7 +1662,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  
  #ifdef USE_SDL
   #include "SDL.h"
-@@ -25,15 +25,29 @@
+@@ -25,15 +25,30 @@
  #endif
  
  #include "version.h"
@@ -1610,6 +1672,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +#include "frame_timing.h"
 +#include "frame_pacer.h"
 +#include "rom_notice.h"
++#include "lang.h"
 +extern void z7390e62(const char* szPrefix);
 +extern int z60255f4;
  
@@ -1631,7 +1694,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  
  HACCEL hAccel = NULL;
  
-@@ -404,7 +418,7 @@
+@@ -404,7 +419,7 @@
  		// Initialise the debug log file
  
    #ifdef _UNICODE
@@ -1640,7 +1703,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  
  		if (ftell(DebugLog) == 0) {
  			WRITE_UNICODE_BOM(DebugLog);
-@@ -415,7 +429,7 @@
+@@ -415,7 +430,7 @@
  			_ftprintf(DebugLog, _T("</head><body><pre>"));
  		}
    #else
@@ -1649,7 +1712,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  
  		if (ftell(DebugLog) == 0) {
  			_ftprintf(DebugLog, _T("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">"));
-@@ -499,7 +513,7 @@
+@@ -499,7 +514,7 @@
  
  		SetConsoleTextAttribute(DebugBuffer, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
  		if (DebugLog) {
@@ -1658,7 +1721,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  			if (!DebugLog || bEchoLog) {
  				_sntprintf(szConsoleBuffer + _tcslen(szConsoleBuffer), 1024 - _tcslen(szConsoleBuffer), _T(", and echod to this console"));
  			}
-@@ -775,6 +789,185 @@
+@@ -775,6 +790,239 @@
  
  #include <wininet.h>
  
@@ -1708,6 +1771,46 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +	z5d90bae(zfe810e3);
 +}
 +
++struct z2c35ca6 { const wchar_t* zee9c291; int bFound; RECT rc; };
++static BOOL CALLBACK za8f490c(HMONITOR hMon, HDC, LPRECT, LPARAM l)
++{
++	z2c35ca6* f = (z2c35ca6*)l;
++	MONITORINFOEXW mi;
++	memset(&mi, 0, sizeof(mi));
++	mi.cbSize = sizeof(mi);
++	if (GetMonitorInfoW(hMon, &mi) && !_wcsicmp(mi.szDevice, f->zee9c291)) {
++		f->bFound = 1;
++		f->rc = mi.rcMonitor;
++		return FALSE;
++	}
++	return TRUE;
++}
++
++static void zbed3198(const wchar_t* szName)
++{
++	HorScreen[0] = VerScreen[0] = 0;
++	if (!szName || !szName[0]) return;
++	wchar_t zee9c291[32] = L"\\\\.\\";
++	wcsncat(zee9c291, szName, 31 - wcslen(zee9c291));
++	z2c35ca6 f;
++	memset(&f, 0, sizeof(f));
++	f.zee9c291 = zee9c291;
++	EnumDisplayMonitors(NULL, NULL, za8f490c, (LPARAM)&f);
++	char zfe810e3[160], ze2e52b5[24];
++	int i = 0;
++	for (; szName[i] && i < 23; i++) ze2e52b5[i] = (char)szName[i];
++	ze2e52b5[i] = 0;
++	if (f.bFound) {
++		wcscpy(HorScreen, zee9c291);
++		wcscpy(VerScreen, zee9c291);
++		snprintf(zfe810e3, sizeof(zfe810e3), "video: no monitor %s (%ldx%ld em %ld,%ld)", ze2e52b5,
++		         f.rc.right - f.rc.left, f.rc.bottom - f.rc.top, f.rc.left, f.rc.top);
++	} else {
++		snprintf(zfe810e3, sizeof(zfe810e3), "video: o monitor %s nao esta ligado - fica o principal", ze2e52b5);
++	}
++	z5d90bae(zfe810e3);
++}
++
 +static void zac349c9()
 +{
 +	bForce60Hz = false;
@@ -1730,7 +1833,9 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +		int zd98e777 = 0;
 +		int za2d4792 = 0;
 +		int z3e35fae = 0;
++		int z3dac03f = 0;
 +		char z5357c77[48] = "";
++		wchar_t zf03cf24[24] = L"";
 +		for (TCHAR* tok = _tcstok(list, _T(",")); tok != NULL; tok = _tcstok(NULL, _T(","))) {
 +			TCHAR* eq = _tcschr(tok, _T('='));
 +			if (eq == NULL) continue;
@@ -1746,6 +1851,16 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +			else if (_tcscmp(tok, _T("quadros")) == 0) za2d4792 = _ttoi(val) ? 1 : 0;
 +			else if (_tcscmp(tok, _T("ritmo"))   == 0) z3e35fae   = _ttoi(val) ? 1 : 0;
 +			else if (_tcscmp(tok, _T("flip"))    == 0) z60255f4 = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("esticar")) == 0) z3dac03f = _ttoi(val) ? 1 : 0;
++			else if (_tcscmp(tok, _T("mon"))     == 0) {
++				int n = 0;
++				for (; val[n] && n < 23; n++) {
++					const TCHAR c = val[n];
++					if (!((c >= _T('a') && c <= _T('z')) || (c >= _T('A') && c <= _T('Z')) || (c >= _T('0') && c <= _T('9')))) break;
++					zf03cf24[n] = (wchar_t)c;
++				}
++				zf03cf24[(val[n] == 0) ? n : 0] = 0;
++			}
 +			else if (_tcscmp(tok, _T("vol"))     == 0) {
 +				const int v = _ttoi(val);
 +				if (v >= 0 && v <= 100 && !_tcsstr(szCmdLine, _T("-rbffundo"))) nAudVolume = v * 100;
@@ -1766,6 +1881,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +
 +		zbf78557(z3e35fae);
 +		z82c780f();
++		zbed3198(zf03cf24);
 +		if (z3e35fae) nAudSegCount = 12;
 +
 +		if (zd98e777 < 0 || zd98e777 > 35) zd98e777 = 0;
@@ -1813,19 +1929,20 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +				snprintf(zde54f7d, sizeof(zde54f7d), "video: filtro de software %d (%s)", zd98e777, TCHARToANSI(VidSoftFXGetEffect(zd98e777), NULL, 0));
 +				z5d90bae(zde54f7d);
 +			}
-+			snprintf(zfe810e3, sizeof(zfe810e3), "video: %s, %s, scanlines %d%%%s%s",
++			snprintf(zfe810e3, sizeof(zfe810e3), "video: %s, %s, scanlines %d%%%s%s%s",
 +			         z443c3f1 ? (zd98e777 ? "DirectDraw SoftFX" : "DirectDraw") : "DirectX 9 Alt",
 +			         z443c3f1 ? (zd98e777 ? "com o filtro de software" : "sem filtro") : (z6522264[0] ? z6522264 : (zb6badbf ? "suave (linear)" : "pixels (point)")),
 +			         z443c3f1 ? 0 : z31f46b2,
 +			         (!z443c3f1 && zd5f510b) ? ", bordas presas" : "",
-+			         z9cb4cb9 ? ", resolucao nativa (dpi)" : "");
++			         z9cb4cb9 ? ", resolucao nativa (dpi)" : "",
++			         z3dac03f ? ", esticada (tela toda)" : "");
 +			z5d90bae(zfe810e3);
 +		}
 +
 +		if (z4048f0e > 0) nWindowSize = z4048f0e;
 +
-+		bVidCorrectAspect = 1;
-+		bVidFullStretch   = 0;
++		bVidCorrectAspect = z3dac03f ? 0 : 1;
++		bVidFullStretch   = z3dac03f ? 1 : 0;
 +		bVidVSync         = 0;
 +		bAlwaysDrawFrames = 0;
 +	}
@@ -1844,7 +1961,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  static int AppInit()
  {
  #if defined (_MSC_VER) && defined (_DEBUG)
-@@ -791,6 +984,14 @@
+@@ -791,6 +1039,14 @@
  
  	// Load config for the application
  	ConfigAppLoad();
@@ -1859,7 +1976,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	LookupSubDirThreads();
  
  #if defined (FBNEO_DEBUG)
-@@ -811,7 +1012,7 @@
+@@ -811,7 +1067,7 @@
  
  	if (bMonitorAutoCheck) MonitorAutoCheck();
  
@@ -1868,7 +1985,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	// print a warning if we're running for the 1st time
  	if (nIniVersion < nBurnVer) {
  		ScrnInit();
-@@ -863,6 +1064,12 @@
+@@ -863,6 +1119,12 @@
  	//  2 Silent + specified path
  	INT32 nExport = ParseExportPath(szCmdLine, NULL, NULL);
  
@@ -1881,7 +1998,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	// Suppresses ROMs scanning when full list is exported
  	if (-1 == nExport) {
  		// Build the ROM information
-@@ -1039,6 +1246,234 @@
+@@ -1039,6 +1301,238 @@
  	unzip_close_context(&titles_zip);
  	unzip_close_context(&previews_zip);
  	return;
@@ -1909,6 +2026,8 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +	if (_tcsicmp(tok, _T("GKG")) == 0) return 2;
 +	return -1;
 +}
++
++extern "C" int z3a135ef;
 +
 +static bool z9446d05(z54dec38* cfg)
 +{
@@ -1975,6 +2094,8 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +		}
 +		else if (_tcscmp(key, _T("solo"))      == 0) cfg->zc5cc23a        = _ttoi(val) ? 1 : 0;
 +		else if (_tcscmp(key, _T("chat"))      == 0) cfg->z115149b        = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("cmudo"))     == 0) cfg->z744cae6    = _ttoi(val) ? 1 : 0;
++		else if (_tcscmp(key, _T("q"))         == 0) z3a135ef             = _ttoi(val) & 3;
 +		else if (_tcscmp(key, _T("relaytoken")) == 0) {
 +			char* a = TCHARToANSI(val, NULL, 0);
 +			strncpy(cfg->z4a06e1f, a, sizeof(cfg->z4a06e1f) - 1);
@@ -2116,7 +2237,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  }
  
  int ProcessCmdLine()
-@@ -1250,6 +1685,10 @@
+@@ -1250,6 +1744,10 @@
  			bFullscreen = 0;
  		}
  
@@ -2127,7 +2248,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  		if (bFullscreen) {
  			nVidFullscreen = 1;
  		}
-@@ -1312,6 +1751,13 @@
+@@ -1312,6 +1810,13 @@
  			for (i = 0; i < nBurnDrvCount; i++) {
  				nBurnDrvActive = i;
  				if ((_tcscmp(BurnDrvGetText(DRV_NAME), szName) == 0) && (!(BurnDrvGetFlags() & BDF_BOARDROM))) {
@@ -2141,7 +2262,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  					TCHAR* szSub = _tcsstr(szCmdLine, _T("-sub"));	// Handling -sub additional parameters
  					if (szSub) {									// With -sub parameters
  						szSub += _tcslen(_T("-sub"));				// The parameter does not contain the identifier itself
-@@ -1400,11 +1846,117 @@
+@@ -1400,11 +1905,117 @@
  						IpsPatchInit();		// Entry point: cmdline launch
  					}
  
@@ -2217,9 +2338,9 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +							if (ze0d3fd3(&zf9006e2) != 0) {
 +								bprintf(PRINT_ERROR, _T("[rbf] FbnHostStartWatch failed; nothing to watch.\n"));
 +								if (!zfe62411()) MessageBox(NULL,
-+									_T("Nao foi possivel entrar na transmissao desta partida.\n\n")
-+									_T("O motivo esta em rbf-netplay.log, ao lado do emulador."),
-+									_T("RBF - assistir"), MB_OK | MB_ICONWARNING);
++									z6f2968c(L"Nao foi possivel entrar na transmissao desta partida.\n\n"
++									       L"O motivo esta em rbf-netplay.log, ao lado do emulador."),
++									z6f2968c(L"RBF - assistir"), MB_OK | MB_ICONWARNING);
 +								return 1;
 +							}
 +						} else if (z2a85b33(&z8ad8bd2, &zec6bdb3, &z5da0f84)) {
@@ -2259,7 +2380,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  					break;
  				}
  			}
-@@ -1413,6 +1965,10 @@
+@@ -1413,6 +2024,10 @@
  
  			if (i == nBurnDrvCount) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_NOSUPPORT), szName, _T(APP_TITLE));
@@ -2270,7 +2391,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  				FBAPopupDisplay(PUF_TYPE_ERROR);
  				return 1;
  			}
-@@ -1489,9 +2045,62 @@
+@@ -1489,9 +2104,62 @@
  	}
  }
  
@@ -2333,7 +2454,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	DSCore_Init();
  	DICore_Init();
  	DDCore_Init();
-@@ -1556,12 +2165,21 @@
+@@ -1556,12 +2224,21 @@
  	if (!(AppInit())) {							// Init the application
  		if (bAlwaysCreateSupportFolders) CreateSupportFolders();
  		if (!(ProcessCmdLine())) {
@@ -2789,7 +2910,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  int bAlwaysDrawFrames = 0;
  
-@@ -67,6 +298,46 @@
+@@ -67,6 +298,61 @@
  
  static void CheckSystemMacros() // These are the Pause / FFWD macros added to the input dialog
  {
@@ -2802,9 +2923,13 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
 +
 +	{
 +		static int z9d2db69 = 0;
-+		const int zc4e8e23 = (bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_BACK) & 0x8000)) ? 1 : 0;
-+		if (zc4e8e23 && !z9d2db69) z06e3af7();
-+		z9d2db69 = zc4e8e23;
++		static DWORD z85a9ec8 = 0;
++		const int zcf8a8e5 = z806b0c0();
++		if (zcf8a8e5) z85a9ec8 = GetTickCount();
++		const int z9e15f52 = !zcf8a8e5 && (z85a9ec8 == 0 || GetTickCount() - z85a9ec8 >= 1000);
++		const int z2ee5e70 = (bHasFocus && (GetAsyncKeyState(VK_BACK) & 0x8000)) ? 1 : 0;
++		if (z2ee5e70 && z9e15f52 && !z9d2db69) z06e3af7();
++		z9d2db69 = z2ee5e70;
 +	}
 +
 +	{
@@ -2814,6 +2939,17 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
 +		                 (GetAsyncKeyState(VK_MENU) & 0x8000)) ? 1 : 0;
 +		if (z5705e15 && !z24bfe73) z34d19c6();
 +		z24bfe73 = z5705e15;
++	}
++
++	{
++		static int zde8eb02[2] = { 0, 0 };
++		const int zcd8a2c2 = bHasFocus && !z806b0c0() &&
++		                (GetAsyncKeyState(VK_CONTROL) & 0x8000) && (GetAsyncKeyState(VK_MENU) & 0x8000);
++		for (int w = 0; w < 2; w++) {
++			const int z7e384e5 = (zcd8a2c2 && (GetAsyncKeyState(w == 0 ? 'D' : 'R') & 0x8000)) ? 1 : 0;
++			if (z7e384e5 && !zde8eb02[w]) zfd67ef1(w);
++			zde8eb02[w] = z7e384e5;
++		}
 +	}
 +
 +	if (z912408c) {
@@ -2836,7 +2972,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  	// Pause
  	if (macroSystemPause && macroSystemPause != prevPause && timeGetTime() > prevPause_debounce+90) {
  		if (bHasFocus) {
-@@ -76,7 +347,7 @@
+@@ -76,7 +362,7 @@
  	}
  	prevPause = macroSystemPause;
  
@@ -2845,7 +2981,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  		// FFWD
  		int bPrevAppDoFast = bAppDoFast;
  		if (macroSystemFFWD) {
-@@ -124,6 +395,9 @@
+@@ -124,6 +410,9 @@
  		}
  
  	}
@@ -2855,7 +2991,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  	// Load State
  	if (macroSystemLoadState && macroSystemLoadState != prevLState) {
  		PostMessage(hScrnWnd, WM_KEYDOWN, VK_F9, 0);
-@@ -232,10 +506,19 @@
+@@ -232,10 +521,19 @@
  	static int bPrevPause = 0;
  	static int bPrevDraw = 0;
  
@@ -2877,7 +3013,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			SuperWaitVBlank();
  	}
  
-@@ -258,6 +541,9 @@
+@@ -258,6 +556,9 @@
  
  		nFramesEmulated++;
  		nCurrentFrame++;
@@ -2887,7 +3023,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  		if (kNetGame) {
  			GetInput(true);						// Update inputs
-@@ -280,16 +566,44 @@
+@@ -280,16 +581,44 @@
  			}
  		}
  
@@ -2933,7 +3069,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			if ((bDraw & FFWD_GHOST_FRAME) == 0)
  				nFramesRendered++;
  
-@@ -313,9 +627,15 @@
+@@ -313,9 +642,15 @@
  				StateRunAheadSave();
  				INT16 *pBurnSoundOut_temp = pBurnSoundOut;
  				pBurnSoundOut = NULL;
@@ -2951,7 +3087,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  				if (VidFrame()) {
  					// VidFrame() failed, but we must run a driver frame because we have
  					// an input.  Possibly from recording or netplay(!)
-@@ -323,8 +643,9 @@
+@@ -323,8 +658,9 @@
  					BurnDrvFrame();
  				}
  
@@ -2962,7 +3098,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  				StateRunAheadLoad();
  				pBurnSoundOut = pBurnSoundOut_temp; // restore pointer, for wav & avi writer
  			}
-@@ -333,7 +654,17 @@
+@@ -333,7 +669,17 @@
  			BurnDrvFrame();
  		}
  
@@ -2981,17 +3117,26 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			StateRewindDoFrame(macroSystemRewind || bAppDoRewind, macroSystemRewindCancel, bRunPause);
  		}
  
-@@ -527,6 +858,48 @@
+@@ -527,6 +873,57 @@
  // Keyboard callback function, a way to provide a driver with shifted/unshifted ASCII data from the keyboard.  see drv/msx/d_msx.cpp for usage
  void (*cBurnerKeyCallback)(UINT8 code, UINT8 KeyType, UINT8 down) = NULL;
  
++static int z41ee004(UINT32 i)
++{
++	struct BurnInputInfo bii;
++	memset(&bii, 0, sizeof(bii));
++	if (BurnDrvGetInputInfo(&bii, i) || bii.szName == NULL) return 0;
++	return strstr(bii.szName, "Tilt") || strstr(bii.szName, "Service") || strstr(bii.szName, "Reset") ||
++	       strstr(bii.szName, "Diagnostic") || strstr(bii.szName, "Test");
++}
++
 +static int z51b645c(UINT16 nCode)
 +{
 +	if (GameInp == NULL) return 0;
 +	for (UINT32 i = 0; i < nGameInpCount + nMacroCount; i++) {
 +		const struct GameInp* pgi = &GameInp[i];
 +		if (i < nGameInpCount) {
-+			if (pgi->nInput == GIT_SWITCH && pgi->Input.Switch.nCode == nCode) return 1;
++			if (pgi->nInput == GIT_SWITCH && pgi->Input.Switch.nCode == nCode && !z41ee004(i)) return 1;
 +		} else if (pgi->Macro.nMode && pgi->Macro.Switch.nCode == nCode) {
 +			return 1;
 +		}
@@ -3030,7 +3175,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  static void BurnerHandlerKeyCallback(MSG *Msg, INT32 KeyDown, INT32 KeyType)
  {
  	INT32 shifted = (GetAsyncKeyState(VK_SHIFT) & 0x80000000) ? 0xf0 : 0;
-@@ -565,10 +938,11 @@
+@@ -565,10 +962,11 @@
  
  		RunInit();
  
@@ -3044,7 +3189,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  		GameInpCheckLeftAlt();
  		GameInpCheckMouse();															// Hide the cursor
-@@ -650,6 +1024,10 @@
+@@ -650,6 +1048,10 @@
  					bRestartVideo = 1;
  					break;
  				}
@@ -3055,7 +3200,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  				if (bMenuEnabled && nVidFullscreen == 0) {								// Handle keyboard messages for the menu
  					if (MenuHandleKeyboard(&Msg)) {
-@@ -660,7 +1038,7 @@
+@@ -660,7 +1062,7 @@
  				if (Msg.message == WM_SYSKEYDOWN || Msg.message == WM_KEYDOWN) {
  					if (Msg.lParam & 0x20000000) {
  						// An Alt/AltGr-key was pressed
@@ -3064,7 +3209,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  #if defined (FBNEO_DEBUG)
  							case 'C': {
-@@ -774,7 +1152,11 @@
+@@ -774,7 +1176,11 @@
  						if (cBurnerKeyCallback)
  							BurnerHandlerKeyCallback(&Msg, (Msg.message == WM_KEYDOWN) ? 1 : 0, 0);
  
@@ -3077,7 +3222,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  #if defined (FBNEO_DEBUG)
  							case 'N':
-@@ -798,8 +1180,8 @@
+@@ -798,8 +1204,8 @@
  								if (hwndChat) {
  									DeActivateChat();
  								} else {
@@ -3088,7 +3233,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  									} else {
  										if (nVidFullscreen) {
  											nVidFullscreen = 0;
-@@ -872,11 +1254,13 @@
+@@ -872,11 +1278,13 @@
  									}
  								} else
  								{ // Backspace: toggles FPS counter
@@ -3107,7 +3252,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  									}
  								}
  								break;
-@@ -923,7 +1307,7 @@
+@@ -923,7 +1331,7 @@
  				// Check for messages for dialogs etc.
  				if (AppMessage(&Msg)) {
  					if (TranslateAccelerator(hScrnWnd, hAccel, &Msg) == 0) {
@@ -3162,7 +3307,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  }
  
  static int WINAPI gameCallback(char* game, int player, int numplayers)
-@@ -593,8 +598,146 @@
+@@ -593,8 +598,255 @@
  	}
  }
  
@@ -3197,9 +3342,12 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
 +	if (wp->y > zd14c728 / 2) wp->y = zd14c728;
 +}
 +
-+#define z243dbe1 14
++#define z243dbe1 18
++#define z0e55dd0 RGB(0xE0, 0x66, 0xD9)
 +static HWND z4f7d2a2 = NULL;
 +static bool zf244259 = false;
++static bool z846d0a1 = false;
++static bool ze2ee132 = false;
 +static POINT z8f7e21d;
 +static RECT z4323390;
 +static const TCHAR z48ce885[] = _T("FramePerfectBarra");
@@ -3218,20 +3366,122 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
 +	             SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW);
 +}
 +
++static void z03aa0f2(HWND hWnd, RECT* rc)
++{
++	GetClientRect(hWnd, rc);
++	rc->left = rc->right - (z243dbe1 * 3) / 2 - 6;
++}
++
++static bool z10ab761(HWND hWnd, LPARAM lParam)
++{
++	POINT pt = { (short)LOWORD(lParam), (short)HIWORD(lParam) };
++	RECT rc;
++	z03aa0f2(hWnd, &rc);
++	return PtInRect(&rc, pt) != 0;
++}
++
++static bool z715e489(HWND hWnd)
++{
++	POINT pt;
++	GetCursorPos(&pt);
++	ScreenToClient(hWnd, &pt);
++	return z10ab761(hWnd, MAKELPARAM(pt.x, pt.y));
++}
++
++static void ze9b0291(HWND hWnd, bool zf9c8655)
++{
++	if (z846d0a1 == zf9c8655) return;
++	z846d0a1 = zf9c8655;
++	z8a35ea7(zf9c8655 ? 1 : 0);
++	InvalidateRect(hWnd, NULL, FALSE);
++}
++
++static void z8420be5(HWND hWnd)
++{
++	PAINTSTRUCT ps;
++	HDC dc = BeginPaint(hWnd, &ps);
++	RECT rc, rx;
++	GetClientRect(hWnd, &rc);
++	z03aa0f2(hWnd, &rx);
++
++	HBRUSH bar = CreateSolidBrush(z0e55dd0);
++	RECT rb = rc;
++	rb.right = rx.left;
++	FillRect(dc, &rb, bar);
++	DeleteObject(bar);
++
++	HBRUSH dot = CreateSolidBrush(RGB(0x9C, 0x34, 0x96));
++	const int cx = (rb.left + rb.right) / 2, cy = (rc.top + rc.bottom) / 2;
++	for (int i = -3; i <= 3; i++) {
++		for (int j = -1; j <= 1; j += 2) {
++			RECT d = { cx + i * 6 - 1, cy + j * 3 - 1, cx + i * 6 + 1, cy + j * 3 + 1 };
++			FillRect(dc, &d, dot);
++		}
++	}
++	DeleteObject(dot);
++
++	HBRUSH xb = CreateSolidBrush(z846d0a1 ? RGB(0xD0, 0x20, 0x48) : ze2ee132 ? RGB(0xB8, 0x2C, 0x86) : RGB(0x9C, 0x34, 0x96));
++	FillRect(dc, &rx, xb);
++	DeleteObject(xb);
++	HPEN pen = CreatePen(PS_SOLID, 2, RGB(0xFF, 0xFF, 0xFF));
++	HGDIOBJ old = SelectObject(dc, pen);
++	const int xx = (rx.left + rx.right) / 2, xy = (rx.top + rx.bottom) / 2, r = z243dbe1 / 4;
++	MoveToEx(dc, xx - r, xy - r, NULL);
++	LineTo(dc, xx + r + 1, xy + r + 1);
++	MoveToEx(dc, xx + r, xy - r, NULL);
++	LineTo(dc, xx - r - 1, xy + r + 1);
++	SelectObject(dc, old);
++	DeleteObject(pen);
++	EndPaint(hWnd, &ps);
++}
++
 +static LRESULT CALLBACK z30e252d(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 +{
 +	switch (Msg) {
 +		case WM_MOUSEACTIVATE:
 +			return MA_NOACTIVATE;
++		case WM_PAINT:
++			z8420be5(hWnd);
++			return 0;
++		case WM_ERASEBKGND:
++			return 1;
++		case WM_SETCURSOR:
++			SetCursor(LoadCursor(NULL, z715e489(hWnd) ? IDC_HAND : IDC_SIZEALL));
++			return TRUE;
++		case WM_MOUSELEAVE:
++			ze2ee132 = false;
++			InvalidateRect(hWnd, NULL, FALSE);
++			return 0;
 +		case WM_LBUTTONDOWN:
 +			if (hScrnWnd == NULL) return 0;
++			if (z10ab761(hWnd, lParam)) {
++				SetCapture(hWnd);
++				ze9b0291(hWnd, true);
++				if (GetForegroundWindow() != hScrnWnd) SetForegroundWindow(hScrnWnd);
++				return 0;
++			}
 +			GetCursorPos(&z8f7e21d);
 +			GetWindowRect(hScrnWnd, &z4323390);
 +			zf244259 = true;
 +			SetCapture(hWnd);
 +			if (GetForegroundWindow() != hScrnWnd) SetForegroundWindow(hScrnWnd);
 +			return 0;
-+		case WM_MOUSEMOVE:
++		case WM_MOUSEMOVE: {
++			const bool bIn = z10ab761(hWnd, lParam);
++			if (bIn != ze2ee132) {
++				ze2ee132 = bIn;
++				InvalidateRect(hWnd, NULL, FALSE);
++				if (bIn) {
++					TRACKMOUSEEVENT t;
++					memset(&t, 0, sizeof(t));
++					t.cbSize = sizeof(t);
++					t.dwFlags = TME_LEAVE;
++					t.hwndTrack = hWnd;
++					TrackMouseEvent(&t);
++				}
++			}
++			if (z846d0a1 && !bIn) ze9b0291(hWnd, false);
++		}
 +			if (zf244259 && hScrnWnd) {
 +				POINT pt;
 +				GetCursorPos(&pt);
@@ -3247,10 +3497,12 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
 +			}
 +			return 0;
 +		case WM_LBUTTONUP:
++			ze9b0291(hWnd, false);
 +			zf244259 = false;
 +			ReleaseCapture();
 +			return 0;
 +		case WM_CAPTURECHANGED:
++			ze9b0291(hWnd, false);
 +			zf244259 = false;
 +			return 0;
 +	}
@@ -3260,6 +3512,8 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
 +static void z5e90deb()
 +{
 +	zf244259 = false;
++	z846d0a1 = ze2ee132 = false;
++	z8a35ea7(0);
 +	if (z4f7d2a2) {
 +		DestroyWindow(z4f7d2a2);
 +		z4f7d2a2 = NULL;
@@ -3273,7 +3527,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
 +
 +	static bool z3d296f3 = false;
 +	if (!z3d296f3) {
-+		z5ee8a35 = CreateSolidBrush(RGB(0x20, 0x20, 0x24));
++		z5ee8a35 = CreateSolidBrush(z0e55dd0);
 +		WNDCLASS wc;
 +		memset(&wc, 0, sizeof(wc));
 +		wc.lpfnWndProc = z30e252d;
@@ -3309,7 +3563,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	switch (Msg) {
  		HANDLE_MSG(hWnd, WM_CREATE,			OnCreate);
  		HANDLE_MSG(hWnd, WM_ACTIVATEAPP,	OnActivateApp);
-@@ -649,6 +792,7 @@
+@@ -649,6 +901,7 @@
  static int OnDisplayChange(HWND, UINT, UINT, UINT)
  {
  	if (!nVidFullscreen) {
@@ -3317,7 +3571,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  		POST_INITIALISE_MESSAGE;
  	}
  
-@@ -678,8 +822,7 @@
+@@ -678,8 +931,7 @@
  	// If fullscreen and right double-click
  	if (hwnd == hScrnWnd && nVidFullscreen && bRDblClick)
  	{
@@ -3327,7 +3581,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  		{
  			// toggle fullscreen
  			nVidFullscreen = !nVidFullscreen;
-@@ -689,6 +832,10 @@
+@@ -689,6 +941,10 @@
  		}
  	}
  
@@ -3338,7 +3592,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	// If not fullscreen and this event is not related to 'toggle fullscreen' right double-click event
  	if (!nVidFullscreen && !bRDblClick) {
  		bMenuEnabled = !bMenuEnabled;
-@@ -738,6 +885,10 @@
+@@ -738,6 +994,10 @@
  
  static int OnLButtonDown(HWND hwnd, BOOL, int x, int y, UINT)
  {
@@ -3349,7 +3603,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	if (hwnd == hScrnWnd && !nVidFullscreen && !bMenuEnabled) {
  		RECT clientRect;
  
-@@ -760,6 +911,10 @@
+@@ -760,6 +1020,10 @@
  static int OnLButtonUp(HWND hwnd, int x, int y, UINT)
  {
  	bDrag = false;
@@ -3360,7 +3614,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  
  	if (nVidFullscreen) {
  
-@@ -791,6 +946,10 @@
+@@ -791,6 +1055,10 @@
  
  static int OnLButtonDblClk(HWND hwnd, BOOL, int, int, UINT)
  {
@@ -3371,7 +3625,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	if (bDrvOkay) {
  		nVidFullscreen = !nVidFullscreen;
  		POST_INITIALISE_MESSAGE;
-@@ -808,7 +967,8 @@
+@@ -808,7 +1076,8 @@
  static void OnActivateApp(HWND hwnd, BOOL fActivate, DWORD /* dwThreadId */)
  {
  	bHasFocus = fActivate;
@@ -3381,7 +3635,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  		bRunPause = fActivate? 0 : 1;
  	}
  	if (fActivate == false && hwnd == hScrnWnd) {
-@@ -1560,6 +1720,32 @@
+@@ -1560,6 +1829,32 @@
  
  	if (bLoading) {
  		return;
@@ -3414,7 +3668,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	}
  
  	switch (id) {
-@@ -1981,7 +2167,7 @@
+@@ -1981,7 +2276,7 @@
  
  			nSavestateSlot++;
  			if (nSavestateSlot > 8) {
@@ -3423,7 +3677,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  			}
  			_sntprintf(szString, 256, FBALoadStringEx(hAppInst, IDS_STATE_ACTIVESLOT, true), nSavestateSlot);
  			VidSNewShortMsg(szString);
-@@ -2064,22 +2250,27 @@
+@@ -2064,22 +2359,27 @@
  			break;
  
  		case MENU_BLITTER_1:
@@ -3451,7 +3705,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  			VidSelect(4);
  			POST_INITIALISE_MESSAGE;
  			break;
-@@ -2604,7 +2795,7 @@
+@@ -2604,7 +2904,7 @@
  			break;
  
  		case MENU_RUNAHEAD:
@@ -3460,7 +3714,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  			break;
  
  		case MENU_AUD_PLUGIN_1:
-@@ -3958,6 +4149,17 @@
+@@ -3958,6 +4258,17 @@
  // Block screensaver and windows menu if needed
  static int OnSysCommand(HWND, UINT sysCommand, int, int)
  {
@@ -3478,7 +3732,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	switch (sysCommand) {
  		case SC_MONITORPOWER:
  		case SC_SCREENSAVE: {
-@@ -4055,7 +4257,7 @@
+@@ -4055,7 +4366,7 @@
  		InputSetCooperativeLevel(false, bAlwaysProcessKeyboardInput);
  		AudBlankSound();
  	} else {
@@ -3487,7 +3741,48 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  			bRunPause = 1;
  		}
  	}
-@@ -4201,10 +4403,22 @@
+@@ -4093,6 +4404,26 @@
+ 	}
+ }
+ 
++struct zd9dd7bf { HMONITOR hMon; };
++static BOOL CALLBACK z46ccbdc(HMONITOR hMon, HDC, LPRECT, LPARAM l)
++{
++	MONITORINFOEXW mi;
++	memset(&mi, 0, sizeof(mi));
++	mi.cbSize = sizeof(mi);
++	if (GetMonitorInfoW(hMon, &mi) && !_wcsicmp(mi.szDevice, HorScreen)) {
++		((zd9dd7bf*)l)->hMon = hMon;
++		return FALSE;
++	}
++	return TRUE;
++}
++
++static HMONITOR z337d826()
++{
++	zd9dd7bf m = { NULL };
++	if (z374fdd2 && HorScreen[0]) EnumDisplayMonitors(NULL, NULL, z46ccbdc, (LPARAM)&m);
++	return m.hMon;
++}
++
+ int ScrnSize()
+ {
+ 	int x, y, w, h, ew, eh;
+@@ -4114,9 +4445,13 @@
+ 	HMONITOR monitor = MonitorFromRect(&RealWorkArea, MONITOR_DEFAULTTOPRIMARY);
+ 	MONITORINFO mi;
+ 
++	HMONITOR z7fdd0e7 = z337d826();
++	if (z7fdd0e7) monitor = z7fdd0e7;
++
+ 	memset(&mi, 0, sizeof(mi));
+ 	mi.cbSize = sizeof(mi);
+ 	GetMonitorInfo(monitor, &mi);
++	if (z7fdd0e7) RealWorkArea = mi.rcWork;
+ 	SystemWorkArea = mi.rcMonitor; // needs to be set to monitor's resolution for proper aspect calculation
+ 
+ 	if (bDrvOkay) {
+@@ -4201,10 +4536,22 @@
  		ew += 1 << 1;
  	}
  
@@ -3510,7 +3805,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	}
  
  	if ((bVidCorrectAspect || bVidFullStretch) && !(nVidSelect == 2 && (nVidBlitterOpt[2] & 0x0100) == 0)) {
-@@ -4253,7 +4467,7 @@
+@@ -4253,7 +4600,7 @@
  	h = rect.bottom - rect.top + eh;
  
  	x = nWindowPosX; y = nWindowPosY;
@@ -3519,7 +3814,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  		// Find the midpoint for the window
  		x = SystemWorkArea.left + SystemWorkArea.right;
  		x /= 2;
-@@ -4262,6 +4476,7 @@
+@@ -4262,6 +4609,7 @@
  
  		x -= w / 2;
  		y -= h / 2;
@@ -3527,7 +3822,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	}
  
  	MenuUpdate();
-@@ -4318,7 +4533,7 @@
+@@ -4318,7 +4666,7 @@
  		TCHAR* pszPosition = szText;
  		TCHAR* pszName = BurnDrvGetText(DRV_FULLNAME | nGetTextFlags);
  
@@ -3536,7 +3831,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  		while ((pszName = BurnDrvGetText(DRV_NEXTNAME | DRV_FULLNAME | nGetTextFlags)) != NULL) {
  			if (pszPosition + _tcslen(pszName) - 1024 > szText) {
  				break;
-@@ -4365,13 +4580,21 @@
+@@ -4365,13 +4713,21 @@
  		nWindowStyles = WS_POPUP;
  		nWindowExStyles = 0;
  	} else {
@@ -3559,7 +3854,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	}
  
  	hScrnWnd = CreateWindowEx(nWindowExStyles, szClass, _T(APP_TITLE), nWindowStyles,
-@@ -4424,6 +4647,8 @@
+@@ -4424,6 +4780,8 @@
  
  		ScrnTitle();
  		ScrnSize();
@@ -3568,7 +3863,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  	}
  
  	return 0;
-@@ -4440,6 +4665,8 @@
+@@ -4440,6 +4798,8 @@
  		hRebar = NULL;
  	}
  
@@ -4144,11 +4439,12 @@ diff --git a/src/intf/video/win32/directx9_core.h b/src/intf/video/win32/directx
 diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_directx9.cpp
 --- a/src/intf/video/win32/vid_directx9.cpp
 +++ b/src/intf/video/win32/vid_directx9.cpp
-@@ -88,6 +88,54 @@
+@@ -88,6 +88,55 @@
  static VidEffect* pVidEffect = NULL;
  static int nDX9HardFX = -1;
  
 +#include "overlay.h"
++#include "lang.h"
 +#include "hud.h"
 +#include "speedrun.h"
 +#include "input_display.h"
@@ -4199,7 +4495,25 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static ID3DXFont* pFont = NULL;							// OSD font
  static ID3DXFont* pStatusFont = NULL;					// Status font
  static ID3DXFont* pStatusFontSmall = NULL;				// Status font (small)
-@@ -816,6 +864,19 @@
+@@ -189,6 +238,17 @@
+ }
+ */
+ 
++static void z2f2b894(IDirect3D9* d3d, UINT z36305a8, int w, int h)
++{
++	RECT rc = { 0, 0, w, h };
++	HMONITOR hm = d3d ? d3d->GetAdapterMonitor(z36305a8) : NULL;
++	MONITORINFO mi;
++	memset(&mi, 0, sizeof(mi));
++	mi.cbSize = sizeof(mi);
++	if (hm && GetMonitorInfo(hm, &mi)) rc = mi.rcMonitor;
++	MoveWindow(hScrnWnd, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, TRUE);
++}
++
+ static UINT dx9GetAdapter(wchar_t* name)
+ {
+ 	for (int a = pD3D->GetAdapterCount() - 1; a >= 0; a--)
+@@ -816,6 +876,19 @@
  
  static void vid_FontExit()
  {
@@ -4219,7 +4533,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	RELEASE(pFont);
  	RELEASE(pStatusFont);
  	RELEASE(pStatusFontSmall);
-@@ -960,6 +1021,9 @@
+@@ -960,6 +1033,9 @@
  		}
  	}
  
@@ -4229,7 +4543,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	if (!pTinyFont) {
  		HRESULT hr = _D3DXCreateFont(pD3DDevice, 18,
  									 0, FW_DEMIBOLD, 1, FALSE,
-@@ -987,6 +1051,8 @@
+@@ -987,6 +1063,8 @@
  	return 0;
  }
  
@@ -4238,20 +4552,20 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static void textout(ID3DXFont *font, TCHAR *str, RECT dst, DWORD shadow, DWORD flags, DWORD color)
  {
  	if (shadow) {
-@@ -1015,8 +1081,952 @@
+@@ -1015,8 +1093,975 @@
  	font->DrawText(NULL, str, -1, &dst, flags, color);
  }
  
-+static void zfd4ef07(ID3DXFont* font, TCHAR* str, RECT rc, DWORD colour, int z8fb4cd1)
++static void zfd4ef07(ID3DXFont* font, TCHAR* str, RECT rc, DWORD colour, int thick)
 +{
 +	if (!font || !str || !str[0]) return;
 +	const DWORD flags = DT_LEFT | DT_TOP | DT_NOCLIP | DT_SINGLELINE;
 +
-+	if (z8fb4cd1 < 1) z8fb4cd1 = 1;
-+	if (z8fb4cd1 > 2) z8fb4cd1 = 2;
++	if (thick < 1) thick = 1;
++	if (thick > 2) thick = 2;
 +
-+	for (int dy = -z8fb4cd1; dy <= z8fb4cd1; dy++) {
-+		for (int dx = -z8fb4cd1; dx <= z8fb4cd1; dx++) {
++	for (int dy = -thick; dy <= thick; dy++) {
++		for (int dx = -thick; dx <= thick; dx++) {
 +			if (dx == 0 && dy == 0) continue;
 +			RECT o = rc;
 +			o.left += dx; o.right += dx;
@@ -4261,6 +4575,29 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	}
 +	font->DrawText(NULL, str, -1, &rc, flags, colour);
 +	font->DrawText(NULL, str, -1, &rc, flags, colour);
++}
++
++static int zb5adfcd(ID3DXFont* font, TCHAR* str);
++
++static int z0431aa6(const TCHAR* s)
++{
++	if (!s || s[0] != _T('[')) return 0;
++	for (int i = 1; s[i] && i < 12; i++)
++		if (s[i] == _T(']')) return s[i + 1] ? i + 1 : 0;
++	return 0;
++}
++
++static void zc6e45e6(ID3DXFont* font, TCHAR* str, RECT rc, DWORD colour, int thick)
++{
++	const int n = z0431aa6(str);
++	if (!n) { zfd4ef07(font, str, rc, colour, thick); return; }
++	TCHAR tag[16];
++	_tcsncpy(tag, str, n);
++	tag[n] = 0;
++	zfd4ef07(font, tag, rc, D3DCOLOR_XRGB(0xF5, 0xC5, 0x42), thick);
++	RECT r2 = rc;
++	r2.left += zb5adfcd(font, tag);
++	zfd4ef07(font, str + n, r2, colour, thick);
 +}
 +
 +static int zb5adfcd(ID3DXFont* font, TCHAR* str)
@@ -4336,24 +4673,24 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	const int top  = frec.top + (z404a75f - want) / 2;
 +	const int bot  = top + want + want / 2;
 +
-+	const int z8fb4cd1 = (want >= 26) ? 2 : 1;
++	const int thick = (want >= 26) ? 2 : 1;
 +
 +	RECT rc;
 +	rc.top = top; rc.bottom = bot;
 +
 +	rc.right = mid - half;      rc.left = rc.right - ws1;
-+	zfd4ef07(font, zfad56d7, rc, z1b992ca(L.ze871279), z8fb4cd1);
++	zfd4ef07(font, zfad56d7, rc, z1b992ca(L.ze871279), thick);
 +
 +	rc.right = mid - half - ws1 - gap;  rc.left = rc.right - w1;
-+	zfd4ef07(font, z733a844, rc, z1b992ca(L.z03b5823), z8fb4cd1);
++	zc6e45e6(font, z733a844, rc, z1b992ca(L.z03b5823), thick);
 +
 +	if (z8d214a5) {
 +		rc.left = mid - z8d214a5 / 2; rc.right = rc.left + z8d214a5;
-+		zfd4ef07(font, z5ea9399, rc, z1b992ca(L.z73d250a), z8fb4cd1);
++		zfd4ef07(font, z5ea9399, rc, z1b992ca(L.z73d250a), thick);
 +	}
 +
 +	rc.left = mid + half;       rc.right = rc.left + z6437052;
-+	zfd4ef07(font, z561be8d, rc, z1b992ca(L.ze871279), z8fb4cd1);
++	zfd4ef07(font, z561be8d, rc, z1b992ca(L.ze871279), thick);
 +
 +	rc.left = mid + half + z6437052 + gap;   rc.right = frec.right;
 +
@@ -4371,7 +4708,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +			_tcscpy(zd5e0939, z469f4bc);
 +		}
 +	}
-+	zfd4ef07(font, zd5e0939, rc, z1b992ca(L.z20dcc8d), z8fb4cd1);
++	zc6e45e6(font, zd5e0939, rc, z1b992ca(L.z20dcc8d), thick);
 +}
 +
 +static struct {
@@ -4379,7 +4716,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	int   z19ef79a;
 +	TCHAR sz1[128], sz2[128], z30b14bc[16];
 +	int   w1, w2, wf;
-+	int   zded58ea, top, right, z8fb4cd1;
++	int   zded58ea, top, right, thick;
 +	DWORD colour;
 +} z45b55b2;
 +
@@ -4450,7 +4787,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +
 +	z45b55b2.zded58ea  = want + want / 4;
 +	z45b55b2.right  = frec.right - (want / 2 + 2);
-+	z45b55b2.z8fb4cd1  = 1;
++	z45b55b2.thick  = 1;
 +	z45b55b2.colour = z1b992ca(L.zd4c6117);
 +
 +	const int z59dc169 = z45b55b2.zded58ea * z45b55b2.z19ef79a;
@@ -4476,19 +4813,19 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	if (z45b55b2.z19ef79a >= 1) {
 +		rc.right = z45b55b2.right; rc.left = rc.right - z45b55b2.w1;
 +		rc.bottom = rc.top + z45b55b2.zded58ea;
-+		zfd4ef07(font, z45b55b2.sz1, rc, z45b55b2.colour, z45b55b2.z8fb4cd1);
++		zfd4ef07(font, z45b55b2.sz1, rc, z45b55b2.colour, z45b55b2.thick);
 +		rc.top += z45b55b2.zded58ea;
 +	}
 +	if (z45b55b2.z19ef79a >= 2) {
 +		rc.right = z45b55b2.right; rc.left = rc.right - z45b55b2.w2;
 +		rc.bottom = rc.top + z45b55b2.zded58ea;
-+		zfd4ef07(font, z45b55b2.sz2, rc, z45b55b2.colour, z45b55b2.z8fb4cd1);
++		zfd4ef07(font, z45b55b2.sz2, rc, z45b55b2.colour, z45b55b2.thick);
 +		rc.top += z45b55b2.zded58ea;
 +	}
 +	if (z45b55b2.z30b14bc[0]) {
 +		rc.right = z45b55b2.right; rc.left = rc.right - z45b55b2.wf;
 +		rc.bottom = rc.top + z45b55b2.zded58ea;
-+		zfd4ef07(font, z45b55b2.z30b14bc, rc, z45b55b2.colour, z45b55b2.z8fb4cd1);
++		zfd4ef07(font, z45b55b2.z30b14bc, rc, z45b55b2.colour, z45b55b2.thick);
 +	}
 +}
 +
@@ -4661,11 +4998,11 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	return *pp;
 +}
 +
-+static void z869a0d9(ID3DXFont* font, TCHAR* str, RECT rc, DWORD ring, DWORD colour, int z8fb4cd1)
++static void z869a0d9(ID3DXFont* font, const TCHAR* str, RECT rc, DWORD ring, DWORD colour, int thick)
 +{
 +	const DWORD flags = DT_LEFT | DT_TOP | DT_NOCLIP | DT_SINGLELINE;
-+	for (int dy = -z8fb4cd1; dy <= z8fb4cd1; dy++)
-+		for (int dx = -z8fb4cd1; dx <= z8fb4cd1; dx++) {
++	for (int dy = -thick; dy <= thick; dy++)
++		for (int dx = -thick; dx <= thick; dx++) {
 +			if (dx == 0 && dy == 0) continue;
 +			RECT o = rc; o.left += dx; o.right += dx; o.top += dy; o.bottom += dy;
 +			font->DrawText(NULL, str, -1, &o, flags, ring);
@@ -4709,14 +5046,14 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	const int x0  = cx - bw / 2, y0 = B.nSide ? frec.top + (H * 16) / 100 : frec.top + (H - bh) / 2;
 +	Boxxy(x0, y0, bw, bh, D3DCOLOR_ARGB(B.z70f9d25, (B.z0456974 >> 16) & 0xFF,
 +	                                     (B.z0456974 >> 8) & 0xFF, B.z0456974 & 0xFF));
-+	const int z8fb4cd1 = (want >= 26) ? 2 : 1;
++	const int thick = (want >= 26) ? 2 : 1;
 +	RECT rc;
 +	rc.left = cx - w1 / 2;              rc.right = rc.left + w1;
 +	rc.top  = y0 + pad;                 rc.bottom = rc.top + want + want / 2;
-+	zfd4ef07(font, s1, rc, z1b992ca(B.z430cab8 ? B.zd4c6117 : 0xF8F8F2u), z8fb4cd1);
++	zfd4ef07(font, s1, rc, z1b992ca(B.z430cab8 ? B.zd4c6117 : 0xF8F8F2u), thick);
 +	rc.left = cx - w2 / 2;              rc.right = rc.left + w2;
 +	rc.top  = y0 + pad * 2 + want;      rc.bottom = rc.top + want + want / 2;
-+	zfd4ef07(font, s2, rc, z1b992ca(B.z430cab8 ? 0xF8F8F2u : B.zd4c6117), z8fb4cd1);
++	zfd4ef07(font, s2, rc, z1b992ca(B.z430cab8 ? 0xF8F8F2u : B.zd4c6117), thick);
 +	if (z404a75f) {
 +		const int bx = x0 + pad * 2, zcc13a35 = bw - pad * 4;
 +		const int by = y0 + pad * 4 + want * 2;
@@ -4793,7 +5130,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	for (int i = 0; i < V.z19ef79a; i++) {
 +		const z9bafc5a& L = V.lines[i];
 +		if (L.sys) _snwprintf(comp[i], 299, L"%s", L.text);
-+		else _snwprintf(comp[i], 299, L"%s: %s%s", L.mine ? L"Voc\x00EA" : V.zd8f5856, L.text, L.mine && L.read ? L"  (lido)" : L"");
++		else _snwprintf(comp[i], 299, L"%s: %s%s", L.mine ? z6f2968c(L"Voc\x00EA") : V.zd8f5856, L.text, L.mine && L.read ? z6f2968c(L"  (lido)") : L"");
 +		comp[i][299] = 0;
 +		hl[i] = zb77b79f(L.sys ? fs : f, comp[i], z9c875be);
 +	}
@@ -4841,14 +5178,14 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	_snwprintf(title, 79, L"CHAT \x00B7 %s", V.zd8f5856);
 +	title[79] = 0;
 +	za1e9ebb(fs, title, x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
-+	za1e9ebb(fs, V.z92c652b ? L"F2 ativa" : L"T escreve \x00B7 F1 esconde \x00B7 F2 desativa", x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_RIGHT | DT_SINGLELINE);
++	za1e9ebb(fs, V.z92c652b ? z6f2968c(L"F2 ativa") : z6f2968c(L"T escreve \x00B7 F1 esconde \x00B7 F2 desativa"), x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_RIGHT | DT_SINGLELINE);
 +	y += small + pad / 2;
 +	if (V.ze6affeb) {
 +		za1e9ebb(fs, V.ze6affeb, x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0xFF, 0xB8, 0x6C), DT_LEFT | DT_SINGLELINE);
 +		y += z7884e38;
 +	}
 +	if (V.z19ef79a == 0) {
-+		za1e9ebb(fs, L"Nenhuma mensagem ainda.", x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
++		za1e9ebb(fs, z6f2968c(L"Nenhuma mensagem ainda."), x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
 +		y += small;
 +	}
 +	for (int i = first; i < V.z19ef79a; i++) {
@@ -4866,7 +5203,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +		static wchar_t cnt[24];
 +		_snwprintf(cnt, 23, L"%d/%d", V.nInput, V.nMax);
 +		cnt[23] = 0;
-+		za1e9ebb(fs, L"Enter envia \x00B7 Esc fecha", x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
++		za1e9ebb(fs, z6f2968c(L"Enter envia \x00B7 Esc fecha"), x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_LEFT | DT_SINGLELINE);
 +		za1e9ebb(fs, cnt, x0 + pad, y, z9c875be, small, D3DCOLOR_ARGB(0xFF, 0x8A, 0x93, 0xA6), DT_RIGHT | DT_SINGLELINE);
 +	}
 +}
@@ -4925,7 +5262,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	const int zcdda22c = zb5adfcd(font, _T("999"));
 +	const int z9c08b8b = zb5adfcd(arrow, _T("\x2198"));
 +	const int z1d5dcc6 = zb5adfcd(font, _T("A B")) - zb5adfcd(font, _T("AB"));
-+	const int z8fb4cd1 = (want >= 26) ? 2 : 1;
++	const int thick = (want >= 26) ? 2 : 1;
 +	const int margin = W / 80;
 +
 +	for (int side = 1; side <= 2; side++) {
@@ -4951,14 +5288,14 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +			_sntprintf(sz, 39, _T("%d"), rows[i].nFrames); sz[39] = 0;
 +			const int wc = zb5adfcd(font, sz);
 +			rc.left = x0 + pad + zcdda22c - wc; rc.right = rc.left + wc;
-+			zfd4ef07(font, sz, rc, zb35e420(0xA6ACCD, pct), z8fb4cd1);
++			zfd4ef07(font, sz, rc, zb35e420(0xA6ACCD, pct), thick);
 +
 +			TCHAR szDir[2] = { (TCHAR)rows[i].z64f3ab9[0], 0 };
 +			const int wa = zb5adfcd(arrow, szDir);
 +			RECT ra = rc;
 +			ra.left = x0 + pad + zcdda22c + gap + (z9c08b8b - wa) / 2; ra.right = ra.left + wa;
 +			ra.top -= (z652ac86 - want) / 2 + want / 12; ra.bottom = ra.top + z652ac86 + z652ac86 / 2;
-+			zfd4ef07(arrow, szDir, ra, zb35e420(szDir[0] == 0x2022 ? 0x6272A4 : 0xF8F8F2, pct), z8fb4cd1);
++			zfd4ef07(arrow, szDir, ra, zb35e420(szDir[0] == 0x2022 ? 0x6272A4 : 0xF8F8F2, pct), thick);
 +
 +			int x = x0 + pad + zcdda22c + gap + z9c08b8b + gap;
 +			char zd24b553[32];
@@ -4967,7 +5304,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +				_sntprintf(sz, 39, _T("%S"), tok); sz[39] = 0;
 +				const int wb = zb5adfcd(font, sz);
 +				rc.left = x; rc.right = x + wb;
-+				zfd4ef07(font, sz, rc, zb35e420(z6a8fe85(tok), pct), z8fb4cd1);
++				zfd4ef07(font, sz, rc, zb35e420(z6a8fe85(tok), pct), thick);
 +				x += wb + z1d5dcc6;
 +			}
 +		}
@@ -4986,7 +5323,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +
 +	float pos = 0.0f;
 +	if (zf8b4e34(&pos)) {
-+		TCHAR sz[] = _T("TOMANDO O CONTROLE");
++		const TCHAR* sz = z6f2968c(L"TOMANDO O CONTROLE");
 +		static int zf2e8287 = 0, z0490efe = 0, z9a9f28f = 0;
 +		int want = (zf2e8287 == H && z0490efe == W && z9a9f28f > 0) ? z9a9f28f : H / 4;
 +		if (want < 20) want = 20;
@@ -5007,15 +5344,15 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +		if (font) {
 +			const int center = frec.left + (W - tw) / 2;
 +			const int right  = frec.left + W + 4;
-+			int z8fb4cd1 = want / 18;
-+			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
-+			if (z8fb4cd1 > 6) z8fb4cd1 = 6;
++			int thick = want / 18;
++			if (thick < 2) thick = 2;
++			if (thick > 6) thick = 6;
 +			RECT rc;
 +			rc.left   = right + (int)((center - right) * pos);
 +			rc.right  = rc.left + tw;
 +			rc.top    = frec.top + (H - th) / 2;
 +			rc.bottom = rc.top + th;
-+			z869a0d9(font, sz, rc, 0xFFFFFFFF, 0xFF000000, z8fb4cd1);
++			z869a0d9(font, sz, rc, 0xFFFFFFFF, 0xFF000000, thick);
 +		}
 +	}
 +
@@ -5028,9 +5365,9 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +			TCHAR* names[2] = { _T("P1"), _T("P2") };
 +			const DWORD cols[2] = { 0xFF4C8DFF, 0xFFF0554E };
 +			const int sides[2] = { 1, 2 };
-+			int z8fb4cd1 = want / 18;
-+			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
-+			if (z8fb4cd1 > 6) z8fb4cd1 = 6;
++			int thick = want / 18;
++			if (thick < 2) thick = 2;
++			if (thick > 6) thick = 6;
 +			for (int i = 0; i < 2; i++) {
 +				const int mine = (sides[i] == sel);
 +				if (mine && !blink) continue;
@@ -5043,14 +5380,14 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +				rc.top = frec.top + (H * 13) / 100; rc.bottom = rc.top + th;
 +				const DWORD col = mine ? cols[i] : ((cols[i] & 0x00FFFFFF) | 0x60000000);
 +				const DWORD ring = mine ? 0xFFFFFFFF : 0x60000000;
-+				z869a0d9(font, names[i], rc, ring, col, z8fb4cd1);
++				z869a0d9(font, names[i], rc, ring, col, thick);
 +			}
 +		}
 +		int hw = H / 30;
 +		if (hw < 12) hw = 12;
 +		ID3DXFont* small = z836891f(&zc2b20c8, &z112ed4b, hw, _T("Segoe UI"), FW_BOLD);
 +		if (small) {
-+			TCHAR sz[] = _T("Esquerda / direita escolhe o lado  -  qualquer bot\u00e3o confirma");
++			const TCHAR* sz = z6f2968c(L"Esquerda / direita escolhe o lado  -  qualquer bot\u00e3o confirma");
 +			RECT m = { 0, 0, 0, 0 };
 +			small->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
 +			RECT rc;
@@ -5076,10 +5413,10 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +			rc.top = frec.top + (H - th) / 2; rc.bottom = rc.top + th;
 +			if (alpha < 0.0f) alpha = 0.0f;
 +			const DWORD a = ((DWORD)(alpha * 255.0f) & 0xFF) << 24;
-+			int z8fb4cd1 = want / 18;
-+			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
-+			if (z8fb4cd1 > 8) z8fb4cd1 = 8;
-+			z869a0d9(font, sz, rc, a | 0x000000, a | 0xFFFFFF, z8fb4cd1);
++			int thick = want / 18;
++			if (thick < 2) thick = 2;
++			if (thick > 8) thick = 8;
++			z869a0d9(font, sz, rc, a | 0x000000, a | 0xFFFFFF, thick);
 +		}
 +	}
 +
@@ -5092,7 +5429,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +		ID3DXFont* font = z836891f(&z222b9df, &z56e9737, want, _T("Johnny Fever"), FW_NORMAL);
 +		if (font && !zac3a83a) {
 +			RECT m = { 0, 0, 0, 0 };
-+			font->DrawText(NULL, _T("SEGUIR COM O REPLAY"), -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
++			font->DrawText(NULL, z6f2968c(L"SEGUIR COM O REPLAY"), -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
 +			const int room = (W * 44) / 100;
 +			if (m.right - m.left > room) {
 +				want = (int)((long long)want * room / (m.right - m.left));
@@ -5102,9 +5439,9 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +			z05c8333 = H; ze7c33b4 = W; zfcd585f = want;
 +		}
 +		if (font) {
-+			TCHAR* opts[2] = { _T("TENTAR DE NOVO"), _T("SEGUIR COM O REPLAY") };
-+			int z8fb4cd1 = want / 18;
-+			if (z8fb4cd1 < 2) z8fb4cd1 = 2;
++			const TCHAR* opts[2] = { z6f2968c(L"TENTAR DE NOVO"), z6f2968c(L"SEGUIR COM O REPLAY") };
++			int thick = want / 18;
++			if (thick < 2) thick = 2;
 +			for (int i = 0; i < 2; i++) {
 +				const int mine = (i == ask);
 +				if (mine && !blink) continue;
@@ -5117,7 +5454,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +				rc.top = frec.top + (H - th) / 2; rc.bottom = rc.top + th;
 +				const DWORD col = mine ? 0xFFFFD23F : 0x60FFFFFF;
 +				const DWORD ring = mine ? 0xFF000000 : 0x60000000;
-+				z869a0d9(font, opts[i], rc, ring, col, z8fb4cd1);
++				z869a0d9(font, opts[i], rc, ring, col, thick);
 +			}
 +		}
 +	}
@@ -5128,7 +5465,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +		if (want > 26) want = 26;
 +		ID3DXFont* font = z836891f(&zc2b20c8, &z112ed4b, want, _T("Segoe UI"), FW_BOLD);
 +		if (font) {
-+			TCHAR sz[] = _T("F4 ou 2 bot\x00f5") _T("es - Tomar o controle");
++			const TCHAR* sz = z6f2968c(L"F4 ou 2 bot\x00f5" L"es - Tomar o controle");
 +			RECT m = { 0, 0, 0, 0 };
 +			font->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
 +			RECT rc;
@@ -5165,15 +5502,15 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +	RECT m = { 0, 0, 0, 0 };
 +	font->DrawText(NULL, sz, -1, &m, DT_CALCRECT | DT_SINGLELINE, 0xFFFFFFFF);
 +	const int tw = m.right - m.left, th = m.bottom - m.top;
-+	int z8fb4cd1 = want / 20;
-+	if (z8fb4cd1 < 1) z8fb4cd1 = 1;
-+	if (z8fb4cd1 > 4) z8fb4cd1 = 4;
++	int thick = want / 20;
++	if (thick < 1) thick = 1;
++	if (thick > 4) thick = 4;
 +	RECT rc;
 +	rc.left   = frec.left + (W - tw) / 2;
 +	rc.right  = rc.left + tw;
 +	rc.bottom = frec.top + H - H / 40;
 +	rc.top    = rc.bottom - th;
-+	z869a0d9(font, sz, rc, 0xFF000000, zb114d6e() == 2 ? 0xFF50FA7B : 0xFFFFFFFF, z8fb4cd1);
++	z869a0d9(font, sz, rc, 0xFF000000, zb114d6e() == 2 ? 0xFF50FA7B : 0xFFFFFFFF, thick);
 +}
 +
  static void vid_FontDraw(RECT frec)
@@ -5191,7 +5528,16 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	if (nVidSDisplayStatus == 0) {
  		return;
  	}
-@@ -1190,7 +2200,7 @@
+@@ -1164,7 +2209,7 @@
+ 		d3dpp.PresentationInterval			= (bVidDX9WinFullscreen && bVidVSync) ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_DEFAULT;
+ 		if (bVidDX9WinFullscreen) {
+ 			d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;
+-			MoveWindow(hScrnWnd, 0, 0, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, TRUE);
++			z2f2b894(pD3D, nD3DAdapter, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight);
+ 		}
+ 	} else {
+ 		d3dpp.BackBufferWidth				= dm.Width;
+@@ -1190,7 +2235,7 @@
  		dprintf(_T("  * Error: Couldn't create Direct3D device.\n"));
  #endif
  
@@ -5200,7 +5546,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
  			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
-@@ -1692,6 +2702,7 @@
+@@ -1692,6 +2737,7 @@
  //	VidSDisplayOSD(pddsBlitFX[nUseSys], &rect, 0);
  
  	if (nVidFullscreen) {
@@ -5208,7 +5554,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		pD3DDevice->Present(NULL, NULL, NULL, NULL);
  	} else {
  		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
-@@ -1906,6 +2917,7 @@
+@@ -1906,6 +2952,7 @@
  {
  	VidSoftFXExit();
  
@@ -5216,7 +5562,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	dx9AltReleaseTexture();
  
  	VidSFreeVidImage();
-@@ -2136,13 +3148,25 @@
+@@ -2136,13 +3183,25 @@
  	}
  
  	// HardFX
@@ -5244,7 +5590,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	}
  	else
  	{
-@@ -2153,6 +3177,50 @@
+@@ -2153,6 +3212,50 @@
  	return r;
  }
  
@@ -5295,7 +5641,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static int dx9AltInit()
  {
  	if (hScrnWnd == NULL) {
-@@ -2166,14 +3234,16 @@
+@@ -2166,14 +3269,16 @@
  #endif
  
  	// Get pointer to Direct3D
@@ -5314,7 +5660,16 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	nRotateGame = 0;
  	if (bDrvOkay) {
  		if (BurnDrvGetFlags() & BDF_ORIENTATION_VERTICAL) {
-@@ -2251,13 +3321,53 @@
+@@ -2231,7 +3336,7 @@
+ 		d3dpp.PresentationInterval = (bVidDX9WinFullscreen && bVidVSync) ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_DEFAULT;
+ 		if (bVidDX9WinFullscreen) {
+ 			d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;
+-			MoveWindow(hScrnWnd, 0, 0, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, TRUE);
++			z2f2b894(pD3D, nD3DAdapter, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight);
+ 		}
+ 	} else {
+ 		d3dpp.BackBufferWidth = dm.Width;
+@@ -2251,13 +3356,53 @@
  		dwBehaviorFlags |= D3DCREATE_SOFTWARE_VERTEXPROCESSING;
  	}
  
@@ -5370,7 +5725,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
  			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
-@@ -2337,8 +3447,7 @@
+@@ -2337,8 +3482,7 @@
  	// HardFX gets initted here
  	dx9AltSetHardFX(nVidDX9HardFX);
  
@@ -5380,7 +5735,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	nImageWidth = 0; nImageHeight = 0;
  
-@@ -2401,6 +3510,8 @@
+@@ -2401,6 +3545,8 @@
  	// apply vertex alpha values to texture
  	pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
  
@@ -5389,7 +5744,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	dx9AltTextureInit();
  
  	nImageWidth = 0; nImageHeight = 0;
-@@ -2447,6 +3558,11 @@
+@@ -2447,6 +3593,11 @@
  	if (pVidImage == NULL) return 1;
  
  	GetClientRect(hVidWnd, &Dest);
@@ -5401,7 +5756,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	if (nVidFullscreen == 0) {
  		Dest.top += nMenuHeight;
-@@ -2475,7 +3591,7 @@
+@@ -2475,7 +3626,7 @@
  			int nWidth = nGameImageWidth;
  			int nHeight = nGameImageHeight;
  
@@ -5410,7 +5765,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				if (nPreScale & 1) {
  					nWidth *= nPreScaleZoom;
  				}
-@@ -2484,7 +3600,7 @@
+@@ -2484,7 +3635,7 @@
  				}
  			}
  
@@ -5419,7 +5774,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, nRotateGame ? Dest.top : Dest.left, nRotateGame ? Dest.left : Dest.top, nImageWidth, nImageHeight);
  			} else {
  				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, 0, 0, nImageWidth, nImageHeight);
-@@ -2497,7 +3613,7 @@
+@@ -2497,7 +3648,7 @@
  			D3DVIEWPORT9 vp;
  
  			// Set the size of the image on the PC screen
@@ -5428,7 +5783,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				vp.X = Dest.left;
  				vp.Y = Dest.top;
  				vp.Width = Dest.right - Dest.left;
-@@ -2519,9 +3635,19 @@
+@@ -2519,9 +3670,19 @@
  
  	ClearD3D9SurfaceEntirety<true>();
  
@@ -5448,7 +5803,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	{
  		// Copy the game image onto a texture for rendering
-@@ -2531,7 +3657,7 @@
+@@ -2531,7 +3692,7 @@
  			int pitch = d3dlr.Pitch;
  			unsigned char* pd = (unsigned char*)d3dlr.pBits;
  
@@ -5457,7 +5812,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				VidFilterApplyEffect(pd, pitch);
  			} else {
  				unsigned char* ps = pVidImage + nVidImageLeft * nVidImageBPP;
-@@ -2545,6 +3671,7 @@
+@@ -2545,6 +3706,7 @@
  						VidSCpyImg16(pd, pitch, ps, s, nVidImageWidth, nVidImageHeight);
  						break;
  				}
@@ -5465,7 +5820,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			}
  
  			pTexture->UnlockRect(0);
-@@ -2624,6 +3751,67 @@
+@@ -2624,6 +3786,67 @@
  	return 0;
  }
  
@@ -5533,7 +5888,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  // Paint the BlitFX surface onto the primary surface
  static int dx9AltPaint(int bValidate)
  {
-@@ -2632,6 +3820,30 @@
+@@ -2632,6 +3855,30 @@
  	}
  
  	RECT rect = { 0, 0, 0, 0 };
@@ -5564,7 +5919,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	if (!nVidFullscreen) {
  		GetClientScreenRect(hVidWnd, &rect);
-@@ -2649,6 +3861,7 @@
+@@ -2649,6 +3896,7 @@
  	}
  
  	if (nVidFullscreen) {
@@ -5572,7 +5927,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		pD3DDevice->Present(NULL, NULL, NULL, NULL);
  	} else {
  		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
-@@ -2656,6 +3869,7 @@
+@@ -2656,6 +3904,7 @@
  		ClientToScreen(hVidWnd, &c);
  		RECT dst = { rect.left - c.x, rect.top - c.y, rect.right - c.x, rect.bottom - c.y };
  

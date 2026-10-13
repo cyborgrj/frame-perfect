@@ -74,6 +74,12 @@ Sync::AddLocalInput(int queue, GameInput &input)
    return true;
 }
 
+bool
+Sync::GetLocalInputAt(int queue, int frame, GameInput *input)
+{
+   return _input_queues[queue].GetConfirmedInput(frame, input);
+}
+
 void
 Sync::AddRemoteInput(int queue, GameInput &input)
 {

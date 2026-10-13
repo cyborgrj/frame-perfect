@@ -9,6 +9,7 @@ void z06e3af7(void);
 int  z2eabea4(void);
 
 void z34d19c6(void);
+void z0d8fbe5(int v, int ms);
 
 void z8b4c8e3(void);
 

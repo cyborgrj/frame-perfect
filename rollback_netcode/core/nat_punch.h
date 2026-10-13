@@ -17,7 +17,8 @@ enum zda44996 {
 typedef enum {
     zaf33281 = 0,
     z1b155da    = 1,
-    za95c540  = 2
+    za95c540  = 2,
+    z7199250      = 3
 } z0b7780b;
 
 typedef struct zf74d5eb {
@@ -25,6 +26,9 @@ typedef struct zf74d5eb {
     char           z10e203a[64];
     unsigned short zea7b53c;
     int            ze3a737a;
+    int            z5c6ee43;
+    int            zae7efac;
+    int            zf3e1f1a;
 } zf74d5eb;
 
 void z73b2207(int (*zb6e470c)(int z1af252e, int zf13fff5));
@@ -39,7 +43,7 @@ int z416a606(const char*      z12df4dc,
                         int              zf13fff5,
                         void           (*z930c6f2)(const char*));
 
-int z82369e2(const char* zf785ae5, char* szOut, int z58ab65b);
+int z82369e2(const char* zf785ae5, char* szOut, int nOut);
 
 #ifdef __cplusplus
 }

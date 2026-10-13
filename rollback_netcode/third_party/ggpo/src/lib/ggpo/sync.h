@@ -47,6 +47,7 @@ public:
    void SetLastConfirmedFrame(int frame);
    void SetFrameDelay(int queue, int delay);
    bool AddLocalInput(int queue, GameInput &input);
+   bool GetLocalInputAt(int queue, int frame, GameInput *input);
    void AddRemoteInput(int queue, GameInput &input);
    int GetConfirmedInputs(void *values, int size, int frame);
    int SynchronizeInputs(void *values, int size);

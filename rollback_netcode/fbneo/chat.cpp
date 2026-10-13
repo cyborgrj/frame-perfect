@@ -6,7 +6,9 @@
 #include "fbneo_host.h"
 #include "ggpo_bridge.h"
 #include "overlay.h"
+#include "lang.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 static void z69dc1cf(const char* fmt, int a, int b)
 {
@@ -32,7 +34,8 @@ struct z9bcd5c1 {
 };
 
 static int      z910e658, z314f466, zcca8952, zb7ea71a, z97ff77b, zae54566;
-static int      zb421fde, z648aeaa, z73e1c41;
+static int      zb421fde, z648aeaa, z73e1c41, z3fe3b91;
+static int      z6ca83a6;
 static float    z96fa54e;
 static wchar_t  z3ba2b20[z1eeca0f + 1];
 static z9bcd5c1 z25621e0[z97ebd85];
@@ -116,11 +119,11 @@ static void z900294f()
 	while (b > a && z3ba2b20[b - 1] == L' ') b--;
 	if (a == b) { zf272a87(); return; }
 	const DWORD now = GetTickCount();
-	if (z6d8bb6b && now - z6d8bb6b < zebac260) { hint(L"Espere um instante", zc0ed3c1); return; }
+	if (z6d8bb6b && now - z6d8bb6b < zebac260) { hint(z6f2968c(L"Espere um instante"), zc0ed3c1); return; }
 	char utf8[z67a7ed4];
 	const int n = WideCharToMultiByte(CP_UTF8, 0, z3ba2b20 + a, b - a, utf8, sizeof(utf8), NULL, NULL);
 	const int id = n > 0 ? z77d22b7(utf8, n) : 0;
-	if (!id) { hint(L"N\x00E3o deu para enviar agora", zc0ed3c1); return; }
+	if (!id) { hint(z6f2968c(L"N\x00E3o deu para enviar agora"), zc0ed3c1); return; }
 	wchar_t t[z1eeca0f + 1];
 	wcsncpy(t, z3ba2b20 + a, b - a);
 	t[b - a] = 0;
@@ -134,6 +137,9 @@ static void z900294f()
 
 static void z6a78f87(int kind, int id, const char* text, int len, void*  )
 {
+	if (kind == 0 && z7675262(text, len)) return;
+	if (kind == 0 && !z910e658) return;
+	if (kind == 0 && z3fe3b91) return;
 	if (kind == 0) {
 		wchar_t w[z1eeca0f + 1];
 		int n = MultiByteToWideChar(CP_UTF8, 0, text, len, w, z1eeca0f);
@@ -153,9 +159,13 @@ static void z6a78f87(int kind, int id, const char* text, int len, void*  )
 	}
 }
 
-void z2e5f4c9(int bOn, const char* zd8f5856)
+void z2e5f4c9(int bOn, const char* zd8f5856, int zb568fa4)
 {
 	z910e658 = bOn ? 1 : 0;
+	z3fe3b91 = zb568fa4 ? 1 : 0;
+	char tc[16];
+	z6ca83a6 = (z83650cd() && GetEnvironmentVariableA("RBF_TESTE_CHAT", tc, sizeof(tc))) ? atoi(tc) : 0;
+	if (z3fe3b91) z69dc1cf("chat: mudo deste lado (%d)", 1, 0);
 	z314f466 = zcca8952 = zb7ea71a = z97ff77b = zae54566 = 0;
 	zb421fde = 0;
 	z3ba2b20[0] = 0;
@@ -182,7 +192,7 @@ void z2e5f4c9(int bOn, const char* zd8f5856)
 		if (n <= 0) MultiByteToWideChar(CP_ACP, 0, raw, -1, zdf20384, 39);
 		zdf20384[39] = 0;
 	}
-	if (!zdf20384[0]) wcscpy(zdf20384, L"Advers\x00E1rio");
+	if (!zdf20384[0]) wcscpy(zdf20384, z6f2968c(L"Advers\x00E1rio"));
 	z648aeaa = z910e658;
 	if (z910e658) zd1751a0(1, zb567096);
 }
@@ -194,7 +204,9 @@ void ze31c6f0(void)
 
 void zfc2ac67(void)
 {
-	if (z910e658) z9949c17(z6a78f87, NULL);
+	if (z910e658 || z38fea27()) z9949c17(z6a78f87, NULL);
+	if (z910e658 && z6ca83a6 > 0 && --z6ca83a6 == 0)
+		z69dc1cf("teste: RBF_TESTE_CHAT mandou a mensagem %d (%d bytes)", z77d22b7("teste", 5), 5);
 }
 
 int z60692a4(void) { return z910e658; }
@@ -213,12 +225,12 @@ int z2b7bad9(unsigned int vk)
 		zb421fde = !zb421fde;
 		z648aeaa = 0;
 		z69dc1cf("chat: F2 neste lado - ativado %d%.0d", !zb421fde, 0);
-		flash(zb421fde ? L"Chat desativado nesta partida. F2 ativa de novo."
-		                 : L"Chat ativado. T escreve, F1 mostra ou esconde.");
+		flash(zb421fde ? z6f2968c(L"Chat desativado nesta partida. F2 ativa de novo.")
+		                 : z6f2968c(L"Chat ativado. T escreve, F1 mostra ou esconde."));
 		return 1;
 	}
 	if (zb421fde && (vk == 'T' || vk == VK_F1)) {
-		flash(L"Chat desativado nesta partida. F2 ativa de novo.");
+		flash(z6f2968c(L"Chat desativado nesta partida. F2 ativa de novo."));
 		return 1;
 	}
 	if (vk == 'T') {
@@ -239,7 +251,7 @@ void z5fa0f19(unsigned int ch)
 {
 	if (!z910e658 || !z314f466) return;
 	if (ch < 0x20 || ch == 0x7F || (ch >= 0xD800 && ch <= 0xDFFF)) return;
-	if (zb7ea71a >= z1eeca0f) { hint(L"No m\x00E1ximo 200 caracteres", zc0ed3c1); return; }
+	if (zb7ea71a >= z1eeca0f) { hint(z6f2968c(L"No m\x00E1ximo 200 caracteres"), zc0ed3c1); return; }
 	z3ba2b20[zb7ea71a++] = (wchar_t)ch;
 	z3ba2b20[zb7ea71a] = 0;
 }
@@ -263,7 +275,7 @@ int z8ad8d82(z1ea8be6* v)
 	if (z648aeaa) {
 		z9bafc5a& W = v->lines[v->z19ef79a++];
 		W.sys = 1;
-		W.text = zd137d22;
+		W.text = z6f2968c(zd137d22);
 		room--;
 	}
 	const int from = zae54566 > room ? zae54566 - room : 0;

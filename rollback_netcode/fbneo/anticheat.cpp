@@ -60,7 +60,7 @@ typedef struct {
 
 static int       z910e658 = 0;
 static int       z5a44a65 = 0;
-static void    (*zf2fc3fb)(const char*) = NULL;
+static void    (*g_log)(const char*) = NULL;
 static long long ze9bc394 = 0;
 static long long z1bfdc76 = 0;
 static zffe827f    zcd602dd[2];
@@ -185,7 +185,7 @@ static unsigned int mirror(const zffe827f* s, unsigned int st)
 	return st;
 }
 
-static unsigned int z67f6725(const unsigned int* a, int n, unsigned int z212301c)
+static unsigned int fnv(const unsigned int* a, int n, unsigned int z212301c)
 {
 	unsigned int h = 2166136261u;
 	for (int i = 0; i < n; i++)
@@ -198,7 +198,7 @@ static unsigned int zc39788b(const zffe827f* s, const unsigned int* dirs, int n,
 {
 	unsigned int alt[z3721e04];
 	for (int i = 0; i < n; i++) alt[i] = mirror(s, dirs[i]);
-	const unsigned int h1 = z67f6725(dirs, n, z212301c), h2 = z67f6725(alt, n, z212301c);
+	const unsigned int h1 = fnv(dirs, n, z212301c), h2 = fnv(alt, n, z212301c);
 	return h1 < h2 ? h1 : h2;
 }
 
@@ -289,7 +289,7 @@ void z47f386e(int bOn, int z980d9ce, void (*z930c6f2)(const char*))
 {
 	z910e658 = bOn ? 1 : 0;
 	z5a44a65 = z980d9ce ? 1 : 0;
-	zf2fc3fb = z930c6f2;
+	g_log = z930c6f2;
 	ze9bc394 = 0;
 	z1bfdc76 = 0;
 	memset(zcd602dd, 0, sizeof(zcd602dd));
@@ -351,12 +351,12 @@ int z8486cb4(int* pSide, int* zd49fdcf)
 #include <stdarg.h>
 static void z4f31939(const char* fmt, ...)
 {
-	if (!zf2fc3fb) return;
+	if (!g_log) return;
 	char buf[256];
 	va_list ap;
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	buf[sizeof(buf) - 1] = '\0';
-	zf2fc3fb(buf);
+	g_log(buf);
 }

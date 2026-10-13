@@ -9,6 +9,8 @@ extern "C" {
 
 void z639f64f(const wchar_t* zaa888a7, const wchar_t* z6922496, int nSeconds);
 
+void zd0938e8(const wchar_t* zaa888a7, const wchar_t* z6922496, int nSeconds);
+
 void z22ec6fe(const char* sz, const wchar_t* szFallback, wchar_t* out, int n);
 
 #ifdef __cplusplus

@@ -318,6 +318,8 @@ Peer2PeerBackend::AddLocalInput(GGPOPlayerHandle player,
 
    input.init(-1, (char *)values, size);
 
+   const int prev = _local_connect_status[queue].last_frame;
+
    // Feed the input for the current frame into the synchronzation layer.
    if (!_sync.AddLocalInput(queue, input)) {
       return GGPO_ERRORCODE_PREDICTION_THRESHOLD;
@@ -330,6 +332,20 @@ Peer2PeerBackend::AddLocalInput(GGPOPlayerHandle player,
 
       Log("setting local connect status for local queue %d to %d", queue, input.frame);
       _local_connect_status[queue].last_frame = input.frame;
+
+      if (prev >= 0) {
+         for (int f = prev + 1; f < input.frame; f++) {
+            GameInput g;
+            if (!_sync.GetLocalInputAt(queue, f, &g)) {
+               break;
+            }
+            for (int i = 0; i < _num_players; i++) {
+               if (_endpoints[i].IsInitialized()) {
+                  _endpoints[i].SendInput(g);
+               }
+            }
+         }
+      }
 
       // Send the input to all the remote players.
       for (int i = 0; i < _num_players; i++) {

@@ -3,6 +3,7 @@
 #include <wchar.h>
 
 #include "training_notice.h"
+#include "lang.h"
 
 #define z21fcd44      L"RbfTrainingNotice"
 #define zfec9376  1
@@ -22,7 +23,7 @@ static struct {
 	int     dpi;
 	double  scale;
 	int     left;
-	int     z5c65f29;
+	int     interacted;
 	int     focus;
 	int     nButtons;
 	const wchar_t* label[2];
@@ -56,7 +57,7 @@ static void z9e18520(HDC dc, HFONT f, COLORREF c, const wchar_t* t, RECT r, UINT
 	SelectObject(dc, old);
 }
 
-static int z034911c(HDC dc, HFONT f, const wchar_t* t, int width)
+static int textHeight(HDC dc, HFONT f, const wchar_t* t, int width)
 {
 	RECT r = { 0, 0, width, 0 };
 	HGDIOBJ old = SelectObject(dc, f);
@@ -101,7 +102,7 @@ static void buttons(HDC dc, int w, int top)
 		SelectObject(dc, z546cbdc);
 		DeleteObject(pen);
 		DeleteObject(br);
-		z9e18520(dc, f, on ? z74d6d86 : za4ba6b0, s.label[i], r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		z9e18520(dc, f, on ? z74d6d86 : za4ba6b0, z6f2968c(s.label[i]), r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 		x += bw + gap;
 	}
 	DeleteObject(f);
@@ -119,26 +120,26 @@ static void z82cf2cc(HDC dc, int w, int h)
 	int y = S(26);
 	RECT r = { S(28), y, w - S(28), y + S(22) };
 	SetTextCharacterExtra(dc, S(3));
-	z9e18520(dc, z023821e, zab5ebb2, L"TREINO", r, DT_CENTER | DT_SINGLELINE);
+	z9e18520(dc, z023821e, zab5ebb2, z6f2968c(L"TREINO"), r, DT_CENTER | DT_SINGLELINE);
 	SetTextCharacterExtra(dc, 0);
 	y += S(22) + S(8);
 
 	r.top = y; r.bottom = y + S(56);
-	z9e18520(dc, z5b4a22e, za4ba6b0, L"Pressione F6 para o treino avançado", r,
+	z9e18520(dc, z5b4a22e, za4ba6b0, z6f2968c(L"Pressione F6 para o treino avançado"), r,
 	       DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
 	y += S(56);
 
 	r.top = y; r.bottom = y + S(32);
-	z9e18520(dc, z0e77c4c, z749c406, L"hitboxes, gravação do adversário e menu de opções", r,
+	z9e18520(dc, z0e77c4c, z749c406, z6f2968c(L"hitboxes, gravação do adversário e menu de opções"), r,
 	       DT_CENTER | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
 	y += S(32) + S(24);
 
 	buttons(dc, w, y);
 	y += S(52) + S(12);
 
-	if (s.left > 0 && !s.z5c65f29) {
+	if (s.left > 0 && !s.interacted) {
 		wchar_t t[64];
-		_snwprintf(t, 63, L"fecha sozinho em %d", s.left);
+		_snwprintf(t, 63, z6f2968c(L"fecha sozinho em %d"), s.left);
 		t[63] = 0;
 		r.top = y; r.bottom = y + S(26);
 		z9e18520(dc, fCount, zab5ebb2, t, r, DT_CENTER | DT_SINGLELINE | DT_VCENTER);
@@ -202,29 +203,29 @@ static int column(HDC dc, const z2dc75c0* sec, int nSec, int x, int y, int width
 		RECT r = { x, y, x + width, y + S(22) };
 		if (bDraw) {
 			SetTextCharacterExtra(dc, S(2));
-			z9e18520(dc, z5b4a22e, zab5ebb2, sec[i].title, r, DT_LEFT | DT_SINGLELINE);
+			z9e18520(dc, z5b4a22e, zab5ebb2, z6f2968c(sec[i].title), r, DT_LEFT | DT_SINGLELINE);
 			SetTextCharacterExtra(dc, 0);
 		}
 		y += S(22) + S(8);
 
 		for (int j = 0; j < sec[i].n; j++) {
 			const int tw = width - z5d13cbd;
-			const int th = z034911c(dc, fText, sec[i].rows[j].text, tw);
+			const int th = textHeight(dc, fText, z6f2968c(sec[i].rows[j].text), tw);
 			const int kh = S(26);
 			const int rh = (th > kh) ? th : kh;
 			if (bDraw) {
 				RECT rk = { x, y, x + z5d13cbd - S(10), y + kh };
-				z9e18520(dc, zfd65895, za4ba6b0, sec[i].rows[j].key, rk, DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
+				z9e18520(dc, zfd65895, za4ba6b0, z6f2968c(sec[i].rows[j].key), rk, DT_LEFT | DT_SINGLELINE | DT_END_ELLIPSIS);
 				RECT rt = { x + z5d13cbd, y + S(1), x + width, y + rh + S(1) };
-				z9e18520(dc, fText, z749c406, sec[i].rows[j].text, rt, DT_LEFT | DT_WORDBREAK);
+				z9e18520(dc, fText, z749c406, z6f2968c(sec[i].rows[j].text), rt, DT_LEFT | DT_WORDBREAK);
 			}
 			y += rh + zc59ed7d;
 		}
 		if (sec[i].note) {
-			const int nh = z034911c(dc, z2e53e83, sec[i].note, width);
+			const int nh = textHeight(dc, z2e53e83, z6f2968c(sec[i].note), width);
 			if (bDraw) {
 				RECT rn = { x, y, x + width, y + nh };
-				z9e18520(dc, z2e53e83, z3d3aae5, sec[i].note, rn, DT_LEFT | DT_WORDBREAK);
+				z9e18520(dc, z2e53e83, z3d3aae5, z6f2968c(sec[i].note), rn, DT_LEFT | DT_WORDBREAK);
 			}
 			y += nh + zc59ed7d;
 		}
@@ -247,10 +248,10 @@ static void zb223a2a(HDC dc, int w, int h)
 	const int pad = S(40), zbbd06e4 = S(44);
 	int y = S(30);
 	RECT r = { pad, y, w - pad, y + S(44) };
-	z9e18520(dc, z6581d70, za4ba6b0, L"Como usar o treino", r, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
+	z9e18520(dc, z6581d70, za4ba6b0, z6f2968c(L"Como usar o treino"), r, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
 	y += S(44);
 	r.top = y; r.bottom = y + S(28);
-	z9e18520(dc, z0e77c4c, z3d3aae5, L"O treino avançado começa desligado. Ligue no F6 quando quiser.", r,
+	z9e18520(dc, z0e77c4c, z3d3aae5, z6f2968c(L"O treino avançado começa desligado. Ligue no F6 quando quiser."), r,
 	       DT_LEFT | DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS);
 	y += S(28) + S(22);
 
@@ -296,8 +297,8 @@ static void paint(HWND h, HDC dc)
 
 static void touched(HWND h)
 {
-	if (!s.z5c65f29) {
-		s.z5c65f29 = 1;
+	if (!s.interacted) {
+		s.interacted = 1;
 		KillTimer(h, zfec9376);
 		InvalidateRect(h, NULL, FALSE);
 	}
