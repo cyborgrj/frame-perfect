@@ -220,4 +220,5 @@ void zdc4b33f(unsigned char* img, int w, int h, int bpp, int pitch)
 {
 	zc639fea(img, w, h, bpp, pitch);
 	za50e763(img, w, h, bpp, pitch);
+	if (!z9534659()) z363f3e1(img, w, h, bpp, pitch);
 }

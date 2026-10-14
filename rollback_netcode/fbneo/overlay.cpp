@@ -12,6 +12,8 @@
 
 extern "C" void z5d90bae(const char* s);
 extern "C" int  zedf061d(void);
+extern "C" int  zc8b4cc6(void);
+extern "C" int  ze12829b(void);
 extern "C" int  z1b0f145(void);
 extern "C" int  zf796ce3(void);
 extern "C" int  zf5650f6(int* pSide, int* z4b39f95);
@@ -432,7 +434,10 @@ int z70213e0(z2c2b1a7* out)
 	if (!z910e658) return 0;
 	if (za9e2613 >= 0) {
 		memset(out, 0, sizeof(*out));
-		if (z1b0f145()) {
+		if (z1b0f145() && zc8b4cc6()) {
+			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("ENCERRANDO"));
+			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("A FT JA TERMINOU"));
+		} else if (z1b0f145()) {
 			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("ENCERRANDO A PARTIDA"));
 			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("HAVERA PERDA DE PONTOS..."));
 		} else {
@@ -443,6 +448,18 @@ int z70213e0(z2c2b1a7* out)
 		out->z0456974    = z937b93b;
 		out->z70f9d25 = z170e95d;
 		out->z8b6ca0e   = za9e2613 > 100 ? 100 : za9e2613;
+		return 1;
+	}
+	const int z1f9fd65 = ze12829b();
+	if (z1f9fd65 > 0) {
+		memset(out, 0, sizeof(*out));
+		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("FT ENCERRADA"));
+		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s %d S", z34ba319("FECHANDO EM"), z1f9fd65);
+		out->zd4c6117   = z8f95492;
+		out->z0456974    = z937b93b;
+		out->z70f9d25 = z170e95d;
+		out->z430cab8    = 1;
+		out->z8b6ca0e   = -1;
 		return 1;
 	}
 	int side = 0, stage = 0, left = 0;
@@ -709,6 +726,21 @@ static void zfba7f65(void* ctx, int x0, int y0, int x1, int y1, unsigned int rgb
 	z5bbbc0c(c->img, c->w, c->h, c->bpp, c->pitch, x0, y0, x1, y1, rgb, alpha);
 }
 
+static int z212e6db(void* ctx, const wchar_t* s, int x, int y, unsigned int rgb, int  )
+{
+	const zc8658a8* c = (const zc8658a8*)ctx;
+	char a[256];
+	z610fb2b(a, sizeof(a), s);
+	return zd1ca55b(c->img, c->w, c->h, c->bpp, c->pitch, x, y, a, rgb, 0);
+}
+
+static int zc03da91(void*  , const wchar_t* s, int  , int* z932636c)
+{
+	char a[256];
+	z610fb2b(a, sizeof(a), s);
+	return z50ccdbc(a, 0, z932636c);
+}
+
 static int z7827c08(unsigned char* img, int w, int h, int bpp, int pitch, const char* s,
                       int x, int y, int maxW, int lh, unsigned int rgb, int draw, int z24f3184)
 {
@@ -753,25 +785,31 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 	const int pw = w * 80 / 100, pad = 3, tw = pw - pad * 2;
 	char name[64], line[512], zd87126d[512];
 	z610fb2b(name, sizeof(name), V.zd8f5856);
-	const int nShow = V.z19ef79a;
-	int rows = 1 + (V.ze6affeb ? 1 : 0);
+	z5509597 P;
+	P.ctx = &ctx; P.rect = zfba7f65; P.text = z212e6db; P.measure = zc03da91;
+	P.unit = lh; P.small = lh; P.ansi = 1;
+	const int z19fd162 = V.z7a57a1d ? z07cecca(&P, 0, 0, tw, 0) : 0;
+	const int nShow = V.z24baf09 ? 0 : V.z19ef79a;
+	int rows = (V.z24baf09 ? 0 : 1) + (V.ze6affeb ? 1 : 0);
 	int z9e62f73[z0452cf9];
 	for (int i = 0; i < nShow; i++) {
 		if (V.lines[i].sys) { z610fb2b(zd87126d, sizeof(zd87126d), V.lines[i].text); z9e62f73[i] = z7827c08(img, w, h, bpp, pitch, zd87126d, 0, 0, tw, lh, 0, 0, 3); }
 		else z9e62f73[i] = 1;
 	}
 	int first = 0, body = 0;
-	const int zc25b6c8 = 5;
+	const int zc25b6c8 = z19fd162 ? 2 : 5;
 	for (int i = nShow - 1; i >= 0; i--) {
 		if (body + z9e62f73[i] > zc25b6c8) { first = i + 1; break; }
 		body += z9e62f73[i];
 	}
-	if (nShow == 0) body = 1;
-	rows += body + (V.zcf8a8e5 ? 2 : 0);
-	const int ph = pad * 2 + rows * lh + (V.zcf8a8e5 ? pad : 0);
+	if (nShow == 0 && !V.z24baf09 && !z19fd162) body = 1;
+	rows += body;
+	const int zb992224 = z19fd162 ? z19fd162 + (rows ? pad : 0) : 0;
+	const int ph = pad * 2 + rows * lh + zb992224 + (V.zcf8a8e5 ? pad + 2 * lh : 0);
 	const int z7108971 = (w - pw) / 2, py0 = h - m - ph;
 
 	if (V.fOpen <= 0.001f) {
+		if (V.z5ad0488) { zb1eff89(&P, w / 2, iy + ih, ih, V.z1868977); return; }
 		int bx = 0, by = 0, br = 0;
 		zb52af7e(zfba7f65, &ctx, ix, iy, iw, ih, 110, V.z92c652b, V.z822f0cf, &bx, &by, &br);
 		if (br > 0) {
@@ -794,10 +832,12 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 
 	z8eca64b(zfba7f65, &ctx, z7108971, py0, pw, ph, 3, 0x1B1F27, 230);
 	int y = py0 + pad;
-	snprintf(line, sizeof(line), "CHAT - %s", name);
-	z43680e3(line, 0, tw);
-	zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, line, 0x8A93A6, 0);
-	y += lh;
+	if (!V.z24baf09) {
+		snprintf(line, sizeof(line), "CHAT - %s", name);
+		z43680e3(line, 0, tw);
+		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, line, 0x8A93A6, 0);
+		y += lh;
+	}
 	if (V.ze6affeb) {
 		char z1d5151e[128];
 		z610fb2b(z1d5151e, sizeof(z1d5151e), V.ze6affeb);
@@ -805,7 +845,7 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, z1d5151e, z8f95492, 0);
 		y += lh;
 	}
-	if (nShow == 0) { zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, z34ba319("Nenhuma mensagem ainda."), 0x8A93A6, 0); y += lh; }
+	if (nShow == 0 && !V.z24baf09 && !z19fd162) { zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, z34ba319("Nenhuma mensagem ainda."), 0x8A93A6, 0); y += lh; }
 	for (int i = first; i < nShow; i++) {
 		char t[512];
 		z610fb2b(t, sizeof(t), V.lines[i].text);
@@ -818,11 +858,16 @@ static void zfa8d765(unsigned char* img, int w, int h, int bpp, int pitch)
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, line, V.lines[i].mine ? 0x7FE3F0 : z98784dd, 0);
 		y += lh;
 	}
+	if (z19fd162) {
+		if (rows) y += pad;
+		z07cecca(&P, z7108971 + pad, y, tw, 1);
+		y += z19fd162;
+	}
 	if (V.zcf8a8e5) {
 		y += pad;
 		char t[512];
 		z610fb2b(t, sizeof(t), V.z1e5d86a);
-		snprintf(line, sizeof(line), "> %s%s", t, ((GetTickCount() / 500) & 1) ? "|" : "");
+		snprintf(line, sizeof(line), "> %s%s", t, (!V.zcc658c2 && ((GetTickCount() / 500) & 1)) ? "|" : "");
 		char* p = line;
 		while (*p && z50ccdbc(p, 0, NULL) > tw) p++;
 		zd1ca55b(img, w, h, bpp, pitch, z7108971 + pad, y, p, z98784dd, 0);

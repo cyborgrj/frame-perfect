@@ -1,5 +1,6 @@
 #include "burnint.h"
 #include "img_hash.h"
+#include "fbneo_host.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -14,10 +15,10 @@ static int   z4ffc7e6 = 0;
 static unsigned zac6f163 = 0, z9de8ef3 = 0xFFFFFFFFu;
 
 static void z03973aa(const unsigned char* zf154067, int w, int h, int bpp, int pitch, const char* szPrefix = "rbf-img",
-                    unsigned nFrame = (unsigned)-1)
+                    unsigned nFrame = (unsigned)-1, int zb4ad809 = 0)
 {
 	char path[64];
-	snprintf(path, sizeof(path), "%s-%06u.bmp", szPrefix, nFrame == (unsigned)-1 ? (unsigned)nCurrentFrame : nFrame);
+	snprintf(path, sizeof(path), zb4ad809 ? "%s-%u.bmp" : "%s-%06u.bmp", szPrefix, nFrame == (unsigned)-1 ? (unsigned)nCurrentFrame : nFrame);
 	FILE* f = fopen(path, "wb");
 	if (!f) return;
 	const int row = (w * 3 + 3) & ~3;
@@ -91,6 +92,48 @@ void zd5697a3(const char* szPrefix, unsigned nFrame, const unsigned char* zf1540
 static int z5d53e64 = 0;
 void z40cd21d(int bOn) { z5d53e64 = bOn ? 1 : 0; }
 int  zfe62411(void)       { return z5d53e64; }
+
+#define zd80184b 32
+static int zcd50d63 = -1;
+static int z13cc027[zd80184b];
+
+int ze609dec(void)
+{
+	if (zcd50d63 < 0) {
+		zcd50d63 = 0;
+		char v[256] = "";
+		if (z5d53e64 && GetEnvironmentVariableA("RBF_TESTE_PRINT", v, sizeof(v)) && v[0]) {
+			for (char* t = strtok(v, ",; "); t && zcd50d63 < zd80184b; t = strtok(NULL, ",; ")) {
+				const int f = atoi(t);
+				if (f > 0) z13cc027[zcd50d63++] = f;
+			}
+		}
+	}
+	if (!zcd50d63 || !z5d53e64) return -1;
+	const long long now = zb71d2fc() ? zca74129() : (long long)nCurrentFrame;
+	for (int i = 0; i < zcd50d63; i++) {
+		if (z13cc027[i] <= 0 || now < z13cc027[i]) continue;
+		const int f = z13cc027[i];
+		z13cc027[i] = 0;
+		return f;
+	}
+	return -1;
+}
+
+void z18c8ef8(int nFrame, const unsigned char* zf154067, int w, int h, int bpp, int pitch)
+{
+	if (!zf154067 || w <= 0 || h <= 0 || (bpp != 2 && bpp != 3 && bpp != 4)) return;
+	z03973aa(zf154067, w, h, bpp, pitch, "rbf-print", (unsigned)nFrame, 1);
+	char line[96];
+	snprintf(line, sizeof(line), "teste: RBF_TESTE_PRINT - rbf-print-%d.bmp (%dx%d)", nFrame, w, h);
+	z5d90bae(line);
+}
+
+void z363f3e1(const unsigned char* zf154067, int w, int h, int bpp, int pitch)
+{
+	const int f = ze609dec();
+	if (f > 0) z18c8ef8(f, zf154067, w, h, bpp, pitch);
+}
 
 int z21a6605(void) { return z066dade != NULL && !zd07604b; }
 

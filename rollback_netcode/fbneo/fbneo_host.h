@@ -61,6 +61,8 @@ int  zdd5bb4f(void);
 int  z1b0f145(void);
 int  z17f8ebd(int bHasFocus);
 int  zedf061d(void);
+int  zc8b4cc6(void);
+int  ze12829b(void);
 void z8a35ea7(int z4067262);
 int  zf796ce3(void);
 
@@ -70,9 +72,20 @@ int  z60692a4(void);
 int  z806b0c0(void);
 int  z2b7bad9(unsigned int vk);
 void z5fa0f19(unsigned int ch);
-void z2e5f4c9(int bOn, const char* zd8f5856, int zb568fa4);
+void z2e5f4c9(int bOn, const char* zd8f5856, int zb568fa4, int z64249f9);
 void ze31c6f0(void);
 void zfc2ac67(void);
+void zcf8c9b2(int z3cbb6bc);
+
+#define z1eb4eb1    1u
+#define zbd4b563  2u
+#define z6a08570  4u
+#define z9e5f2af 8u
+#define z32e3848     16u
+#define z884daca     32u
+int  z6f4ded3(void);
+int  z2ae00bb(void);
+void z52fc988(unsigned int edges);
 
 void zfd67ef1(int w);
 int  z7675262(const char* p, int n);

@@ -49,6 +49,8 @@ typedef struct z1ea8be6 {
 	const wchar_t* zd8f5856;
 	const wchar_t* ze6affeb;
 	z9bafc5a   lines[z0452cf9];
+	int            z7a57a1d, z24baf09, zcc658c2, z5ad0488;
+	const wchar_t* z1868977;
 } z1ea8be6;
 int z8ad8d82(z1ea8be6* v);
 
@@ -56,6 +58,16 @@ typedef void (*zdcfcee4)(void* ctx, int x0, int y0, int x1, int y1, unsigned int
 void z8eca64b(zdcfcee4 fn, void* ctx, int x, int y, int w, int h, int r, unsigned int rgb, int alpha);
 void zb52af7e(zdcfcee4 fn, void* ctx, int x, int y, int w, int h, int alpha,
                     int z92c652b, int z822f0cf, int* z924dd86, int* ze97eb52, int* pbr);
+
+typedef struct z5509597 {
+	void*      ctx;
+	zdcfcee4 rect;
+	int      (*text)(void* ctx, const wchar_t* s, int x, int y, unsigned int rgb, int font);
+	int      (*measure)(void* ctx, const wchar_t* s, int font, int* z932636c);
+	int        unit, small, ansi;
+} z5509597;
+int  z07cecca(const z5509597* P, int x, int y, int w, int bDraw);
+void zb1eff89(const z5509597* P, int cx, int bottom, int h, const wchar_t* szText);
 
 const char* z5c1451e(void);
 

@@ -157,6 +157,7 @@ struct z2dc75c0 { const wchar_t* title; const zdb32abc* rows; int n; const wchar
 static const zdb32abc zb2097c2[] = {
 	{ L"F6",         L"liga o treino avançado; com ele ligado, abre e fecha o menu de opções" },
 	{ L"F7",         L"liga e desliga os hitboxes (começam desligados)" },
+	{ L"F8",         L"troca o filtro de CRT (no Médio e no Avançado)" },
 	{ L"F3",         L"volta ao começo do treino" },
 	{ L"F10 / F9",   L"salva / carrega o seu ponto do treino" },
 	{ L"Esc",        L"sai do treino" },

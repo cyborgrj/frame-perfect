@@ -17,6 +17,10 @@ void zd5697a3(const char* szPrefix, unsigned nFrame, const unsigned char* zf1540
 void z40cd21d(int bOn);
 int  zfe62411(void);
 
+int  ze609dec(void);
+void z18c8ef8(int nFrame, const unsigned char* zf154067, int w, int h, int bpp, int pitch);
+void z363f3e1(const unsigned char* zf154067, int w, int h, int bpp, int pitch);
+
 #ifdef __cplusplus
 }
 #endif

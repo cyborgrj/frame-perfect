@@ -179,7 +179,9 @@ static int           z1cd003b  = 0;
 static int           z6a2ac86     = 0;
 static int           z6a3da4b     = 0;
 static int           z59322ff = 0;
-#define z4825c5f 300
+static unsigned long long zfeed50d = 0;
+static long long          z065abf3 = 0;
+#define z7cc0a06 20000
 static int           z73638f5 = 0;
 static z54dec38 z94aaa38;
 
@@ -465,10 +467,14 @@ static void z7c7574b(int p, unsigned char* out, int z9df8312)
 		if (m->pVal[b] && *m->pVal[b]) out[b >> 3] |= (unsigned char)(1 << (b & 7));
 }
 
+static void ze1b2699(unsigned char* out, int p, int z9df8312);
+
 static void zf125d1e(void* out, int z9df8312, void*  )
 {
 	const int p = z2cf405c ? 0 : (z05f35c5 >= 1 && z05f35c5 <= z3332e9c) ? z05f35c5 - 1 : 0;
 	z7c7574b(p, (unsigned char*)out, z9df8312);
+	ze1b2699((unsigned char*)out, p, z9df8312);
+	if (zfeed50d) { memset(out, 0, (size_t)z9df8312); return; }
 
 	if (zc1569cf && (zc3f80f4 >> 3) < z9df8312) {
 		unsigned char* o = (unsigned char*)out;
@@ -948,6 +954,7 @@ static int z909038f(const z54dec38* cfg)
 	z6a2ac86     = 0;
 	z6a3da4b     = 0;
 	z59322ff = 0;
+	zfeed50d     = 0;
 	z7618f45       = 0;
 	zec0344b = 0;
 	z90c98a2 = 0;
@@ -972,7 +979,7 @@ static int z909038f(const z54dec38* cfg)
 	const int rc = z441d635();
 	zf95ede8(!z5aa079a && !z59b4fb8());
 	if (zc1569cf) z503808b("F3: recomeco so com os dois (bit %d)", zc3f80f4);
-	z3faa1df(!z5aa079a && !z59b4fb8() && !z94aaa38.zed95901 && z94aaa38.z115149b, z6cc50c1);
+	z3faa1df(!z5aa079a && !z59b4fb8() && !z94aaa38.zed95901, z6cc50c1);
 	return rc;
 }
 
@@ -1030,9 +1037,11 @@ static int z4febd14(void)
 	return ze41ba77() && !z5aa079a && !z90c98a2 && z3332e9c == 2;
 }
 
+static int zedb57ac = 0;
+
 int z38fea27(void)
 {
-	return (z3a135ef & 3) && z4febd14();
+	return ((z3a135ef & 3) || zedb57ac) && z4febd14();
 }
 
 static int z0ff5272(void)
@@ -1041,6 +1050,122 @@ static int z0ff5272(void)
 	if (k < 0) k = 0;
 	if (k > 2) k = 2;
 	return k;
+}
+
+static int                z02d2bda = 0, z7b9eeb8 = -1, z326ef20 = 0, z12b318f = 0, zb3ae073 = 0, z6ce0d9e = 0;
+static int                z145c818[5], z8c41b24 = 0, z54881ff = 0, z95e03d4 = 0, zf037b31 = 0, z73efbc8 = 0, zd0bb897 = 0, z046ac0f = -1, z446847e = 0;
+static unsigned long long zf915871 = 0, z77073bd = 0, ze1a56d8 = 0;
+static char               z2cf7838[256] = "";
+static const char*        z7af9695 = NULL;
+static const int          zc919bb8[3] = { 50, 149, 180 };
+
+static int z9ec58c2(int d)
+{
+	return (zedb57ac == 2 && d >= 2) ? 2 : z02d2bda;
+}
+
+static void z82cde07(const z54dec38* cfg)
+{
+	char v[8] = "";
+	zedb57ac = GetEnvironmentVariableA("RBF_U", v, sizeof(v)) ? atoi(v) : 0;
+	if (zedb57ac < 0 || zedb57ac > 2) zedb57ac = 0;
+	z02d2bda = 0; z7b9eeb8 = -1; z326ef20 = 0; z12b318f = 0; zb3ae073 = 0; z6ce0d9e = 0;
+	z8c41b24 = z54881ff = z95e03d4 = zf037b31 = z73efbc8 = zd0bb897 = z446847e = 0;
+	z046ac0f = -1;
+	zf915871 = z77073bd = ze1a56d8 = 0;
+	z7af9695 = NULL;
+	z2cf7838[0] = 0;
+	if (zedb57ac && GetEnvironmentVariableA("RBF_TESTE_PING", z2cf7838, sizeof(z2cf7838)) && z2cf7838[0]) {
+		if (cfg && z9568fa1(cfg)) { z7af9695 = z2cf7838; z503808b("teste: RBF_TESTE_PING=%s", z2cf7838); }
+		else z2cf7838[0] = 0;
+	}
+}
+
+static void z2ce5e2d(int d)
+{
+	if (!zedb57ac || z5aa079a || z7618f45 || z90c98a2 || z3332e9c != 2) { zedb57ac = 0; return; }
+	z02d2bda = z0ff5272();
+	bRunAhead = z9ec58c2(d);
+	const unsigned long long now = GetTickCount64();
+	zf915871 = now;
+	z77073bd = now + 1000;
+	ze1a56d8 = now;
+	z503808b("u0 %d %d %d %d", zedb57ac, d, z0ff5272(), z7b9eeb8);
+}
+
+static void zccb4ec0(int d, int est)
+{
+	if (z2549f00(d) < 0) return;
+	bRunAhead = z9ec58c2(d);
+	if (++z73efbc8 > 250) z73efbc8 = 1;
+	const char m[3] = { 0x02, (char)('a' + d), (char)z73efbc8 };
+	z446847e = z77d22b7(m, 3) ? 0 : d + 1;
+	z503808b("u %d %d %d", d, z0ff5272(), est);
+}
+
+static void zbb9f5f5(const char* p, int n)
+{
+	if (!zedb57ac || !z4febd14() || n < 3) return;
+	const int d = p[1] - 'a', q = (unsigned char)p[2];
+	if (d < 0 || d > 3 || q < 1 || q > 250) return;
+	if (zd0bb897 && (signed char)(q - zd0bb897) <= 0) return;
+	zd0bb897 = q;
+	if (d != z2db5ead()) z2549f00(d);
+	bRunAhead = z9ec58c2(d);
+	z503808b("u< %d %d", d, z0ff5272());
+}
+
+static void z7020e2b(void)
+{
+	if (!zedb57ac || !z4febd14() || !zf915871) return;
+	const unsigned long long now = GetTickCount64();
+	if (now < z77073bd) return;
+	z77073bd = now + 1000;
+	if (z446847e) {
+		const char m[3] = { 0x02, (char)('a' + z446847e - 1), (char)z73efbc8 };
+		if (z77d22b7(m, 3)) z446847e = 0;
+	}
+	const long el = (long)((now - zf915871) / 1000);
+	if (z7af9695) {
+		long t = 0;
+		int ms = 0;
+		if (sscanf(z7af9695, "%ld:%d", &t, &ms) == 2) {
+			if (el >= t) {
+				z046ac0f = ms;
+				const char* nx = strchr(z7af9695, ';');
+				z7af9695 = nx ? nx + 1 : NULL;
+			}
+		} else z7af9695 = NULL;
+	}
+	int v = -1;
+	zc3f6a60 st;
+	if (z70d4a8a(&st) == z30e34bc && st.valid) v = st.zd534a2f;
+	if (v < 0) return;
+	if (z7b9eeb8 >= 0 && el >= 3 && el < 10) { z6ce0d9e += v; zb3ae073++; }
+	if (el >= 10 && !z12b318f) {
+		z12b318f = 1;
+		if (z7b9eeb8 >= 0 && zb3ae073 > 0) {
+			int off = z6ce0d9e / zb3ae073 - z7b9eeb8;
+			if (off < 0) off = 0;
+			if (off > 40) off = 40;
+			z326ef20 = off;
+		}
+		z503808b("u1 %d %d", z7b9eeb8, z326ef20);
+	}
+	z145c818[z54881ff] = v;
+	z54881ff = (z54881ff + 1) % 5;
+	if (z8c41b24 < 5) z8c41b24++;
+	if (el < 10 || zd82262d != 1) return;
+	int sum = 0;
+	for (int i = 0; i < z8c41b24; i++) sum += z145c818[i];
+	int est = sum / z8c41b24 - z326ef20;
+	if (z046ac0f >= 0) est = z046ac0f;
+	const int d = z2db5ead();
+	if (d < 3 && est > zc919bb8[d]) z95e03d4++; else z95e03d4 = 0;
+	if (d > 0 && est <= zc919bb8[d - 1] - 10) zf037b31++; else zf037b31 = 0;
+	if (now - ze1a56d8 < 10000) return;
+	if (z95e03d4 >= 3)       { zccb4ec0(d + 1, est); z95e03d4 = zf037b31 = 0; ze1a56d8 = now; }
+	else if (zf037b31 >= 10) { zccb4ec0(d - 1, est); z95e03d4 = zf037b31 = 0; ze1a56d8 = now; }
 }
 
 void zfd67ef1(int w)
@@ -1065,6 +1190,7 @@ void zfd67ef1(int w)
 
 int z7675262(const char* p, int n)
 {
+	if (p && n >= 1 && p[0] == 0x02) { zbb9f5f5(p, n); return 1; }
 	if (!p || n < 1 || p[0] != 0x01) return 0;
 	if (!(z3a135ef & 2) || !z4febd14() || n < 4) return 1;
 	const int w = p[1] - 'a', v = p[2] - 'a', q = (unsigned char)p[3];
@@ -1105,6 +1231,12 @@ int z054c841(const z54dec38* cfg)
 	if (zcef8663) z912bf82();
 	z9ecf998 = 1;
 	z6303ef7[0] = z6303ef7[1] = ze3ce0f1[0] = ze3ce0f1[1] = 0;
+	z82cde07(cfg);
+	{
+		char v[24] = "";
+		z065abf3 = (GetEnvironmentVariableA("RBF_TESTE_FIM", v, sizeof(v)) && z9568fa1(cfg)) ? _atoi64(v) : 0;
+		if (z065abf3 > 0) z503808b("teste: RBF_TESTE_FIM=%lld", z065abf3);
+	}
 	{
 		char v[16] = "";
 		z3bfe586 = GetEnvironmentVariableA("RBF_TESTE_RESET", v, sizeof(v)) ? atoi(v) : 0;
@@ -1180,6 +1312,7 @@ int z054c841(const z54dec38* cfg)
 		z0b86b9d();
 		if (rc == z10fc2a7) {
 			const int d0 = bc.z3b2036b;
+			if (plan.mode == zaf33281 || plan.mode == z1b155da) z7b9eeb8 = plan.z5c6ee43;
 			if (plan.mode == zaf33281 && plan.zf3e1f1a >= 0) {
 				z94aaa38.z3b2036b = plan.zf3e1f1a;
 				bc.z3b2036b    = plan.zf3e1f1a;
@@ -1236,7 +1369,9 @@ int z054c841(const z54dec38* cfg)
 
 	zcef8663 = 1;
 	z503808b("session up.");
-	z2e5f4c9(z94aaa38.z115149b && !z5aa079a && z3332e9c == 2, zd82262d == 1 ? z94aaa38.z7dd7ec2 : z94aaa38.zd843ce2, z94aaa38.z744cae6);
+	z2ce5e2d(bc.z3b2036b);
+	z2e5f4c9(z94aaa38.z115149b && !z5aa079a && z3332e9c == 2, zd82262d == 1 ? z94aaa38.z7dd7ec2 : z94aaa38.zd843ce2, z94aaa38.z744cae6,
+	          !z5aa079a && z3332e9c == 2);
 	if (z94aaa38.z115149b) z503808b("chat: ligado (T escreve, F1 mostra/esconde)");
 	zfe8da2e = zfb10f62();
 	zf299840(zfe8da2e);
@@ -3615,12 +3750,114 @@ static int z685eaf8(void)
 	return start && coin;
 }
 
+#define z11bb702 400
+static int                ze388bcb      = 0;
+static unsigned long long z5c58e7f    = 0;
+static int                zd4e2ee7   = 0;
+static int                za1e75b4 = 0;
+static unsigned int       zcd075d1    = 0;
+
+static int zd3391ee(void)
+{
+	return zcef8663 && !z7618f45 && !zd5a1a8b && !z90c98a2 && !z5aa079a && z3332e9c == 2 && z60692a4();
+}
+
+static int z1339444(void)
+{
+	return z2cf405c ? 0 : (z05f35c5 >= 1 && z05f35c5 <= z3332e9c) ? z05f35c5 - 1 : 0;
+}
+
+static int z50e9899(const char* n)
+{
+	return !strcmp(n, "Select") || !strncmp(n, "Service", 7) || !strncmp(n, "Diag", 4) ||
+	       !strcmp(n, "Reset") || !strncmp(n, "Test", 4) || !strcmp(n, "Tilt");
+}
+
+static unsigned int z6174763(int* pStart, int* zd490586, int* pAny)
+{
+	const int p = z1339444();
+	unsigned char bits[z102275f];
+	z7c7574b(p, bits, z102275f);
+	unsigned int e = 0;
+	int start = 0, coin = 0, any = 0, fire = 0;
+	for (int b = 0; b < z3c35b6f[p].nBits && b < z2d35323 && (b >> 3) < z102275f; b++) {
+		if (p == 0 && b == zc3f80f4) continue;
+		const char* n = zd8e7890(zde7202f[p][b]);
+		if (!n) continue;
+		const int on = z27d554e(bits, b);
+		any |= on;
+		if      (!strcmp(n, "Start")) start |= on;
+		else if (!strcmp(n, "Coin"))  coin |= on;
+		else if (!strcmp(n, "Up"))    { if (on) e |= z1eb4eb1; }
+		else if (!strcmp(n, "Down"))  { if (on) e |= zbd4b563; }
+		else if (!strcmp(n, "Left"))  { if (on) e |= z6a08570; }
+		else if (!strcmp(n, "Right")) { if (on) e |= z9e5f2af; }
+		else if (!z50e9899(n) && fire < 2) {
+			if (on) e |= fire == 0 ? z32e3848 : z884daca;
+			fire++;
+		}
+	}
+	*pStart = start;
+	*zd490586  = coin;
+	*pAny   = any;
+	return e;
+}
+
+static void z8ca5ff3(void)
+{
+	if (!zd3391ee()) {
+		ze388bcb = zd4e2ee7 = za1e75b4 = 0;
+		zcd075d1 = 0;
+		return;
+	}
+	int start = 0, coin = 0, any = 0;
+	unsigned int cur = z6174763(&start, &coin, &any);
+	static int zd5c0735 = -1;
+	if (zd5c0735 < 0) zd5c0735 = GetEnvironmentVariableA("RBF_TESTE_PROXIMA_PAD", NULL, 0) ? 1 : 0;
+	if (z2cf405c && !zd5c0735) { cur = 0; start = coin = 0; }
+	const unsigned long long now = GetTickCount64();
+	if (start && coin) {
+		if (!ze388bcb) { ze388bcb = 1; z5c58e7f = now; }
+		else if (ze388bcb == 1 && now - z5c58e7f > z11bb702) {
+			ze388bcb = 2;
+			z503808b("chat: Start+Select segurado - e o segurar para sair (quadro %lld)", z91b3ccd());
+		}
+	} else if (ze388bcb) {
+		if (ze388bcb == 1 && now - z5c58e7f <= z11bb702 && z2ae00bb())
+			z503808b("chat: Start+Select no controle (quadro %lld)", z91b3ccd());
+		ze388bcb = (start || coin) ? 2 : 0;
+	}
+	if (!ze388bcb) {
+		const unsigned int edges = cur & ~zcd075d1;
+		if (edges) z52fc988(edges);
+	}
+	zcd075d1 = cur;
+	const int zcd1214d = z6f4ded3();
+	if (za1e75b4 && !zcd1214d) zd4e2ee7 = 1;
+	if (zd4e2ee7 && !any) zd4e2ee7 = 0;
+	za1e75b4 = zcd1214d;
+}
+
+static void ze1b2699(unsigned char* out, int p, int z9df8312)
+{
+	if (!ze388bcb && !zd4e2ee7 && !z6f4ded3()) return;
+	if (!zd3391ee()) return;
+	if (zd4e2ee7 || z6f4ded3()) {
+		memset(out, 0, (size_t)z9df8312);
+		return;
+	}
+	for (int b = 0; b < z3c35b6f[p].nBits && b < z2d35323 && (b >> 3) < z9df8312; b++) {
+		const char* n = zd8e7890(zde7202f[p][b]);
+		if (n && (!strcmp(n, "Start") || !strcmp(n, "Coin"))) out[b >> 3] &= (unsigned char)~(1 << (b & 7));
+	}
+}
+
 int z17f8ebd(int bHasFocus)
 {
+	z8ca5ff3();
 	if (z8a9a977) return 0;
-	const int held = z1bebf91 ||
-	                 (z1b0f145() &&
-	                  ((bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000)) || z685eaf8()));
+	const int esc = bHasFocus && !z806b0c0() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000);
+	const int held = z1bebf91 || (z1b0f145() && (esc || z685eaf8()));
 	if (!held) {
 		zb65b6cf = 0;
 		z897beb2   = -1;
@@ -3630,6 +3867,7 @@ int z17f8ebd(int bHasFocus)
 	if (!zb65b6cf) zb65b6cf = now;
 	const unsigned long long el = now - zb65b6cf;
 	z897beb2 = el >= zdedc5dd ? 100 : (int)(el * 100 / zdedc5dd);
+	if (!z1bebf91 && !esc && ze388bcb == 1 && el <= z11bb702) z897beb2 = -1;
 	if (el < zdedc5dd) return 0;
 	z8a9a977 = 1;
 	if (z1b0f145() && strcmp(zb702c05, "closed") == 0) zb702c05 = "quit";
@@ -3639,6 +3877,15 @@ int z17f8ebd(int bHasFocus)
 }
 
 int zedf061d(void) { return z897beb2; }
+
+int zc8b4cc6(void) { return zfeed50d != 0; }
+
+int ze12829b(void)
+{
+	if (!zfeed50d) return 0;
+	const unsigned long long el = GetTickCount64() - zfeed50d;
+	return el >= z7cc0a06 ? 0 : (int)((z7cc0a06 - el + 999) / 1000);
+}
 
 int zf5650f6(int* pSide, int* z4b39f95)
 {
@@ -3758,6 +4005,7 @@ int z607366a(int bDraw)
 	if (z5aa079a) return ze11fccc();
 
 	zb6d9c60();
+	z7020e2b();
 	int r = zeba63f1();
 	zfc2ac67();
 
@@ -3775,19 +4023,21 @@ int z607366a(int bDraw)
 		return r == z30e34bc ? 1 : 0;
 	}
 
-	if (ze949c69()) {
-		if (z59322ff == 0) {
+	if (ze949c69() || (z065abf3 > 0 && z91b3ccd() >= z065abf3)) {
+		if (!zfeed50d) {
 			zb702c05 = "limit";
+			zfeed50d = GetTickCount64();
 			zd82e415(&z6a2ac86, &z6a3da4b);
 			z503808b("first to %d reached (%d x %d) - closing in %d s.",
-			       z94aaa38.ze6bfbdc, z6a2ac86, z6a3da4b, z4825c5f / 60);
+			       z94aaa38.ze6bfbdc, z6a2ac86, z6a3da4b, z7cc0a06 / 1000);
+			zcf8c9b2(z7cc0a06 / 1000);
 		}
 		if (r != z30e34bc && r != zdebf434) {
 			z503808b("ggpo tick failed during the closing seconds (bridge %d) - ending now.", r);
 			return -1;
 		}
 		if (r == z30e34bc) z59322ff++;
-		if (z59322ff >= z4825c5f || z69d3fdc) {
+		if (GetTickCount64() - zfeed50d >= z7cc0a06 || z69d3fdc) {
 			z503808b("ending the session.");
 			return -1;
 		}
