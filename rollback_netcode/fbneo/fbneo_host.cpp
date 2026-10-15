@@ -1057,11 +1057,38 @@ static int                z145c818[5], z8c41b24 = 0, z54881ff = 0, z95e03d4 = 0,
 static unsigned long long zf915871 = 0, z77073bd = 0, ze1a56d8 = 0;
 static char               z2cf7838[256] = "";
 static const char*        z7af9695 = NULL;
-static const int          zc919bb8[3] = { 50, 149, 180 };
+static const int          zc919bb8[3] = { 59, 140, 200 };
 
 static int z9ec58c2(int d)
 {
-	return (zedb57ac == 2 && d >= 2) ? 2 : z02d2bda;
+	(void)d;
+	return z02d2bda;
+}
+
+static int                za66db34 = 0, z31c9081 = 0, za8a2596 = 0, za6cc0b6 = 0, z078fe31 = 0, zc6504dd = 0;
+static unsigned long long z4a236b1 = 0;
+static LARGE_INTEGER      zae94e00;
+
+static void z94eceb6(double ms)
+{
+	if (!za66db34 || z078fe31 || bRunAhead <= 0 || z5aa079a || z7618f45 || z90c98a2 || z3332e9c != 2 || !zae94e00.QuadPart) return;
+	const unsigned long long now = GetTickCount64();
+	if (!z4a236b1) z4a236b1 = now;
+	if (now - z4a236b1 < 15000) return;
+	const double per = nBurnFPS > 0 ? 100000.0 / (double)nBurnFPS : 16.9;
+	if (zc6504dd) ms = per;
+	z31c9081++;
+	if (ms > per * 0.85) za8a2596++;
+	if (z31c9081 < 300) return;
+	if (za8a2596 * 10 >= z31c9081) za6cc0b6++; else za6cc0b6 = 0;
+	const int pct = za8a2596 * 100 / z31c9081;
+	z31c9081 = za8a2596 = 0;
+	if (za6cc0b6 < 2) return;
+	z078fe31 = 1;
+	z02d2bda = 0;
+	bRunAhead = 0;
+	z503808b("u7 %d", pct);
+	zea852f9("k9=1");
 }
 
 static void z82cde07(const z54dec38* cfg)
@@ -1075,6 +1102,13 @@ static void z82cde07(const z54dec38* cfg)
 	zf915871 = z77073bd = ze1a56d8 = 0;
 	z7af9695 = NULL;
 	z2cf7838[0] = 0;
+	v[0] = 0;
+	za66db34 = GetEnvironmentVariableA("RBF_C", v, sizeof(v)) ? atoi(v) : 0;
+	z31c9081 = za8a2596 = za6cc0b6 = z078fe31 = 0;
+	z4a236b1 = 0;
+	QueryPerformanceFrequency(&zae94e00);
+	v[0] = 0;
+	zc6504dd = (GetEnvironmentVariableA("RBF_TESTE_CARGA", v, sizeof(v)) && cfg && z9568fa1(cfg)) ? 1 : 0;
 	if (zedb57ac && GetEnvironmentVariableA("RBF_TESTE_PING", z2cf7838, sizeof(z2cf7838)) && z2cf7838[0]) {
 		if (cfg && z9568fa1(cfg)) { z7af9695 = z2cf7838; z503808b("teste: RBF_TESTE_PING=%s", z2cf7838); }
 		else z2cf7838[0] = 0;
@@ -4006,7 +4040,11 @@ int z607366a(int bDraw)
 
 	zb6d9c60();
 	z7020e2b();
+	LARGE_INTEGER za449319, kq1;
+	QueryPerformanceCounter(&za449319);
 	int r = zeba63f1();
+	QueryPerformanceCounter(&kq1);
+	if (r == z30e34bc && za66db34 && zae94e00.QuadPart) z94eceb6((double)(kq1.QuadPart - za449319.QuadPart) * 1000.0 / (double)zae94e00.QuadPart);
 	zfc2ac67();
 
 	if (z90c98a2) {
