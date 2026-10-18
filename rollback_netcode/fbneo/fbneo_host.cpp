@@ -3914,6 +3914,8 @@ int zedf061d(void) { return z897beb2; }
 
 int zc8b4cc6(void) { return zfeed50d != 0; }
 
+int z15e2010(void) { return zcef8663 && z94aaa38.za1c9e09; }
+
 int ze12829b(void)
 {
 	if (!zfeed50d) return 0;

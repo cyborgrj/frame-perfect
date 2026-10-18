@@ -51,6 +51,8 @@ static const z67dd7e2 z7090d52[] = {
 	           0, 0, 0, 0, 0, 0, 0xFF87DE, 0xFF8BDE },
 	{ "sfa2",  0xFF8450, 0xFF8850, 0xFF8482, 0xFF8882, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF2863,
 	           0, 0, 0, 0, 0, 0, 0xFF84A6, 0xFF88A6 },
+	{ "sfa2u", 0xFF8450, 0xFF8850, 0xFF8482, 0xFF8882, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF2861,
+	           0, 0, 0, 0, 0, 0, 0xFF84A6, 0xFF88A6 },
 	{ "sfa3",  0xFF8450, 0xFF8850, 0xFF8502, 0xFF8902, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF22D9,
 	           0, 0, 0, 0, 0, 0, 0xFF8526, 0xFF8926 },
 	{ "xmvsf", 0xFF4211, 0xFF4611, 0xFF4053, 0xFF4453, 1, 0x0120, 0, 0, 1, 0, 0, 0, 0, 1, 0xFF5008,
@@ -601,12 +603,17 @@ int z5ebf79e(int ze6bfbdc, void (*z930c6f2)(const char*))
 	if (zfc8fae7(z930c6f2) != z7e634bf)
 		return z58c624b;
 
-	const char* szGame = BurnDrvGetTextA(DRV_NAME);
-	if (!szGame) szGame = "";
+	const char* zfa0e88b = BurnDrvGetTextA(DRV_NAME);
+	if (!zfa0e88b) zfa0e88b = "";
+	const char* szGame = zfa0e88b;
 	if (!strcmp(szGame, "umk3jug")) szGame = "umk3";
+	if (!strcmp(szGame, "sfa2u"))   szGame = "sfa2";
 	strncpy(z9165167.szGame, szGame, sizeof(z9165167.szGame) - 1);
 
 	for (unsigned i = 0; i < sizeof(z7090d52) / sizeof(z7090d52[0]); i++) {
+		if (strcmp(zfa0e88b, z7090d52[i].szGame) == 0) { z3c35b6f = &z7090d52[i]; break; }
+	}
+	for (unsigned i = 0; !z3c35b6f && i < sizeof(z7090d52) / sizeof(z7090d52[0]); i++) {
 		if (strcmp(szGame, z7090d52[i].szGame) == 0) { z3c35b6f = &z7090d52[i]; break; }
 	}
 

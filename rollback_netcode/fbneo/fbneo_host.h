@@ -32,6 +32,7 @@ typedef struct z54dec38 {
 	char           z4a06e1f[40];
 	int            z115149b;
 	int            z744cae6;
+	int            za1c9e09;
 } z54dec38;
 
 typedef struct z9f83179 {
@@ -62,6 +63,7 @@ int  z1b0f145(void);
 int  z17f8ebd(int bHasFocus);
 int  zedf061d(void);
 int  zc8b4cc6(void);
+int  z15e2010(void);
 int  ze12829b(void);
 void z8a35ea7(int z4067262);
 int  zf796ce3(void);

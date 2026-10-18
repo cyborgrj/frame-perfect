@@ -147,6 +147,7 @@ int z6100f60(z888fe22* out)
 	if (!out) return 0;
 	const int z7c2ac87 = z8d3b69b();
 	if (z9126c4e == 0 && !z7c2ac87) return 0;
+	if (z806cc0e < 0 && zd030f08 < 0 && !z5cc2cfc && !z7c2ac87) return 0;
 	memset(out, 0, sizeof(*out));
 
 	out->nMode   = z9126c4e;

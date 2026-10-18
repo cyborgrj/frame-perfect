@@ -16,6 +16,8 @@ static INT32   za3a8bc3        = 0;
 static INT32   z6a22f8f     = 0;
 static INT32*  zf9beb62    = NULL;
 static UINT32* zc4fa861 = NULL;
+static UINT8*  z5eac49e        = NULL;
+static bool    z4b89ca5        = false;
 static bool    z8224778       = false;
 
 static UINT8*  z89cbd0a      = NULL;
@@ -117,6 +119,7 @@ static z95493ea z6e1d9f5[zc2e62ca];
 static INT32    zcaee2e8     = 0;
 static INT32    zf08260d = 0;
 static INT32    zcf1792d   = 0;
+static INT32    z661a4bf        = 0;
 
 static INT32 __cdecl z5cd4e4e(struct BurnArea* pba)
 {
@@ -143,6 +146,7 @@ static INT32 __cdecl z06c1d5c(struct BurnArea* pba)
 
 static INT32 __cdecl z058a9a6(struct BurnArea* pba)
 {
+	z661a4bf++;
 	if (zcaee2e8 < zc2e62ca) {
 		z95493ea* a = &z6e1d9f5[zcaee2e8++];
 		strncpy(a->szName, pba->szName ? pba->szName : "?", sizeof(a->szName) - 1);
@@ -161,8 +165,10 @@ static INT32 z7802801(void)
 	zc27b02a         = 0;
 	zcaee2e8     = 0;
 	zf08260d = 0;
+	z661a4bf        = 0;
 	BurnAcb = z058a9a6;
 	BurnAreaScan(ze19ce35 | ACB_READ, NULL);
+	z4b89ca5 = (z661a4bf == zcaee2e8);
 	return zc27b02a;
 }
 
@@ -242,7 +248,8 @@ int zc8e48ed(int z2eef737)
 	z83456b9         = (UINT8*)malloc((size_t)z882e322 * (size_t)za3a8bc3);
 	zf9beb62    = (INT32*)malloc(sizeof(INT32) * (size_t)za3a8bc3);
 	zc4fa861 = (UINT32*)malloc(sizeof(UINT32) * (size_t)za3a8bc3);
-	if (!z83456b9 || !zf9beb62 || !zc4fa861) {
+	z5eac49e        = (UINT8*)malloc((size_t)za3a8bc3);
+	if (!z83456b9 || !zf9beb62 || !zc4fa861 || !z5eac49e) {
 		zbf15f5b();
 		return zd0bac66;
 	}
@@ -260,9 +267,11 @@ void zbf15f5b(void)
 	if (z83456b9)         free(z83456b9);
 	if (zf9beb62)    free(zf9beb62);
 	if (zc4fa861) free(zc4fa861);
+	if (z5eac49e)        free(z5eac49e);
 	z83456b9 = NULL;
 	zf9beb62 = NULL;
 	zc4fa861 = NULL;
+	z5eac49e = NULL;
 	z882e322 = za3a8bc3 = z6a22f8f = 0;
 	z8224778 = false;
 }
@@ -272,6 +281,7 @@ void z7119772(void)
 	for (INT32 i = 0; i < za3a8bc3; i++) {
 		zf9beb62[i]    = z7ebbe29;
 		zc4fa861[i] = 0;
+		z5eac49e[i]        = 0;
 	}
 }
 
@@ -288,7 +298,7 @@ int z2726b67(int nFrame, void** ppBuf, int* pnLen, unsigned int* z044e348)
 	z3719527        = z6d50e51;
 	zc27b02a       = 0;
 	za73dc62    = false;
-	z2e9bc2a    = (z044e348 != NULL);
+	z2e9bc2a    = (z044e348 != NULL) || !z4b89ca5;
 	zcf1792d = 0;
 
 	BurnAcb = z5cd4e4e;
@@ -299,6 +309,7 @@ int z2726b67(int nFrame, void** ppBuf, int* pnLen, unsigned int* z044e348)
 
 	zf9beb62[slot]    = nFrame;
 	zc4fa861[slot] = z2e9bc2a ? z3719527 : 0;
+	z5eac49e[slot]        = z2e9bc2a ? 1 : 0;
 
 	if (ppBuf)      *ppBuf      = dst;
 	if (pnLen)      *pnLen      = z882e322;
@@ -391,7 +402,16 @@ const void* z8483030(int nFrame, int* pnLen)
 unsigned int z3afde3a(int nFrame)
 {
 	if (!z4adf996(nFrame)) return 0;
-	return zc4fa861[nFrame & z6a22f8f];
+	const INT32 slot = nFrame & z6a22f8f;
+	if (!z5eac49e[slot]) {
+		const UINT8* src = z83456b9 + (size_t)slot * (size_t)z882e322;
+		z3719527 = z6d50e51;
+		for (INT32 i = 0; i < zcaee2e8; i++)
+			if (!z6e1d9f5[i].z10fad86) z66ddb4b(src + z6e1d9f5[i].nOffset, z6e1d9f5[i].nLen);
+		zc4fa861[slot] = z3719527;
+		z5eac49e[slot]        = 1;
+	}
+	return zc4fa861[slot];
 }
 
 int z9976ce3(void)

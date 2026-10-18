@@ -275,7 +275,8 @@ static bool __cdecl z7c4dc7b(unsigned char** buffer, int* len, int* checksum, in
 	z54113e9 = frame;
 
 	unsigned int chk = 0;
-	int rc = z2726b67(frame, (void**)buffer, len, &chk);
+	const bool q = z1e19f4f || (frame % z00258e2) == z00258e2 - z1b123e3;
+	int rc = z2726b67(frame, (void**)buffer, len, q ? &chk : NULL);
 	if (rc != z20fb1dd) {
 		z32cace1 = rc;
 		fprintf(stderr, "[ggpo_bridge] StateRingSave(frame=%d) failed: %d\n", frame, rc);
@@ -283,9 +284,11 @@ static bool __cdecl z7c4dc7b(unsigned char** buffer, int* len, int* checksum, in
 	}
 	if (checksum) *checksum = (int)chk;
 
-	const int k = frame & (z3fce952 - 1);
-	z74559bc[k] = frame;
-	zd52ad69[k]   = chk;
+	if (q) {
+		const int k = frame & (z3fce952 - 1);
+		z74559bc[k] = frame;
+		zd52ad69[k]   = chk;
+	}
 
 	if (z75a2617.z01e689f) z75a2617.z01e689f(frame, z75a2617.user);
 	return true;

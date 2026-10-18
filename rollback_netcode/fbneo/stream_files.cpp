@@ -83,6 +83,7 @@ static const char* canonical(const char* g)
 	if (!strcmp(g, "vsavj"))  return "vsav";
 	if (!strcmp(g, "ssf2xj")) return "ssf2t";
 	if (!strcmp(g, "umk3jug")) return "umk3";
+	if (!strcmp(g, "sfa2u"))   return "sfa2";
 	return g;
 }
 

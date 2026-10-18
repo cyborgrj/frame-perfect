@@ -9,6 +9,7 @@ enum { z584d921 = 0, zdfc107b, z6a30044, zaa0734c, z3ffc86e };
 
 static const struct { const char* szGame; unsigned int nAddr; } zd47805f[] = {
 	{ "sfa2",   0xFF8076 },
+	{ "sfa2u",  0xFF8076 },
 	{ "sfa3",   0xFF8076 },
 	{ "vsavj",  0xFF8076 },
 	{ "mvsc",   0xFF4499 },

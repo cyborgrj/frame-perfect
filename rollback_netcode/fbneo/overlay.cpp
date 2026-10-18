@@ -15,6 +15,7 @@ extern "C" int  zedf061d(void);
 extern "C" int  zc8b4cc6(void);
 extern "C" int  ze12829b(void);
 extern "C" int  z1b0f145(void);
+extern "C" int  z15e2010(void);
 extern "C" int  zf796ce3(void);
 extern "C" int  zf5650f6(int* pSide, int* z4b39f95);
 
@@ -439,7 +440,7 @@ int z70213e0(z2c2b1a7* out)
 			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("A FT JA TERMINOU"));
 		} else if (z1b0f145()) {
 			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("ENCERRANDO A PARTIDA"));
-			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("HAVERA PERDA DE PONTOS..."));
+			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z15e2010() ? z34ba319("SOLTE PARA CONTINUAR") : z34ba319("HAVERA PERDA DE PONTOS..."));
 		} else {
 			snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("FECHANDO O JOGO"));
 			snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z34ba319("SOLTE PARA CONTINUAR"));
@@ -453,8 +454,8 @@ int z70213e0(z2c2b1a7* out)
 	const int z1f9fd65 = ze12829b();
 	if (z1f9fd65 > 0) {
 		memset(out, 0, sizeof(*out));
-		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s", z34ba319("FT ENCERRADA"));
-		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s %d S", z34ba319("FECHANDO EM"), z1f9fd65);
+		snprintf(out->z0f6d336, sizeof(out->z0f6d336), "%s - %s %d S", z34ba319("FT ENCERRADA"), z34ba319("FECHANDO EM"), z1f9fd65);
+		snprintf(out->z6af1ebd, sizeof(out->z6af1ebd), "%s", z15e2010() ? z34ba319("ESC PARA SAIR AGORA") : z34ba319("ESC SAI SEM PERDER PONTOS"));
 		out->zd4c6117   = z8f95492;
 		out->z0456974    = z937b93b;
 		out->z70f9d25 = z170e95d;
