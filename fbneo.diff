@@ -1071,7 +1071,7 @@ diff --git a/src/burner/win32/burner_win32.h b/src/burner/win32/burner_win32.h
 +void z1706dba();
 +
 +void z53e8fba(const char* szFile, INT32 z7cfb693);
-+void z1a8bac2();
++void z1a8bac2(int zba087a7, int zbd65c1c);
 +void z8dbf416();
 +void zb65da41(const TCHAR* z325aa6e);
 +extern TCHAR z9b25327[MAX_PATH];
@@ -2334,7 +2334,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  					TCHAR* szSub = _tcsstr(szCmdLine, _T("-sub"));	// Handling -sub additional parameters
  					if (szSub) {									// With -sub parameters
  						szSub += _tcslen(_T("-sub"));				// The parameter does not contain the identifier itself
-@@ -1400,11 +1907,123 @@
+@@ -1400,11 +1907,124 @@
  						IpsPatchInit();		// Entry point: cmdline launch
  					}
  
@@ -2451,14 +2451,15 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
 +								zffbad0d[li] = 0;
 +								FBA_LoadLuaCode(TCHARToANSI(zffbad0d, NULL, 0));
 +							} else if (_tcsstr(szCmdLine, _T("-training")) != NULL) {
-+								z1a8bac2();
++								z1a8bac2(_tcsstr(szCmdLine, _T("-rbfsemaviso")) != NULL,
++								                 _tcsstr(szCmdLine, _T("-rbfavancado")) != NULL);
 +							}
 +						}
 +					}
  					break;
  				}
  			}
-@@ -1413,6 +2032,10 @@
+@@ -1413,6 +2033,10 @@
  
  			if (i == nBurnDrvCount) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_NOSUPPORT), szName, _T(APP_TITLE));
@@ -2469,7 +2470,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  				FBAPopupDisplay(PUF_TYPE_ERROR);
  				return 1;
  			}
-@@ -1489,9 +2112,74 @@
+@@ -1489,9 +2113,74 @@
  	}
  }
  
@@ -2544,7 +2545,7 @@ diff --git a/src/burner/win32/main.cpp b/src/burner/win32/main.cpp
  	DSCore_Init();
  	DICore_Init();
  	DDCore_Init();
-@@ -1556,12 +2244,21 @@
+@@ -1556,12 +2245,21 @@
  	if (!(AppInit())) {							// Init the application
  		if (bAlwaysCreateSupportFolders) CreateSupportFolders();
  		if (!(ProcessCmdLine())) {
@@ -2760,7 +2761,7 @@ diff --git a/src/burner/win32/popup_win32.cpp b/src/burner/win32/popup_win32.cpp
 diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
 --- a/src/burner/win32/run.cpp
 +++ b/src/burner/win32/run.cpp
-@@ -1,8 +1,286 @@
+@@ -1,8 +1,295 @@
  // Run module
  #include "burner.h"
 +#include "fbneo_host.h"
@@ -2836,6 +2837,8 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
 +static int   zb9c3ff0      = 0;
 +static int   zcd74319      = 0;
 +static int   za35bc04 = 0;
++static int   z65a79c2    = 0;
++static int   z2d1ede8  = 0;
 +
 +static TCHAR z661af5a[MAX_PATH] = _T("");
 +
@@ -2861,11 +2864,15 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
 +	return "../support/training-mode/fbneo-training-mode.lua";
 +}
 +
-+void z1a8bac2()
++void z1a8bac2(int zba087a7, int zbd65c1c)
 +{
 +	z912408c  = 1;
 +	z9f8a8aa = 0;
-+	z3c738e6("treino: comeca sem o treino avancado (F6 liga)");
++	z65a79c2   = zba087a7 ? 1 : 0;
++	z2d1ede8 = (zba087a7 && zbd65c1c) ? 1 : 0;
++	if (z2d1ede8)    z3c738e6("treino: o aviso foi no launcher - comeca com o treino avancado");
++	else if (z65a79c2) z3c738e6("treino: o aviso foi no launcher - comeca sem o treino avancado (F6 liga)");
++	else                   z3c738e6("treino: comeca sem o treino avancado (F6 liga)");
 +
 +	{
 +		DWORD n = GetEnvironmentVariableA("RBF_TESTE_LUA", z80a6b93, MAX_PATH);
@@ -2980,7 +2987,10 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
 +	}
 +
 +	if (z9f8a8aa < 4) {
-+		if (++z9f8a8aa == 4) z16a7eba();
++		if (++z9f8a8aa == 4) {
++			if (!z65a79c2) z16a7eba();
++			else if (z2d1ede8) z674ee95(0);
++		}
 +		return;
 +	}
 +
@@ -3047,7 +3057,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  int bAlwaysDrawFrames = 0;
  
-@@ -67,6 +345,61 @@
+@@ -67,6 +354,61 @@
  
  static void CheckSystemMacros() // These are the Pause / FFWD macros added to the input dialog
  {
@@ -3109,7 +3119,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  	// Pause
  	if (macroSystemPause && macroSystemPause != prevPause && timeGetTime() > prevPause_debounce+90) {
  		if (bHasFocus) {
-@@ -76,7 +409,7 @@
+@@ -76,7 +418,7 @@
  	}
  	prevPause = macroSystemPause;
  
@@ -3118,7 +3128,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  		// FFWD
  		int bPrevAppDoFast = bAppDoFast;
  		if (macroSystemFFWD) {
-@@ -124,6 +457,9 @@
+@@ -124,6 +466,9 @@
  		}
  
  	}
@@ -3128,7 +3138,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  	// Load State
  	if (macroSystemLoadState && macroSystemLoadState != prevLState) {
  		PostMessage(hScrnWnd, WM_KEYDOWN, VK_F9, 0);
-@@ -232,10 +568,19 @@
+@@ -232,10 +577,19 @@
  	static int bPrevPause = 0;
  	static int bPrevDraw = 0;
  
@@ -3150,7 +3160,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			SuperWaitVBlank();
  	}
  
-@@ -258,6 +603,9 @@
+@@ -258,6 +612,9 @@
  
  		nFramesEmulated++;
  		nCurrentFrame++;
@@ -3160,7 +3170,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  		if (kNetGame) {
  			GetInput(true);						// Update inputs
-@@ -280,16 +628,44 @@
+@@ -280,16 +637,44 @@
  			}
  		}
  
@@ -3206,7 +3216,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			if ((bDraw & FFWD_GHOST_FRAME) == 0)
  				nFramesRendered++;
  
-@@ -313,9 +689,15 @@
+@@ -313,9 +698,15 @@
  				StateRunAheadSave();
  				INT16 *pBurnSoundOut_temp = pBurnSoundOut;
  				pBurnSoundOut = NULL;
@@ -3224,7 +3234,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  				if (VidFrame()) {
  					// VidFrame() failed, but we must run a driver frame because we have
  					// an input.  Possibly from recording or netplay(!)
-@@ -323,8 +705,9 @@
+@@ -323,8 +714,9 @@
  					BurnDrvFrame();
  				}
  
@@ -3235,7 +3245,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  				StateRunAheadLoad();
  				pBurnSoundOut = pBurnSoundOut_temp; // restore pointer, for wav & avi writer
  			}
-@@ -333,7 +716,18 @@
+@@ -333,7 +725,18 @@
  			BurnDrvFrame();
  		}
  
@@ -3255,7 +3265,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  			StateRewindDoFrame(macroSystemRewind || bAppDoRewind, macroSystemRewindCancel, bRunPause);
  		}
  
-@@ -527,6 +921,57 @@
+@@ -527,6 +930,57 @@
  // Keyboard callback function, a way to provide a driver with shifted/unshifted ASCII data from the keyboard.  see drv/msx/d_msx.cpp for usage
  void (*cBurnerKeyCallback)(UINT8 code, UINT8 KeyType, UINT8 down) = NULL;
  
@@ -3313,7 +3323,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  static void BurnerHandlerKeyCallback(MSG *Msg, INT32 KeyDown, INT32 KeyType)
  {
  	INT32 shifted = (GetAsyncKeyState(VK_SHIFT) & 0x80000000) ? 0xf0 : 0;
-@@ -565,10 +1010,11 @@
+@@ -565,10 +1019,11 @@
  
  		RunInit();
  
@@ -3327,7 +3337,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  		GameInpCheckLeftAlt();
  		GameInpCheckMouse();															// Hide the cursor
-@@ -650,6 +1096,10 @@
+@@ -650,6 +1105,10 @@
  					bRestartVideo = 1;
  					break;
  				}
@@ -3338,7 +3348,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  				if (bMenuEnabled && nVidFullscreen == 0) {								// Handle keyboard messages for the menu
  					if (MenuHandleKeyboard(&Msg)) {
-@@ -660,7 +1110,7 @@
+@@ -660,7 +1119,7 @@
  				if (Msg.message == WM_SYSKEYDOWN || Msg.message == WM_KEYDOWN) {
  					if (Msg.lParam & 0x20000000) {
  						// An Alt/AltGr-key was pressed
@@ -3347,7 +3357,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  #if defined (FBNEO_DEBUG)
  							case 'C': {
-@@ -774,7 +1224,11 @@
+@@ -774,7 +1233,11 @@
  						if (cBurnerKeyCallback)
  							BurnerHandlerKeyCallback(&Msg, (Msg.message == WM_KEYDOWN) ? 1 : 0, 0);
  
@@ -3360,7 +3370,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  
  #if defined (FBNEO_DEBUG)
  							case 'N':
-@@ -798,8 +1252,8 @@
+@@ -798,8 +1261,8 @@
  								if (hwndChat) {
  									DeActivateChat();
  								} else {
@@ -3371,7 +3381,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  									} else {
  										if (nVidFullscreen) {
  											nVidFullscreen = 0;
-@@ -872,11 +1326,13 @@
+@@ -872,11 +1335,13 @@
  									}
  								} else
  								{ // Backspace: toggles FPS counter
@@ -3390,7 +3400,7 @@ diff --git a/src/burner/win32/run.cpp b/src/burner/win32/run.cpp
  									}
  								}
  								break;
-@@ -923,7 +1379,7 @@
+@@ -923,7 +1388,7 @@
  				// Check for messages for dialogs etc.
  				if (AppMessage(&Msg)) {
  					if (TranslateAccelerator(hScrnWnd, hAccel, &Msg) == 0) {
@@ -3780,8 +3790,8 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  {
  	bHasFocus = fActivate;
 -	if (!kNetGame && bAutoPause && !bAltPause && hInpdDlg == NULL && hInpCheatDlg == NULL && hInpDIPSWDlg == NULL) {
-+	const bool z238efc3 = z374fdd2 && !nVidFullscreen;
-+	if (!z238efc3 && !kNetGame && !zb71d2fc() && bAutoPause && !bAltPause && hInpdDlg == NULL && hInpCheatDlg == NULL && hInpDIPSWDlg == NULL) {
++	const bool z30a1eca = z374fdd2 != 0;
++	if (!z30a1eca && !kNetGame && !zb71d2fc() && bAutoPause && !bAltPause && hInpdDlg == NULL && hInpCheatDlg == NULL && hInpDIPSWDlg == NULL) {
  		bRunPause = fActivate? 0 : 1;
  	}
  	if (fActivate == false && hwnd == hScrnWnd) {
@@ -3887,7 +3897,7 @@ diff --git a/src/burner/win32/scrn.cpp b/src/burner/win32/scrn.cpp
  		AudBlankSound();
  	} else {
 -		if (!kNetGame && bAutoPause) {
-+		if (!kNetGame && !zb71d2fc() && bAutoPause) {
++		if (!kNetGame && !zb71d2fc() && !z374fdd2 && bAutoPause) {
  			bRunPause = 1;
  		}
  	}
