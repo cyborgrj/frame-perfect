@@ -8,6 +8,7 @@ extern "C" {
 void z5c0c8b7(const char* z733a844, const char* zd5e0939, int ze6bfbdc);
 
 void z8fa5b4b(void);
+void z8e15e46(int ze6bfbdc);
 int  z4b7d267(void);
 
 void z1c35054(void);

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
+#include <ctype.h>
 
 static int     z910e658 = 0;
 static wchar_t z909a4d0[MAX_PATH];
@@ -60,21 +61,36 @@ static void z9c2fd51(const wchar_t* name, char* out, int nOut)
 	out[nOut - 1] = 0;
 }
 
+static int z707c627(const wchar_t* name, const wchar_t* szFile)
+{
+	wchar_t src[MAX_PATH];
+	_snwprintf(src, MAX_PATH, L"%s\\bandeiras\\%s", z909a4d0, szFile);
+	src[MAX_PATH - 1] = 0;
+	FILE* f = _wfopen(src, L"rb");
+	if (!f) return 0;
+	static char buf[256 * 1024];
+	size_t n = fread(buf, 1, sizeof(buf), f);
+	const int whole = feof(f) != 0;
+	fclose(f);
+	if (!whole || n == 0) return 0;
+	put(name, buf, n);
+	return 1;
+}
+
 static void zeff54eb(const wchar_t* name, const char* z2831ef1)
 {
-	wchar_t src[MAX_PATH], dst[MAX_PATH];
-	_snwprintf(dst, MAX_PATH, L"%s\\%s", z909a4d0, name);
-	dst[MAX_PATH - 1] = 0;
 	int ok = 0;
 	if (z2831ef1 && strlen(z2831ef1) == 2) {
-		_snwprintf(src, MAX_PATH, L"%s\\bandeiras\\%c%c.png", z909a4d0, (wchar_t)z2831ef1[0], (wchar_t)z2831ef1[1]);
-		src[MAX_PATH - 1] = 0;
-		ok = CopyFileW(src, dst, FALSE);
+		wchar_t file[16];
+		_snwprintf(file, 16, L"%c%c.png", (wchar_t)toupper((unsigned char)z2831ef1[0]), (wchar_t)toupper((unsigned char)z2831ef1[1]));
+		file[15] = 0;
+		ok = z707c627(name, file);
 	}
-	if (!ok) {
-		_snwprintf(src, MAX_PATH, L"%s\\bandeiras\\vazio.png", z909a4d0);
-		src[MAX_PATH - 1] = 0;
-		if (!CopyFileW(src, dst, FALSE)) DeleteFileW(dst);
+	if (!ok && !z707c627(name, L"vazio.png")) {
+		wchar_t dst[MAX_PATH];
+		_snwprintf(dst, MAX_PATH, L"%s\\%s", z909a4d0, name);
+		dst[MAX_PATH - 1] = 0;
+		DeleteFileW(dst);
 	}
 }
 
@@ -141,6 +157,15 @@ void z5c3a407(const char* szGame, const char* zb306bef, const char* z733a844,
 	z00b0657(L"p2character.txt", "");
 	z00b0657(L"winner.txt", "");
 	z00b0657(L"started.inf", "1");
+}
+
+void zcc5f59a(int ze6bfbdc)
+{
+	if (!z910e658 || ze6bfbdc <= 0 || ze6bfbdc == za5fd107) return;
+	za5fd107 = ze6bfbdc;
+	char vs[16];
+	snprintf(vs, sizeof(vs), "FT%d", ze6bfbdc);
+	z00b0657(L"vs.txt", vs);
 }
 
 void z4aa24cc(void)

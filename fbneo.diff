@@ -4672,7 +4672,7 @@ diff --git a/src/intf/video/win32/vid_ddrawfx.cpp b/src/intf/video/win32/vid_ddr
 diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_directx9.cpp
 --- a/src/intf/video/win32/vid_directx9.cpp
 +++ b/src/intf/video/win32/vid_directx9.cpp
-@@ -88,6 +88,58 @@
+@@ -88,6 +88,75 @@
  static VidEffect* pVidEffect = NULL;
  static int nDX9HardFX = -1;
  
@@ -4683,6 +4683,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +#include "input_display.h"
 +#include "fbneo_host.h"
 +#include "img_hash.h"
++#include "frame_timing.h"
 +
 +int z60255f4 = 0;
 +static int z8ed576d = 0;
@@ -4690,6 +4691,22 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +typedef HRESULT (WINAPI* zdb964ab)(UINT, IDirect3D9Ex**);
 +
 +#define z4ec5c40 (z8ed576d && !nVidFullscreen)
++
++static void zccfb5ca()
++{
++	if (!z8ed576d || !pD3DDevice) return;
++	IDirect3DSwapChain9* z9484a6d = NULL;
++	if (FAILED(pD3DDevice->GetSwapChain(0, &z9484a6d)) || !z9484a6d) return;
++	IDirect3DSwapChain9Ex* z79f939d = NULL;
++	if (SUCCEEDED(z9484a6d->QueryInterface(IID_IDirect3DSwapChain9Ex, (void**)&z79f939d)) && z79f939d) {
++		D3DPRESENTSTATS st;
++		memset(&st, 0, sizeof(st));
++		if (SUCCEEDED(z79f939d->GetPresentStats(&st)))
++			z4ccf091(st.PresentCount, st.SyncRefreshCount, (long long)st.SyncQPCTime.QuadPart);
++		z79f939d->Release();
++	}
++	z9484a6d->Release();
++}
 +
 +static IDirect3D9* z10b6877(int* z31e656b)
 +{
@@ -4731,7 +4748,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static ID3DXFont* pFont = NULL;							// OSD font
  static ID3DXFont* pStatusFont = NULL;					// Status font
  static ID3DXFont* pStatusFontSmall = NULL;				// Status font (small)
-@@ -189,6 +241,17 @@
+@@ -189,6 +258,17 @@
  }
  */
  
@@ -4749,7 +4766,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static UINT dx9GetAdapter(wchar_t* name)
  {
  	for (int a = pD3D->GetAdapterCount() - 1; a >= 0; a--)
-@@ -816,6 +879,20 @@
+@@ -816,6 +896,20 @@
  
  static void vid_FontExit()
  {
@@ -4770,7 +4787,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	RELEASE(pFont);
  	RELEASE(pStatusFont);
  	RELEASE(pStatusFontSmall);
-@@ -837,6 +914,8 @@
+@@ -837,6 +931,8 @@
  
  static void vid_FontsOnLost()
  {
@@ -4779,7 +4796,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	if (pFont) {
  		pFont->OnLostDevice();
  	}
-@@ -960,6 +1039,9 @@
+@@ -960,6 +1056,9 @@
  		}
  	}
  
@@ -4789,7 +4806,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	if (!pTinyFont) {
  		HRESULT hr = _D3DXCreateFont(pD3DDevice, 18,
  									 0, FW_DEMIBOLD, 1, FALSE,
-@@ -987,6 +1069,8 @@
+@@ -987,6 +1086,8 @@
  	return 0;
  }
  
@@ -4798,7 +4815,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static void textout(ID3DXFont *font, TCHAR *str, RECT dst, DWORD shadow, DWORD flags, DWORD color)
  {
  	if (shadow) {
-@@ -1015,8 +1099,1027 @@
+@@ -1015,8 +1116,1027 @@
  	font->DrawText(NULL, str, -1, &dst, flags, color);
  }
  
@@ -5826,7 +5843,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	if (nVidSDisplayStatus == 0) {
  		return;
  	}
-@@ -1164,7 +2267,7 @@
+@@ -1164,7 +2284,7 @@
  		d3dpp.PresentationInterval			= (bVidDX9WinFullscreen && bVidVSync) ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_DEFAULT;
  		if (bVidDX9WinFullscreen) {
  			d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;
@@ -5835,7 +5852,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		}
  	} else {
  		d3dpp.BackBufferWidth				= dm.Width;
-@@ -1190,7 +2293,7 @@
+@@ -1190,7 +2310,7 @@
  		dprintf(_T("  * Error: Couldn't create Direct3D device.\n"));
  #endif
  
@@ -5844,7 +5861,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
  			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
-@@ -1692,6 +2795,7 @@
+@@ -1692,6 +2812,7 @@
  //	VidSDisplayOSD(pddsBlitFX[nUseSys], &rect, 0);
  
  	if (nVidFullscreen) {
@@ -5852,7 +5869,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		pD3DDevice->Present(NULL, NULL, NULL, NULL);
  	} else {
  		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
-@@ -1906,6 +3010,7 @@
+@@ -1906,6 +3027,7 @@
  {
  	VidSoftFXExit();
  
@@ -5860,7 +5877,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	dx9AltReleaseTexture();
  
  	VidSFreeVidImage();
-@@ -2136,13 +3241,25 @@
+@@ -2136,13 +3258,25 @@
  	}
  
  	// HardFX
@@ -5888,7 +5905,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	}
  	else
  	{
-@@ -2153,6 +3270,50 @@
+@@ -2153,6 +3287,50 @@
  	return r;
  }
  
@@ -5939,7 +5956,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  static int dx9AltInit()
  {
  	if (hScrnWnd == NULL) {
-@@ -2166,14 +3327,16 @@
+@@ -2166,14 +3344,16 @@
  #endif
  
  	// Get pointer to Direct3D
@@ -5958,7 +5975,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	nRotateGame = 0;
  	if (bDrvOkay) {
  		if (BurnDrvGetFlags() & BDF_ORIENTATION_VERTICAL) {
-@@ -2231,7 +3394,7 @@
+@@ -2231,7 +3411,7 @@
  		d3dpp.PresentationInterval = (bVidDX9WinFullscreen && bVidVSync) ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_DEFAULT;
  		if (bVidDX9WinFullscreen) {
  			d3dpp.SwapEffect = D3DSWAPEFFECT_COPY;
@@ -5967,7 +5984,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  		}
  	} else {
  		d3dpp.BackBufferWidth = dm.Width;
-@@ -2251,13 +3414,53 @@
+@@ -2251,13 +3431,53 @@
  		dwBehaviorFlags |= D3DCREATE_SOFTWARE_VERTEXPROCESSING;
  	}
  
@@ -5985,7 +6002,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +			pp.BackBufferFormat = D3DFMT_X8R8G8B8;
 +		}
 +		IDirect3DDevice9Ex* z7c4f3b6 = NULL;
-+		HRESULT hr = ((IDirect3D9Ex*)pD3D)->CreateDeviceEx(nD3DAdapter, D3DDEVTYPE_HAL, hVidWnd, dwBehaviorFlags, &pp, NULL, &z7c4f3b6);
++		HRESULT hr = ((IDirect3D9Ex*)pD3D)->CreateDeviceEx(nD3DAdapter, D3DDEVTYPE_HAL, hVidWnd, dwBehaviorFlags | D3DCREATE_ENABLE_PRESENTSTATS, &pp, NULL, &z7c4f3b6);
 +		if (SUCCEEDED(hr) && z7c4f3b6) {
 +			z7c4f3b6->SetMaximumFrameLatency(1);
 +			pD3DDevice = z7c4f3b6;
@@ -6023,7 +6040,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_PROBLEM), d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, nVidDepth);
  			if (bVidArcaderes && (d3dpp.BackBufferWidth != 320 && d3dpp.BackBufferHeight != 240)) {
  				FBAPopupAddText(PUF_TEXT_DEFAULT, MAKEINTRESOURCE(IDS_ERR_UI_FULL_CUSTRES));
-@@ -2337,8 +3540,7 @@
+@@ -2337,8 +3557,7 @@
  	// HardFX gets initted here
  	dx9AltSetHardFX(nVidDX9HardFX);
  
@@ -6033,7 +6050,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	nImageWidth = 0; nImageHeight = 0;
  
-@@ -2401,6 +3603,8 @@
+@@ -2401,6 +3620,8 @@
  	// apply vertex alpha values to texture
  	pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
  
@@ -6042,7 +6059,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  	dx9AltTextureInit();
  
  	nImageWidth = 0; nImageHeight = 0;
-@@ -2447,6 +3651,11 @@
+@@ -2447,6 +3668,11 @@
  	if (pVidImage == NULL) return 1;
  
  	GetClientRect(hVidWnd, &Dest);
@@ -6054,7 +6071,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	if (nVidFullscreen == 0) {
  		Dest.top += nMenuHeight;
-@@ -2475,7 +3684,7 @@
+@@ -2475,7 +3701,7 @@
  			int nWidth = nGameImageWidth;
  			int nHeight = nGameImageHeight;
  
@@ -6063,7 +6080,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				if (nPreScale & 1) {
  					nWidth *= nPreScaleZoom;
  				}
-@@ -2484,7 +3693,7 @@
+@@ -2484,7 +3710,7 @@
  				}
  			}
  
@@ -6072,7 +6089,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, nRotateGame ? Dest.top : Dest.left, nRotateGame ? Dest.left : Dest.top, nImageWidth, nImageHeight);
  			} else {
  				dx9AltSetVertex(0, 0, nWidth, nHeight, nTextureWidth, nTextureHeight, 0, 0, nImageWidth, nImageHeight);
-@@ -2497,7 +3706,7 @@
+@@ -2497,7 +3723,7 @@
  			D3DVIEWPORT9 vp;
  
  			// Set the size of the image on the PC screen
@@ -6081,7 +6098,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				vp.X = Dest.left;
  				vp.Y = Dest.top;
  				vp.Width = Dest.right - Dest.left;
-@@ -2519,9 +3728,19 @@
+@@ -2519,9 +3745,19 @@
  
  	ClearD3D9SurfaceEntirety<true>();
  
@@ -6101,7 +6118,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	{
  		// Copy the game image onto a texture for rendering
-@@ -2531,7 +3750,7 @@
+@@ -2531,7 +3767,7 @@
  			int pitch = d3dlr.Pitch;
  			unsigned char* pd = (unsigned char*)d3dlr.pBits;
  
@@ -6110,7 +6127,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  				VidFilterApplyEffect(pd, pitch);
  			} else {
  				unsigned char* ps = pVidImage + nVidImageLeft * nVidImageBPP;
-@@ -2545,6 +3764,7 @@
+@@ -2545,6 +3781,7 @@
  						VidSCpyImg16(pd, pitch, ps, s, nVidImageWidth, nVidImageHeight);
  						break;
  				}
@@ -6118,7 +6135,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  			}
  
  			pTexture->UnlockRect(0);
-@@ -2624,6 +3844,97 @@
+@@ -2624,6 +3861,97 @@
  	return 0;
  }
  
@@ -6216,7 +6233,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  // Paint the BlitFX surface onto the primary surface
  static int dx9AltPaint(int bValidate)
  {
-@@ -2632,6 +3943,31 @@
+@@ -2632,6 +3960,32 @@
  	}
  
  	RECT rect = { 0, 0, 0, 0 };
@@ -6240,6 +6257,7 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
 +		ze5f8e01();
 +		zd02715f();
 +		pD3DDevice->Present(NULL, NULL, NULL, NULL);
++		zccfb5ca();
 +		if (bValidate & 1) {
 +			ValidateRect(hVidWnd, NULL);
 +		}
@@ -6248,16 +6266,17 @@ diff --git a/src/intf/video/win32/vid_directx9.cpp b/src/intf/video/win32/vid_di
  
  	if (!nVidFullscreen) {
  		GetClientScreenRect(hVidWnd, &rect);
-@@ -2649,6 +3985,8 @@
+@@ -2649,13 +4003,18 @@
  	}
  
  	if (nVidFullscreen) {
 +		ze5f8e01();
 +		zd02715f();
  		pD3DDevice->Present(NULL, NULL, NULL, NULL);
++		zccfb5ca();
  	} else {
  		RECT src = { 0, 0, Dest.right - Dest.left, Dest.bottom - Dest.top };
-@@ -2656,6 +3994,8 @@
+ 		POINT c = { 0, 0 };
  		ClientToScreen(hVidWnd, &c);
  		RECT dst = { rect.left - c.x, rect.top - c.y, rect.right - c.x, rect.bottom - c.y };
  

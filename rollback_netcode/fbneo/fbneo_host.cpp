@@ -71,6 +71,7 @@ void z1706dba();
 #define zbda0044 0x02
 #define za026c16  0x04
 #define zca0bcba  0x08
+#define z94f2111     0x10
 
 static int zc300cc9 = 1;
 
@@ -1582,7 +1583,7 @@ int ze0d3fd3(const z9f83179* cfg)
 		zdd50e3c = cfg->ze6bfbdc;
 	}
 	if (z13cb333) z8fa5b4b();
-	else            z5c0c8b7(info.z733a844, info.zd5e0939, 0);
+	else            z5c0c8b7(info.z733a844, info.zd5e0939, cfg->ze6bfbdc);
 	if (!z13cb333 && !zd5a1a8b && !zd3b974b) {
 		const char* quark = cfg->zb306bef;
 		if (cfg->zac0db38[0]) {
@@ -2747,8 +2748,8 @@ static int z777d921(void)
 	z38de19c(f, z264edf7);
 	fprintf(f, ",\n  \"p2\": ");
 	z38de19c(f, zde3b108);
-	fprintf(f, ",\n  \"placar\": \"%d x %d\",\n  \"partidas\": %d,\n  \"salvo_em\": \"%s\",\n  \"favoritos\": [",
-	        p1, p2, z687a7e0, when);
+	fprintf(f, ",\n  \"placar\": \"%d x %d\",\n  \"partidas\": %d,\n  \"ft\": %d,\n  \"salvo_em\": \"%s\",\n  \"favoritos\": [",
+	        p1, p2, z687a7e0, z1fa1f56, when);
 	for (int i = 0; i < z7c696e9; i++)
 		fprintf(f, "%s\n    { \"partida\": %d, \"inicio\": %lld }", i ? "," : "", z7208f19[i], have[i]);
 	fprintf(f, "\n  ]\n}\n");
@@ -3463,13 +3464,20 @@ static int zc224ed5(int bDraw)
 		int zf3428fd = 0;
 		const unsigned char* pEnd = (const unsigned char*)pState + nState - z193a6a8;
 		if (nState > z193a6a8 && memcmp(pEnd, "RBFB", 4) == 0 &&
-		    pEnd[4] != 0 && (pEnd[4] & ~(z24955bb | zbda0044 | za026c16 | zca0bcba)) == 0 &&
-		    pEnd[5] == 0 && pEnd[6] == 0 && pEnd[7] == 0) {
+		    pEnd[4] != 0 && (pEnd[4] & ~(z24955bb | zbda0044 | za026c16 | zca0bcba | z94f2111)) == 0 &&
+		    (pEnd[5] == 0 || (pEnd[4] & z94f2111)) && pEnd[6] == 0 && pEnd[7] == 0) {
 			zf3428fd   = pEnd[4];
 			nState -= z193a6a8;
 			z503808b("watch: o estado de abertura e de uma placa %s%s%s%s",
 			       (zf3428fd & z24955bb) ? "AES" : "MVS", (zf3428fd & zbda0044) ? ", Single Vs" : "",
 			       (zf3428fd & za026c16) ? ", F3 com os dois" : "", (zf3428fd & zca0bcba) ? ", ficha infinita" : "");
+			if ((zf3428fd & z94f2111) && pEnd[5] > 0 && pEnd[5] < 100 && !z13cb333) {
+				z1fa1f56 = pEnd[5];
+				if (zd5a1a8b) zdd50e3c = z1fa1f56;
+				z8e15e46(z1fa1f56);
+				zcc5f59a(z1fa1f56);
+				z503808b("watch: FT%d (do estado de abertura)", z1fa1f56);
+			}
 		}
 		zf95ede8((zf3428fd & za026c16) != 0);
 		z3faa1df((zf3428fd & zca0bcba) != 0, z6cc50c1);
@@ -3609,8 +3617,9 @@ static void z2700bce(void)
 	strncpy(info.z4b40456, z94aaa38.z4a06e1f, sizeof(info.z4b40456) - 1);
 	info.zc16580c   = zc3f80f4;
 
+	const int z8400656   = (z94aaa38.ze6bfbdc > 0 && z94aaa38.ze6bfbdc < 100) ? z94aaa38.ze6bfbdc : 0;
 	const int zf3428fd = (z40e51f6 ? z24955bb : 0) | (z94aaa38.zed95901 ? zbda0044 : 0) |
-	                  (zc1569cf ? za026c16 : 0) | (z6ef378d() ? zca0bcba : 0);
+	                  (zc1569cf ? za026c16 : 0) | (z6ef378d() ? zca0bcba : 0) | (z8400656 ? z94f2111 : 0);
 	unsigned char* z2181533 = NULL;
 	if (zf3428fd) {
 		z2181533 = (unsigned char*)malloc((size_t)nState + z193a6a8);
@@ -3618,7 +3627,8 @@ static void z2700bce(void)
 			memcpy(z2181533, pState, (size_t)nState);
 			memcpy(z2181533 + nState, "RBFB", 4);
 			z2181533[nState + 4] = (unsigned char)zf3428fd;
-			z2181533[nState + 5] = z2181533[nState + 6] = z2181533[nState + 7] = 0;
+			z2181533[nState + 5] = (unsigned char)z8400656;
+			z2181533[nState + 6] = z2181533[nState + 7] = 0;
 			z503808b("relay: o estado de abertura vai com o rabicho da placa (0x%02X)", zf3428fd);
 		}
 	}

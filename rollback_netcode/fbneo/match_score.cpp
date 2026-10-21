@@ -40,15 +40,18 @@ typedef struct {
 	unsigned int z66158d8, z3afb86c;
 	int zdad73f6;
 	int z50efb64;
+	unsigned int z8acd703, zfea5464;
+	int          zd1e415f;
+	unsigned int za884a39, zaac9881;
 } z67dd7e2;
 
 static const z67dd7e2 z7090d52[] = {
 	{ "sf2ce", 0xFF83E8, 0xFF86E8, 0xFF864F, 0xFF894F, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF8ABE,
 	           0, 0, 0, 0, 0, 0, 0xFF864E, 0xFF894E },
 	{ "ssf2t", 0xFF8478, 0xFF8878, 0xFF87DF, 0xFF8BDF, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF8DCE,
-	           0, 0, 0, 0, 0, 0, 0xFF87DE, 0xFF8BDE },
+	           0, 0, 0, 0, 0, 0, 0xFF87DE, 0xFF8BDE, 0, 0, 0, 0, 0, 0xFF8804, 0xFF8C04, 0, 0, 0 },
 	{ "ssf2xj", 0xFF8478, 0xFF8878, 0xFF87DF, 0xFF8BDF, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF8DCE,
-	           0, 0, 0, 0, 0, 0, 0xFF87DE, 0xFF8BDE },
+	           0, 0, 0, 0, 0, 0, 0xFF87DE, 0xFF8BDE, 0, 0, 0, 0, 0, 0xFF8804, 0xFF8C04, 0, 0, 0 },
 	{ "sfa2",  0xFF8450, 0xFF8850, 0xFF8482, 0xFF8882, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF2863,
 	           0, 0, 0, 0, 0, 0, 0xFF84A6, 0xFF88A6 },
 	{ "sfa2u", 0xFF8450, 0xFF8850, 0xFF8482, 0xFF8882, 1, 0x0090, 0, 0, 2, 0, 0, 0, 0, 0, 0xFF2861,
@@ -69,8 +72,8 @@ static const z67dd7e2 z7090d52[] = {
 	{ "vsav",  0xFF8450, 0xFF8850, 0xFF841D, 0xFF881D, 1, 0x0120, 1, 1 },
 	{ "vsavj", 0xFF8450, 0xFF8850, 0xFF841D, 0xFF881D, 1, 0x0120, 1, 1 },
 	{ "kof98", 0x108238, 0x108438, 0x10A84E, 0x10A85F, 3, 0x0067, 0, 0, 3,
-	           0x108171, 0x108371, 0x10B340, 0x10B540, 0, 0x10A83A, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	           0x10A858, 0x10A869, 1, 1 },
+	           0x108171, 0x108371, 0x10A84C, 0x10A85D, 0, 0x10A83A, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	           0x10A858, 0x10A869, 1, 1, 0x10A85A, 0x10A86B, 1, 0x1082D6, 0x1084D6 },
 	{ "kof2002", 0x108238, 0x108438, 0x10A7EE, 0x10A814, 3, 0x0066, 0, 0, 3,
 	           0x108171, 0x108371, 0, 0, 0, 0x10A7D2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	           0x10A7F3, 0x10A819, 1, 1 },
@@ -526,21 +529,28 @@ static int z4e3d88a(const int* h, int z543f62e)
 	return best;
 }
 
-static void z82b6e54(int nSide, unsigned int nAddr, int* pOut, int nCount, int* zbec1e4f, int z543f62e)
+static int zd2c8081(unsigned int nAddr, int i, int bMask)
+{
+	if (!nAddr) return 0;
+	const int v = zaefff6f(nAddr);
+	return (bMask ? (v >> i) & 1 : v != 0) ? z3f24ff9 : 0;
+}
+
+static void z82b6e54(int nSide, unsigned int nAddr, int* pOut, int nCount, int* zbec1e4f, int z543f62e, unsigned int zad4c35d)
 {
 	if (!nAddr) return;
 	for (int i = 0; i < nCount && i < z5cee153; i++) {
 		int* h = z3a4dc4d[nSide][i];
-		h[zaefff6f(nAddr + i)]++;
+		h[(zaefff6f(nAddr + i) | zd2c8081(zad4c35d, i, z3c35b6f->zd1e415f)) & 0xFF]++;
 		pOut[i] = z4e3d88a(h, z543f62e);
 	}
 	*zbec1e4f = 1;
 }
 
-static void z5b74a62(int nSide, unsigned int nAddr, const int* za55e476, int zab46fd3)
+static void z5b74a62(int nSide, unsigned int nAddr, unsigned int z6166ecd, const int* za55e476, int zab46fd3)
 {
 	if (!nAddr || !zab46fd3) return;
-	const int v = zaefff6f(nAddr);
+	const int v = zaefff6f(nAddr) | zd2c8081(z6166ecd, 0, 0);
 	const int n = z3c35b6f->z37051f2;
 	int z18744d7 = 0;
 	for (int i = 0; i < n; i++) if (za55e476[i] == v) z18744d7 = 1;
@@ -553,7 +563,7 @@ static void z5b74a62(int nSide, unsigned int nAddr, const int* za55e476, int zab
 static void z4f1c6d2(int nSide, unsigned int nAddr)
 {
 	if (!nAddr) return;
-	const int v = zaefff6f(nAddr);
+	const int v = zaefff6f(nAddr) + 1;
 	if (v == z4ca563e || v == z4d63468) zd0532d6[nSide][v]++;
 }
 
@@ -960,10 +970,10 @@ static void ze46111d(void)
 
 	const int z477b3f2 = !z3c35b6f->zdad73f6 || zacd238a();
 	if (l1 > 0 && l2 > 0 && z477b3f2) {
-		z82b6e54(0, z3c35b6f->z8d3029b, z9165167.zc4ac0ca, z3c35b6f->z37051f2, &z9165167.zdafe8ef, z3c35b6f->z8b1bda1);
-		z82b6e54(1, z3c35b6f->z393d5c5, z9165167.zd1372c9, z3c35b6f->z37051f2, &z9165167.zdebfa6d, z3c35b6f->z8b1bda1);
-		z5b74a62(0, z3c35b6f->z5ba4a3e, z9165167.zc4ac0ca, z9165167.zdafe8ef);
-		z5b74a62(1, z3c35b6f->z73d0ac3, z9165167.zd1372c9, z9165167.zdebfa6d);
+		z82b6e54(0, z3c35b6f->z8d3029b, z9165167.zc4ac0ca, z3c35b6f->z37051f2, &z9165167.zdafe8ef, z3c35b6f->z8b1bda1, z3c35b6f->z8acd703);
+		z82b6e54(1, z3c35b6f->z393d5c5, z9165167.zd1372c9, z3c35b6f->z37051f2, &z9165167.zdebfa6d, z3c35b6f->z8b1bda1, z3c35b6f->zfea5464);
+		z5b74a62(0, z3c35b6f->z5ba4a3e, z3c35b6f->za884a39, z9165167.zc4ac0ca, z9165167.zdafe8ef);
+		z5b74a62(1, z3c35b6f->z73d0ac3, z3c35b6f->zaac9881, z9165167.zd1372c9, z9165167.zdebfa6d);
 		z4f1c6d2(0, z3c35b6f->zd930992);
 		z4f1c6d2(1, z3c35b6f->zfd72437);
 	}
@@ -1092,8 +1102,8 @@ static void ze46111d(void)
 
 	if ((zbc89174 || zc28386e) && z3c35b6f->z5ba4a3e && z3c35b6f->z73d0ac3 && zd58046c < z77b92c2) {
 		z21b0d90* b = &ze4f6240[zd58046c++];
-		b->zc4ac0ca = zaefff6f(z3c35b6f->z5ba4a3e);
-		b->zd1372c9 = zaefff6f(z3c35b6f->z73d0ac3);
+		b->zc4ac0ca = zaefff6f(z3c35b6f->z5ba4a3e) | zd2c8081(z3c35b6f->za884a39, 0, 0);
+		b->zd1372c9 = zaefff6f(z3c35b6f->z73d0ac3) | zd2c8081(z3c35b6f->zaac9881, 0, 0);
 		b->zdb52f45 = (zbc89174 && zc28386e) ? 0 : zc28386e ? 1 : 2;
 	}
 

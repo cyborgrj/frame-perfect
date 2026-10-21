@@ -73,6 +73,9 @@ static long long  zfffea48       = 0;
 static long long  z2e5240f  = 0, z905337f = 0, z1cce77d = 0;
 static long long  z9ebd558 = 0;
 static unsigned   ze267bd7 = 0;
+static unsigned   za2c4d28 = 0;
+static double     z7a78498[2] = { 0, 0 };
+static long long  zd50f383[2]   = { 0, 0 };
 static double     zacff564 = -1.0, z1b624f1 = -1.0;
 static long long  zae94da7   = 0;
 static long long  z1491418   = 0;
@@ -161,11 +164,13 @@ static void ze88acb8(const char* z0a0dc81, zdd8cd8b* s, double seconds)
 	const zdd8cd8b& e = s[ze3211d9];
 	if (e.n < 10) return;
 	const double period = z12d4ead();
-	char z35b762b[160] = "tela -";
+	char z35b762b[192] = "tela -";
 	if (s[z17f4406].n >= 10) {
 		const zdd8cd8b& d = s[z17f4406];
-		snprintf(z35b762b, sizeof(z35b762b), "tela media %.2f desvio %.2f p99 %.2f max %.2f ms, fora de +-2 ms %.0f%%",
-		         d.mean(), d.sd(), d.pct(0.99), d.mx, 100.0 * (double)d.z94925ed / (double)d.n);
+		const int k = (s == z67b2509) ? 1 : 0;
+		snprintf(z35b762b, sizeof(z35b762b), "tela media %.2f desvio %.2f p99 %.2f max %.2f ms, fora de +-2 ms %.0f%%, vblanks por quadro %.2f",
+		         d.mean(), d.sd(), d.pct(0.99), d.mx, 100.0 * (double)d.z94925ed / (double)d.n,
+		         zd50f383[k] ? z7a78498[k] / (double)zd50f383[k] : 0.0);
 	}
 	char zde61a7d[640];
 	snprintf(zde61a7d, sizeof(zde61a7d),
@@ -188,6 +193,7 @@ static void z62fbaae(long long t)
 	if (s < z45bab31) return;
 	ze88acb8("parcial", g_win, s);
 	for (int i = 0; i < 4; i++) g_win[i].reset();
+	z7a78498[0] = 0; zd50f383[0] = 0;
 	za6591eb = t;
 	if (z7e589f2) fflush(z7e589f2);
 }
@@ -257,15 +263,22 @@ void z5504f30(void)
 
 void z4ccf091(unsigned int z6e6fe6a, unsigned int z4c1eb79, long long zdb2baae)
 {
-	(void)z4c1eb79;
 	z0823a98();
 	if (z9ebd558 && z6e6fe6a == ze267bd7 + 1 && zdb2baae > z9ebd558) {
 		const double ms = (double)(zdb2baae - z9ebd558) * z2f1766e;
-		if (ms <= z934071a) { zd27afef(z17f4406, ms); z1b624f1 = ms; }
+		if (ms <= z934071a) {
+			zd27afef(z17f4406, ms);
+			z1b624f1 = ms;
+			const unsigned vb = z4c1eb79 - za2c4d28;
+			if (vb >= 1 && vb <= 60) {
+				for (int k = 0; k < 2; k++) { z7a78498[k] += (double)vb; zd50f383[k]++; }
+			}
+		}
 	}
 	if (z6e6fe6a != ze267bd7) {
 		ze267bd7 = z6e6fe6a;
 		z9ebd558 = zdb2baae;
+		za2c4d28 = z4c1eb79;
 	}
 }
 

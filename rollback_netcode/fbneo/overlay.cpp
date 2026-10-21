@@ -349,6 +349,7 @@ void z5c0c8b7(const char* z733a844, const char* zd5e0939, int ze6bfbdc)
 }
 
 void z8fa5b4b(void) { z910e658 = 0; z93f4c3c[0] = z55eba79[0] = '\0'; za5fd107 = 0; }
+void z8e15e46(int ze6bfbdc) { if (z910e658) za5fd107 = (ze6bfbdc > 0 && ze6bfbdc < 100) ? ze6bfbdc : 0; }
 int  z4b7d267(void) { return z910e658; }
 int  zfe2b00f(void) { return z9126c4e; }
 

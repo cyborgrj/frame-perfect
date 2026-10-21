@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #define z5cee153 3
+#define z3f24ff9        0x80
 
 #define z87df4c7 64
 
